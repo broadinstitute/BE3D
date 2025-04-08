@@ -1,0 +1,84 @@
+"""
+File: hypothesis_tests.py
+Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+Date: 2025-02-23
+Description: 
+"""
+
+import os
+from pathlib import Path
+
+from src.qc.hypothesis_tests_helpers import *
+
+def hypothesis_test(
+    workdir, 
+    input_dfs, screen_names, 
+    cases, controls, 
+    comp_name, 
+    mut_col='Mutation category', 
+    val_col='logFC', 
+    gene_col='Target Gene Symbol', 
+): 
+    """
+    Description
+        Conduct hypothesis 1 (one screen vs control from same screens) and hypothesis 2
+        (one screen vs control from all screens) on the set of input screens and genes. 
+    """
+
+    # MKDIR #
+    working_filedir = Path(workdir)
+    if not os.path.exists(working_filedir): 
+        os.mkdir(working_filedir)
+    if not os.path.exists(working_filedir / 'hypothesis_qc'):
+        os.mkdir(working_filedir / 'hypothesis_qc')
+
+    # CHECK INPUTS ARE SELF CONSISTENT #
+    for df in input_dfs: 
+        assert mut_col in df.columns, 'Check [mut_col] input'
+        assert val_col in df.columns, 'Check [val_col] input'
+        assert gene_col in df.columns, 'Check [gene_col] input'
+
+    unique_genes = []
+    for df in input_dfs: 
+        unique = df[gene_col].unique().tolist()
+        unique_genes = list(set(unique_genes+unique))
+
+    unique_mutations = []
+    for df in input_dfs: 
+        unique = df[mut_col].unique().tolist()
+        unique_mutations = list(set(unique_mutations+unique))
+
+    for c in cases+controls: 
+        assert c in unique_mutations, f'{c} not found in mutation types'
+
+    assert len(input_dfs) == len(screen_names), 'Lengths of [input_dfs] and [screen_names] must match'
+
+    # AGGREGATE ACROSS SCREENS FOR HYPOTHESIS #
+
+    # MW AND KS TESTS HYPOTHESIS 1 #
+    df_MW1_input = hypothesis_one(working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name, 
+                                  gene_col, mut_col, val_col, testtype='MannWhitney')
+    df_KS1_input = hypothesis_one(working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name, 
+                                  gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
+    
+    if len(unique_genes) > 1:
+        hypothesis_plot(working_filedir, df_MW1_input, df_KS1_input, screen_names, 'screenid', 'gene_name', 
+                        testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1', header=comp_name)
+    if len(screen_names) > 1:
+        hypothesis_plot(working_filedir, df_MW1_input, df_KS1_input, unique_genes, 'gene_name', 'screenid', 
+                        testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1', header=comp_name)
+
+    # MW AND KS TESTS HYPOTHESIS 2 #
+    df_MW2_input = hypothesis_two(working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name, 
+                                  gene_col, mut_col, val_col, testtype='MannWhitney')
+    df_KS2_input = hypothesis_two(working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name, 
+                                  gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
+    
+    if len(unique_genes) > 1:
+        hypothesis_plot(working_filedir, df_MW2_input, df_KS2_input, screen_names, 'screenid', 'gene_name', 
+                        testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2', header=comp_name)
+    if len(screen_names) > 1:
+        hypothesis_plot(working_filedir, df_MW2_input, df_KS2_input, unique_genes, 'gene_name', 'screenid', 
+                        testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2', header=comp_name)
+    
+    return df_MW1_input, df_MW2_input, df_KS1_input, df_KS2_input

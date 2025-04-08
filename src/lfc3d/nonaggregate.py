@@ -1,0 +1,199 @@
+"""
+File: nonaggregate.py
+Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+Date: 2024-06-18
+Description: 
+"""
+
+import os
+from pathlib import Path
+import pandas as pd
+
+import warnings
+warnings.filterwarnings('ignore')
+
+from .aggregate_helpers import *
+
+def average_split_score(
+        df_LFC_LFC3D, 
+        workdir, input_gene, screen_names, 
+        score_type='LFC3D', 
+): 
+    """
+    Description
+        Averages the LFC3D scores, splits into positive and negative, 
+        retrieves randomized LFC3D scores, bins LFC 3D scores into percentiles
+    """
+
+    # MKDIR #
+    working_filedir = Path(workdir)
+    if not os.path.exists(working_filedir): 
+        os.mkdir(working_filedir)
+    if not os.path.exists(working_filedir / score_type):
+        os.mkdir(working_filedir / score_type)
+
+    # CHECK INPUTS ARE SELF CONSISTENT #
+    assert 'unipos' in df_LFC_LFC3D.columns and 'unires' in df_LFC_LFC3D.columns
+
+    # INITALIZE DF #
+    df_bidir = df_LFC_LFC3D[['unipos', 'unires', 'chain']]
+    
+    # SETUP PARAMS #
+    header_scores = [f"{screen_name}_{score_type}" for screen_name in screen_names]
+
+    # FOR EVERY SCREEN INDIVIDUALLY #
+    for screen_name, header in zip(screen_names, header_scores): 
+        df_bidir[header] = df_LFC_LFC3D[header] # LFC or LFC3D per screen
+        taa_wise_LFC3D_pos, taa_wise_LFC3D_neg = [], []
+        
+        # PULL THE SCORE AND SPLIT POS NEG #
+        taa_LFC3D_raws_dict = df_LFC_LFC3D[header].to_dict()
+        for aa in range(len(df_LFC_LFC3D)): 
+            taa_LFC3D_raw = taa_LFC3D_raws_dict[aa] # TARGET SCORE PER AA PER SCREEN 
+            
+            # SEPARATE INTO POS AND NEG #
+            taa_LFC3D = float(taa_LFC3D_raw) if taa_LFC3D_raw != '-' else 0.0
+            taa_wise_LFC3D_neg.append(taa_LFC3D if taa_LFC3D < 0 else '-') # EITHER THE VALUE OR 0.0
+            taa_wise_LFC3D_pos.append(taa_LFC3D if taa_LFC3D > 0 else '-') # EITHER THE VALUE OR 0.0
+
+        df_bidir[f"{header}_neg"] = taa_wise_LFC3D_neg # LFC3D_neg per SCREEN
+        df_bidir[f"{header}_pos"] = taa_wise_LFC3D_pos # LFC3D_pos per SCREEN
+        df_bidir[f"{screen_name}_AVG_{score_type}r"]     = df_LFC_LFC3D[f"{screen_name}_AVG_{score_type}r"] # AVG_LFC3Dr per SCREEN
+        df_bidir[f"{screen_name}_AVG_{score_type}r_neg"] = df_LFC_LFC3D[f"{screen_name}_AVG_{score_type}r_neg"] # AVG_LFC3Dr_neg per SCREEN
+        df_bidir[f"{screen_name}_AVG_{score_type}r_pos"] = df_LFC_LFC3D[f"{screen_name}_AVG_{score_type}r_pos"] # AVG_LFC3Dr_pos per SCREEN
+
+    # SAVE #
+    out_filename_bidir = working_filedir / f"{score_type}/{input_gene}_{score_type}_bidirectional.tsv"
+    df_bidir.to_csv(out_filename_bidir, sep='\t', index=False)
+    return df_bidir
+
+def bin_score(
+        df_bidir, 
+        workdir, input_gene, screen_names, 
+        score_type='LFC3D', 
+): 
+    """
+    Description
+        Averages the LFC3D scores, splits into positive and negative, 
+        retrieves randomized LFC3D scores, bins LFC 3D scores into percentiles
+    """
+    
+    # MKDIR #
+    working_filedir = Path(workdir)
+    if not os.path.exists(working_filedir): 
+        os.mkdir(working_filedir)
+    if not os.path.exists(working_filedir / score_type):
+        os.mkdir(working_filedir / score_type)
+
+    # SETUP PARAMS #
+    quantiles = {'NEG_10p_v':0.1, 'POS_90p_v':0.9, 'NEG_05p_v':0.05, 'POS_95p_v':0.95}
+    headers_LFC3D = [f"{screen_name}_{score_type}" for screen_name in screen_names]
+    df_neg_stats_list, df_pos_stats_list = [], []
+    
+    # INITALIZE DF #
+    df_dis = df_bidir[['unipos', 'unires', 'chain'] + headers_LFC3D].copy()
+    
+    # FOR EVERY SCREEN INDIVIDUALLY #
+    for screen_name, header_LFC3D in zip(screen_names, headers_LFC3D): 
+
+        # GENERATE THRESHOLDS FOR BINNING #
+        df_temp = df_dis[header_LFC3D].replace('-', np.nan).astype(float)
+        mask_neg = df_temp < 0.0
+        mask_pos = df_temp > 0.0
+        df_neg_stats = df_temp[mask_neg].describe()
+        df_pos_stats = df_temp[mask_pos].describe()
+        df_neg_stats_list.append(df_neg_stats)
+        df_pos_stats_list.append(df_pos_stats)
+
+        # CALCULATE QUANTILES #
+        quantile_values = {}
+        for name, q in quantiles.items(): 
+            df_dis_clean = df_dis[header_LFC3D].replace('-', np.nan).astype(float)
+            quantile_values[name] = df_dis_clean.quantile(q)
+
+        # CALCULATE BINS #
+        arr_disc, arr_weight = binning_neg_pos(df_bidir, df_neg_stats, df_pos_stats, 
+                                               quantile_values.values(), header_LFC3D)
+        df_dis[f"{screen_name}_{score_type}_dis"]  = arr_disc
+        df_dis[f"{screen_name}_{score_type}_wght"] = arr_weight
+
+    # SAVE #
+    out_filename_dis = working_filedir / f"{score_type}/{input_gene}_{score_type}_dis_wght.tsv"
+    df_dis.to_csv(out_filename_dis, sep = '\t', index=False)
+    return df_dis, df_neg_stats_list, df_pos_stats_list
+
+def znorm_score(
+        df_bidir, neg_stats_list, pos_stats_list, 
+        workdir, input_gene, screen_names, 
+        pthrs=[0.05, 0.01, 0.001], score_type='LFC3D', 
+): 
+    """
+    Description
+        Averages the LFC3D scores, splits into positive and negative, 
+        retrieves randomized LFC3D scores, bins LFC 3D scores into percentiles
+    """
+    # EACH SCREEN IS Z SCORED TO ITS OWN SET OF RANDOMIZED CONTROLS #
+    # ASSUMED NEG AND POS FOR EACH #
+    
+    # MKDIR #
+    working_filedir = Path(workdir)
+    if not os.path.exists(working_filedir): 
+        os.mkdir(working_filedir)
+    if not os.path.exists(working_filedir / score_type):
+        os.mkdir(working_filedir / score_type)
+
+    # CHECK INPUTS ARE SELF CONSISTENT #
+    for screen_name in screen_names: 
+        assert f'{screen_name}_{score_type}_neg' in df_bidir.columns
+        assert f'{screen_name}_{score_type}_pos' in df_bidir.columns
+        assert f'{screen_name}_AVG_{score_type}r_neg' in df_bidir.columns
+        assert f'{screen_name}_AVG_{score_type}r_pos' in df_bidir.columns
+    
+    assert all(isinstance(item, float) for item in pthrs), '[pthrs] must be a list of p-values'
+    pthrs_str = [str(pthr).split('.')[1] for pthr in pthrs]
+
+    # INITIALIZE DF #
+    df_z = df_bidir[['unipos', 'unires', 'chain']].copy()
+
+    # FOR EVERY SCREEN INDIVIDUALLY #
+    for screen_name, neg_stats, pos_stats in zip(screen_names, neg_stats_list, pos_stats_list):
+
+        # COPY COLUMNS FOR VALUES AND RAND VALUES #
+        header_main = f'{screen_name}_{score_type}'
+        df_z[f'{header_main}_neg'] = df_bidir[f'{header_main}_neg']
+        df_z[f'{header_main}_pos'] = df_bidir[f'{header_main}_pos']
+        df_z[f'{screen_name}_AVG_{score_type}r_neg'] = df_bidir[f'{screen_name}_AVG_{score_type}r_neg']
+        df_z[f'{screen_name}_AVG_{score_type}r_pos'] = df_bidir[f'{screen_name}_AVG_{score_type}r_pos']
+
+        # SETUP PARAMS FOR CALCULATING Z SCORE #
+        colnames = [f'{header_main}_neg', f'{header_main}_pos']
+        params = [{'mu': neg_stats['mean'], 's': neg_stats['std']}, 
+                  {'mu': pos_stats['mean'], 's': pos_stats['std']}]
+
+        result_data = {f'{header_main}_{sign}_{pthr_str}_{suffix}': [] 
+                    for sign in ['neg', 'pos'] 
+                    for suffix in ['z', 'p', 'psig'] 
+                    for pthr_str in pthrs_str
+                    }
+
+        # CONVERT SIGNAL TO Z SCORE #
+        for colname, param, sign in zip(colnames, params, ['neg', 'pos']): 
+            signals_dict = df_z[colname].replace('-', np.nan).to_dict()
+
+            for pthr, pthr_str in zip(pthrs, pthrs_str): 
+                for i in range(len(df_z)):
+                    signal = float(signals_dict[i])
+                    signal_z, signal_p, signal_plabel = calculate_stats(signal, param, pthr)
+                    
+                    # APPEND RESULTS TO DICT #
+                    result_data[f'{header_main}_{sign}_{pthr_str}_z'].append(signal_z)
+                    result_data[f'{header_main}_{sign}_{pthr_str}_p'].append(signal_p)
+                    result_data[f'{header_main}_{sign}_{pthr_str}_psig'].append(signal_plabel)
+
+        df_temp = pd.DataFrame(result_data)
+        df_z = pd.concat([df_z, df_temp], axis=1)
+
+    # SAVE #
+    filename = working_filedir / f"{score_type}/{input_gene}_NonAggr_{score_type}.tsv"
+    df_z.to_csv(filename, "\t", index=False)
+    return df_z
