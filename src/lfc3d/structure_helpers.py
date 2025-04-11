@@ -6,14 +6,14 @@ Description:
 """
 
 import pandas as pd
-from DSSPparser import parseDSSP
+# from DSSPparser import parseDSSP
 from pathlib import Path
 import os.path
 from biopandas.pdb import PandasPdb
 import math
-import wget
+# import wget
 import warnings
-import requests
+# import requests
 import json
 import time
 import shutil

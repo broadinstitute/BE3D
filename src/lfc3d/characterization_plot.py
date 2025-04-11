@@ -6,11 +6,12 @@ Description:
 """
 
 import os
-import seaborn as sns
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 from pathlib import Path
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 from matplotlib.lines import Line2D
 
 # PLOT ENRICHMENT #
@@ -18,7 +19,8 @@ from matplotlib.lines import Line2D
 def plot_enrichment_test(
     enrichment_results, 
     workdir, 
-    input_gene, hit_value, feature_values
+    input_gene, hit_value, feature_values, 
+    padding=0.5, save_type='png', 
 ):
     """
     Description
@@ -63,11 +65,12 @@ def plot_enrichment_test(
     # CUSTOMIZE PLOT #
     ax.set_yticks(y_positions)
     ax.set_yticklabels(feature_values)
+    ax.set_ylim(min(y_positions) - padding, max(y_positions) + padding)
     ax.set_xlabel('Odds Ratio')
     ax.set_title(f'{input_gene} Enrichment Test Odds Ratios')
     
-    out_filename = working_filedir / f"characterization/plots/{input_gene}_enrichment_test.png"
-    plt.savefig(out_filename, dpi=300)
+    out_filename = working_filedir / f"characterization/plots/{input_gene}_enrichment_test.{save_type}"
+    plt.savefig(out_filename, dpi=100, transparent=True, format=save_type)
     plt.close()
 
 # CHARACTERIZATION PLOTS #
@@ -76,7 +79,7 @@ def lfc_lfc3d_scatter(
     df_input, 
     workdir, 
     input_gene, screen_name, 
-    lfc3d_hit_threshold=0.05
+    lfc3d_hit_threshold=0.05, save_type='png', 
 ): 
     """
     Description
@@ -138,8 +141,8 @@ def lfc_lfc3d_scatter(
     plt.ylabel(f"{screen_name} (LFC3D)")
     plt.grid(True, linestyle="--", alpha=0.5)
 
-    out_filename = f'characterization/plots/{input_gene}_LFC_LFC3D_scatter.png'
-    plt.savefig(working_filedir / out_filename, dpi=300)
+    out_filename = f'characterization/plots/{input_gene}_LFC_LFC3D_scatter.{save_type}'
+    plt.savefig(working_filedir / out_filename, dpi=100, transparent=True, format=save_type)
     plt.close()
 
 def pLDDT_RSA_scatter(
@@ -147,7 +150,8 @@ def pLDDT_RSA_scatter(
     workdir, 
     input_gene, 
     pLDDT_col='bfactor_pLDDT', RSA_col='RSA', size_col='LFC3D_wght', direction_col='direction', 
-    color_map = {'NEG': 'darkred', 'POS': 'darkblue'}
+    color_map = {'NEG': 'darkred', 'POS': 'darkblue'}, 
+    save_type='png', 
 ):
     """
     Description
@@ -188,8 +192,8 @@ def pLDDT_RSA_scatter(
     plt.ylabel('RSA')
     plt.title(f"{input_gene} RSA vs. pLDDT Scatterplot")
 
-    out_filename = working_filedir / f'characterization/plots/{input_gene}_pLDDT_RSA_scatter.png'
-    plt.savefig(out_filename, dpi=300)
+    out_filename = working_filedir / f'characterization/plots/{input_gene}_pLDDT_RSA_scatter.{save_type}'
+    plt.savefig(out_filename, dpi=100, transparent=True, format=save_type)
     plt.close()
 
 def hits_feature_barplot(
@@ -199,6 +203,7 @@ def hits_feature_barplot(
     category_col,
     values_cols, values_vals, value_names, 
     plot_type='Count', colors = ['darkred', 'darkblue'], 
+    save_type='png', 
 ):
     """
     Description
@@ -230,7 +235,7 @@ def hits_feature_barplot(
     # DRAW PLOT #
     if colors is None: 
         colors = plt.cm.get_cmap('tab10').colors[:len(counts_df.columns)] 
-    ax = counts_df.plot(kind='bar', figsize=(10, 6), color=colors, edgecolor='black')
+    ax = counts_df.plot(kind='bar', figsize=(6, 4), color=colors, edgecolor='black')
 
     # LABELS AND OUTPUT #
     plt.xlabel(category_col)
@@ -239,6 +244,6 @@ def hits_feature_barplot(
     plt.title(f"{input_gene} {category_col} Hit Barplot")
     plt.legend(title='Direction')
 
-    out_filename = working_filedir / f"characterization/plots/{input_gene}_{plot_type}_{category_col}_barplot.png"
-    plt.savefig(out_filename, dpi=300)
+    out_filename = working_filedir / f"characterization/plots/{input_gene}_{plot_type}_{category_col}_barplot.{save_type}"
+    plt.savefig(out_filename, dpi=100, transparent=True, format=save_type)
     plt.close()

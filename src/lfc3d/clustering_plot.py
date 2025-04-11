@@ -18,21 +18,21 @@ from sklearn.cluster import AgglomerativeClustering
 
 
 def plot_clustering(
-        df_struc, df_pvals, 
-        df_pvals_clust, dist, 
-        workdir, input_gene, 
-        distances, yvalues, 
-        psig_columns=[f'SUM_LFC3D_neg_05_psig', f'SUM_LFC3D_pos_05_psig'], 
-        names=['Negative', 'Positive'], 
-        pthr_cutoffs=['p<0.05', 'p<0.05'], 
-        screen_name = 'Meta', score_type='LFC3D',  
-        merge_col=['unipos', 'chain'], 
-        clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single"}, 
+    df_struc, df_pvals, 
+    df_pvals_clust, dist, 
+    workdir, input_gene, 
+    distances, yvalues, 
+    psig_columns=[f'SUM_LFC3D_neg_05_psig', f'SUM_LFC3D_pos_05_psig'], 
+    names=['Negative', 'Positive'], 
+    pthr_cutoffs=['p<0.05', 'p<0.05'], 
+    screen_name = 'Meta', score_type='LFC3D',  
+    merge_col=['unipos', 'chain'], 
+    clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single"}, 
 
-        horizontal=False, 
-        line_subplots_kwargs={'figsize':(10,7)}, 
-        dendogram_subplots_kwargs={'figsize':(15, 12)}, 
-
+    horizontal=False, 
+    line_subplots_kwargs={'figsize':(10,7)}, 
+    dendogram_subplots_kwargs={'figsize':(15, 12)}, 
+    save_type='png', 
 ): 
     """
     Description
@@ -69,11 +69,11 @@ def plot_clustering(
 
     # PLOT CLUSTERING DIST VS NUM OF CLUSTERS #
     clust_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_Aggr_Hits_List.tsv" 
-    plot_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_cluster_distance.png"
+    plot_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_cluster_distance.{save_type}"
     plot_cluster_distance(distances, yvalues, 
                           names, input_gene, 
                           clust_filename, plot_filename, 
-                          line_subplots_kwargs)
+                          line_subplots_kwargs, save_type)
 
     # OPEN CLUSTERING FILE #
     for name, pthr, colname in zip(names, pthr_cutoffs, psig_columns): 
@@ -91,12 +91,12 @@ def plot_clustering(
         func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=dist)
         clustering = func_clustering.fit(np_hits_coord)
 
-        dend_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{name}_Dendogram_{str(dist)}A.png"
+        dend_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{name}_Dendogram_{str(dist)}A.{save_type}"
         title = f'{input_gene} {score_type} {name} Clusters'
         plot_dendrogram(clustering, df_pvals_temp, 
                         dist, horizontal, pos_col, chain_col, 
                         title, dend_filename, 
-                        dendogram_subplots_kwargs)
+                        dendogram_subplots_kwargs, save_type)
 
         # CLUSTERS RESIDUES AND LENGTH OF EACH CLUSTER #
         df_pvals_clust_i = df_pvals_clust.loc[(df_pvals_clust[colname] == pthr), ].reset_index(drop=True)
@@ -124,7 +124,7 @@ def plot_cluster_distance(
         distances, yvalues, 
         names, input_gene, 
         clust_filename, plot_filename, 
-        subplots_kwargs, 
+        subplots_kwargs, save_type, 
 ): 
 
     dist_dict = {'clust_dist': distances}
@@ -140,14 +140,14 @@ def plot_cluster_distance(
     plt.xlabel('Cluster Radius')
     plt.ylabel('Number of Clusters')
     plt.title(f'Positive vs Negative Clusters {input_gene}')
-    plt.savefig(plot_filename, dpi=300) 
+    plt.savefig(plot_filename, dpi=100, transparent=True, format=save_type)
     plt.close()
 
 def plot_dendrogram(
         clustering, df_pvals_temp, 
         dist, horizontal, pos_col, chain_col, 
         title, dend_filename, 
-        subplots_kwargs, 
+        subplots_kwargs, save_type, 
 ):  
     fig, ax = plt.subplots(**subplots_kwargs)
     counts = np.zeros(clustering.children_.shape[0]) # CREATE COUNTS OF SAMPLE #
@@ -173,5 +173,5 @@ def plot_dendrogram(
     else: dendrogram(linkage_matrix, color_threshold=dist, labels=xlbl, leaf_rotation=90.)
 
     plt.title(title)
-    plt.savefig(dend_filename, dpi=300)
+    plt.savefig(dend_filename, dpi=100, transparent=True, format=save_type)
     plt.close()
