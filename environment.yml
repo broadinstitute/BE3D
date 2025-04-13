@@ -130,4 +130,3 @@ dependencies:
       - idna==3.10
       - muscle==0.0.4
       - wget==3.2
-prefix: /Users/calvinxyh/opt/anaconda3/envs/beclust-public

@@ -6,7 +6,8 @@ Description:
 """
 
 import pandas as pd
-import matplotlib.pylab as plt
+# import matplotlib.pylab as plt
+import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
@@ -96,7 +97,8 @@ def hypothesis_two(
             df_case = pd.DataFrame()
             for case in cases: 
                 df_case = pd.concat([df_case, df_edits.loc[df_edits[mut_col]==case].reset_index(drop=True)])
-            new_row.extend(add_to_row(df_case, df_control, val_col, testtype))
+            new_row.extend(add_to_row(df_case, df_control, val_col, testtype, gene_col, current_gene))
+            new_row.extend([len(df_case),len(df_control)])
             
             # ADD NEW ROW #
             df_output.loc[len(df_output)] = new_row

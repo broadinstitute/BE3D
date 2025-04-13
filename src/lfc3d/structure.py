@@ -5,6 +5,10 @@ Date: 2024-06-18
 Description: 
 """
 
+import os
+from pathlib import Path
+import shutil
+
 from .structure_helpers import *
 
 def sequence_structural_features(
@@ -46,8 +50,7 @@ def sequence_structural_features(
     af_processed_filename = f"sequence_structure/{structureid}_processed.pdb"
     if user_pdb is not None: # USER INPUT FOR ALPHAFOLD #
         assert os.path.isfile(working_filedir / user_pdb), f'{user_pdb} does not exist'
-        if str(user_pdb) != str(af_filename): 
-            shutil.copy2(working_filedir / user_pdb, working_filedir / af_filename)
+        af_filename = user_pdb
     else: # QUERY DATABASE #
         query_af(working_filedir, af_filename, structureid)
     parse_af(working_filedir, af_filename, af_processed_filename)
@@ -77,8 +80,3 @@ def sequence_structural_features(
     coord_dssp_filename = f"sequence_structure/{structureid}_coord_struc_features.tsv"
     df_coord_dssp = degree_of_burial(df_dssp, df_coord, working_filedir, coord_dssp_filename)
     return df_coord_dssp
-
-###
-# if doing a complex, should be able to run this function multiple times for all genes in a complex
-# then just concat the output by row
-# lastly count aa within radius for the whole complex too, because previously would only be within subunits

@@ -5,20 +5,20 @@ Date: 2024-06-18
 Description: 
 """
 
-import pandas as pd
-from DSSPparser import parseDSSP
-from pathlib import Path
-import os.path
-from biopandas.pdb import PandasPdb
+import os
 import math
 import wget
 import warnings
 import requests
-import json
-import time
+import pandas as pd
 import shutil
 import subprocess
 import csv
+
+from biopandas.pdb import PandasPdb
+
+from Bio.PDB.DSSP import DSSP
+from DSSPparser import parseDSSP
 
 aamap = {
     'A': {'max_asa': 129.0, 'aa3cap': 'ALA'}, 
@@ -201,14 +201,22 @@ def parse_coord(
 def run_dssp(
     working_filedir, af_filename, dssp_filename, 
 ): 
+    os.environ["LIBCIFPP_DATA_DIR"] = "src/helpers/libcifpp_data"
+
     if not os.path.exists(working_filedir / dssp_filename): 
         pdb_file_path = str(working_filedir / af_filename)
+        out_file_path = str(os.path.join(working_filedir / dssp_filename))
+        dic_file_path = "src/helpers/mmcif_pdbx_v50.dic"
 
-        # Run the mkdssp command
-        if shutil.which('dssp') is None:
-            subprocess.run(["mkdssp", pdb_file_path, os.path.join(working_filedir / dssp_filename)], check=True)
-        else:
-            subprocess.run(["dssp", pdb_file_path, os.path.join(working_filedir / dssp_filename)], check=True)
+        # RUN DSSP COMMAND #
+        if shutil.which('dssp') is None: 
+            subprocess.run(["mkdssp", pdb_file_path, out_file_path, 
+                            "--output-format", "dssp", "--mmcif-dictionary", dic_file_path], 
+                            check=True)
+        else: 
+            subprocess.run(["dssp", pdb_file_path, out_file_path, 
+                            "--output-format", "dssp", "--mmcif-dictionary", dic_file_path], 
+                            check=True)
 
 def parse_dssp(
         working_filedir, 
@@ -437,10 +445,10 @@ def degree_of_burial(
     # CALCULATE DEGREE OF BURIAL PER RESIDUE normSumdBurial AND CATEGORY pLDDT_dis #
     aa_wise_cdBurial = []
     arr_pLDDT_discrete = []
-    naa_list_dict = df_coord_dssp['Naa'].todict()
-    naa_pos_list_dict = df_coord_dssp['Naa_pos'].todict()
-    taa_dBurial_dict = df_coord_dssp['dBurial'].todict()
-    pLDDT_dict = df_coord_dssp['bfactor_pLDDT'].todict()
+    naa_list_dict = df_coord_dssp['Naa'].to_dict()
+    naa_pos_list_dict = df_coord_dssp['Naa_pos'].to_dict()
+    taa_dBurial_dict = df_coord_dssp['dBurial'].to_dict()
+    pLDDT_dict = df_coord_dssp['bfactor_pLDDT'].to_dict()
 
     for i in range(len(df_coord_dssp)): 
         taa_dBurial  = taa_dBurial_dict[i]
