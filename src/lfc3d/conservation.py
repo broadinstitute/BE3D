@@ -13,6 +13,7 @@ import sys, os
 import time
 import warnings
 import subprocess
+
 from Bio import AlignIO
 
 cons_dict = {
@@ -26,7 +27,8 @@ def conservation(
         workdir, 
         input_gene, alt_input_gene, 
         input_uniprot, alt_input_uniprot, 
-        alignment_filename=None, 
+        alignment_filename=None, mode='run', 
+        title=None, email=None, wait_time=30, 
 ): 
     """
     Description
@@ -42,9 +44,13 @@ def conservation(
     if not os.path.exists(working_filedir / 'conservation'):
         os.mkdir(working_filedir / 'conservation')
 
+    assert mode=='run' or mode=='query'
+    if mode=='query': 
+        assert title is not None and email is not None
+
     # QUERY UNIPROT AND WRITE TO sequences.fasta #
     if alignment_filename is None: 
-        request_filename_original, request_filename_alternate = f"conservation/{input_uniprot}.fasta", f"conservation/{alt_input_uniprot}.fasta"
+        request_filename_original, request_filename_alternate = f"{input_uniprot}.fasta", f"{alt_input_uniprot}.fasta"
         original_seq = query_protein_fasta(working_filedir, request_filename_original)
         alternate_seq = query_protein_fasta(working_filedir, request_filename_alternate)
         seqs_filename = f"conservation/sequences.fasta"
@@ -55,7 +61,10 @@ def conservation(
         # MUSCLE ALIGNMENT #
         muscle_output_filename = f"conservation/{input_gene}_{alt_input_gene}.afa"
         align_filename = f"conservation/{input_gene}_{alt_input_gene}.align"
-        run_muscle(working_filedir, seqs_filename, muscle_output_filename, align_filename)
+        # RUN ALIGNMENT LOCALLY #
+        if mode=='run': run_muscle(working_filedir, seqs_filename, muscle_output_filename, align_filename)
+        # IF MUSCLE CANT BE RUN LOCALLY, QUERY API #
+        if mode=='query': query_muscle(working_filedir, seqs_filename, align_filename, email, title, wait_time)
     else: 
         align_filename = alignment_filename
     
@@ -84,11 +93,11 @@ def query_protein_fasta(
 
     # RESPONSE TEXT #
     response_body = response.text
-    with open(edits_filedir / request_filename, "w") as text_file:
+    with open(edits_filedir / 'conservation' / request_filename, "w") as text_file:
         text_file.write(response_body)
     return response_body
 
-def alignment_muscle(
+def query_muscle(
     edits_filedir, 
     seqs_filename, align_filename, 
     email, title, wait_time, 
@@ -120,7 +129,7 @@ def alignment_muscle(
 
 def run_muscle(
     edits_filedir, 
-    seqs_filename,afa_filename ,align_filename
+    seqs_filename, afa_filename, align_filename, 
 ): 
     """
     Description
@@ -128,10 +137,12 @@ def run_muscle(
     """
     # Run MUSCLE alignment
     # muscle_path = "/Users/calvinxyh/opt/anaconda3/lib/python3.9/site-packages/gget/bins/Darwin/muscle" ###
-    subprocess.run(["muscle", 
-                    "-align", str(edits_filedir / seqs_filename), 
-                    "-output", str(edits_filedir / afa_filename), 
-                    "-threads", "1"], check=True)
+    subprocess.run([
+        "src/helpers/align/muscle-osx-arm64.v5.3", 
+        "-align", str(edits_filedir / seqs_filename), 
+        "-output", str(edits_filedir / afa_filename), 
+        "-threads", "1", 
+        ], check=True)
 
     # Run Clustal Omega for formatting
     subprocess.run([
@@ -142,6 +153,18 @@ def run_muscle(
         "-o", edits_filedir / align_filename,
         "--force"
     ], check=True)
+
+    # # "chmod +x src/helpers/align/muscle-osx-arm64.v5.3"
+    # muscle_exe = "src/helpers/align/muscle-osx-arm64.v5.3"
+    # in_file = str(edits_filedir / seqs_filename)
+    # inter_file = str(edits_filedir / afa_filename)
+    # out_file = str(edits_filedir / align_filename)
+
+    # subprocess.run([
+    #     muscle_exe,
+    #     "-align", in_file,
+    #     "-output", inter_file
+    # ], check=True)
     
 def parse_alignment(
     edits_filedir, 
@@ -156,7 +179,11 @@ def parse_alignment(
     index  = [i+1 for i in range(len(human_align_res))]
     dis, v = [cons_dict[s][0] for s in score], [cons_dict[s][1] for s in score]
     colnames = ['alignment_pos', 'human_aligned_res', 'mouse_aligned_res', 'score', 'dis_score', 'v_score']
-    colvals  = [index, human_align_res, mouse_align_res, score, dis, v]
+    colvals  = [index, 
+                [c for c in human_align_res], 
+                [c for c in mouse_align_res], 
+                [s for s in score], 
+                dis, v]
 
     df_alignconserv = pd.DataFrame()
     for name, col in zip(colnames, colvals): 

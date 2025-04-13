@@ -80,8 +80,3 @@ def sequence_structural_features(
     coord_dssp_filename = f"sequence_structure/{structureid}_coord_struc_features.tsv"
     df_coord_dssp = degree_of_burial(df_dssp, df_coord, working_filedir, coord_dssp_filename)
     return df_coord_dssp
-
-###
-# if doing a complex, should be able to run this function multiple times for all genes in a complex
-# then just concat the output by row
-# lastly count aa within radius for the whole complex too, because previously would only be within subunits
