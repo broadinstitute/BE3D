@@ -8,7 +8,7 @@ Description:
 import os
 from pathlib import Path
 
-from src.qc.hypothesis_tests_helpers import *
+from .hypothesis_tests_helpers import *
 
 def hypothesis_test(
     workdir, 
