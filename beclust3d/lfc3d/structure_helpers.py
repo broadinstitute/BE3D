@@ -461,7 +461,10 @@ def degree_of_burial(
         sum_dBurial = 0
         for naa_pos in naa_pos_list: 
             if naa_pos != '': 
-                sum_dBurial += round(taa_dBurial_dict[int(naa_pos)-1], 2)
+                dburial = taa_dBurial_dict[int(naa_pos)-1]
+                if dburial != '-': 
+                    sum_dBurial += round(dburial, 2)
+                 ### 250414 only errored on men1 pdb ###
         norm_sum_dBurial = round(sum_dBurial / len(naa_list), 2)
         aa_wise_cdBurial.append(round(norm_sum_dBurial * taa_dBurial, 3))
 
