@@ -136,6 +136,7 @@ def parse_coord(
     working_filedir, 
     af_processed_filename, 
     fastalist_filename, coord_filename, 
+    chain, 
 ): 
     """
     Description
@@ -162,8 +163,8 @@ def parse_coord(
     for i in range(len(fasta_df)):
         unipos = unipos_dict[i]
         uniaa = uniaa_dict[i]
-        residue_entry = atom_df.loc[atom_df['residue_number'] == int(unipos), ] ###
-        ca_entry = residue_entry.loc[residue_entry['atom_name'] == "CA", ] ###
+        entry = atom_df.loc[atom_df['residue_number'] == int(unipos), ] ###
+        ca_entry = entry.loc[(entry['atom_name'] == "CA") & (entry['chain_id'] == chain), ] ###
 
         x_coord, y_coord, z_coord, chain_id, b_factor = "-", "-", "-", "-", "-"
         

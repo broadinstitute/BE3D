@@ -56,7 +56,7 @@ def sequence_structural_features(
     parse_af(working_filedir, af_filename, af_processed_filename)
 
     coord_filename = f"sequence_structure/{structureid}_coord.tsv"
-    parse_coord(working_filedir, af_processed_filename, out_fasta, coord_filename)
+    parse_coord(working_filedir, af_processed_filename, out_fasta, coord_filename, chain)
 
     # SECONDAY STRUCTURE DSSP #
     dssp_filename = f"sequence_structure/{structureid}_processed.dssp"
