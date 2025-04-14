@@ -85,7 +85,7 @@ def plot_clustering(
         np_hits_coord = np.array(df_pvals_temp[coord_columns]).copy()
         if np_hits_coord.shape[0] < 2: 
             warnings.warn(f"Not enough data to perform agglomerative clustering")
-            raise None
+            continue
         
         # RUN CLUSTERING #
         func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=dist)
