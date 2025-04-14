@@ -18,6 +18,7 @@ def hypothesis_test(
     mut_col='Mutation category', 
     val_col='logFC', 
     gene_col='Target Gene Symbol', 
+    save_type='png', 
 ): 
     """
     Description
@@ -63,10 +64,10 @@ def hypothesis_test(
     
     if len(unique_genes) > 1:
         hypothesis_plot(working_filedir, df_MW1_input, df_KS1_input, screen_names, 'screenid', 'gene_name', 
-                        testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1', header=comp_name)
+                        testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1', header=comp_name, save_type=save_type)
     if len(screen_names) > 1:
         hypothesis_plot(working_filedir, df_MW1_input, df_KS1_input, unique_genes, 'gene_name', 'screenid', 
-                        testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1', header=comp_name)
+                        testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1', header=comp_name, save_type=save_type)
 
     # MW AND KS TESTS HYPOTHESIS 2 #
     df_MW2_input = hypothesis_two(working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name, 
@@ -76,9 +77,9 @@ def hypothesis_test(
     
     if len(unique_genes) > 1:
         hypothesis_plot(working_filedir, df_MW2_input, df_KS2_input, screen_names, 'screenid', 'gene_name', 
-                        testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2', header=comp_name)
+                        testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2', header=comp_name, save_type=save_type)
     if len(screen_names) > 1:
         hypothesis_plot(working_filedir, df_MW2_input, df_KS2_input, unique_genes, 'gene_name', 'screenid', 
-                        testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2', header=comp_name)
+                        testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2', header=comp_name, save_type=save_type)
     
     return df_MW1_input, df_MW2_input, df_KS1_input, df_KS2_input

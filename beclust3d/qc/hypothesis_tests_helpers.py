@@ -133,7 +133,7 @@ def hypothesis_plot(
         df_MW_input, df_KS_input, 
         category_names, cat_colname, hue_colname, 
         testtype1, testtype2, hypothesis, 
-        header, 
+        header, save_type, 
 ): 
 
     # SETUP PLOT BY NAME (SCREEN or GENE) #
@@ -216,8 +216,9 @@ def hypothesis_plot(
 
     # SAVE PLOT #
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
-    plot_filename = f"hypothesis_qc/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.png"
-    plt.savefig(working_filedir / plot_filename, dpi=500)
+    plot_filename = f"hypothesis_qc/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.{save_type}"
+    plt.savefig(working_filedir / plot_filename, dpi=100, transparent=True, format=save_type)
+    plt.close()
 
     # CREATE SEPARATE LEGEND PLOT #
     legend_fig, legend_ax = plt.subplots(figsize=(4, len(all_handles) * 0.3))
@@ -225,8 +226,9 @@ def hypothesis_plot(
     legend_ax.legend(all_handles, all_labels, title=hue_colname, loc='center', fontsize='small', frameon=False)
 
     # SAVE LEGEND SEPARATELY #
-    legend_filename = f"hypothesis_qc/hypothesis{hypothesis}_legend_by_{cat_colname}.png"
-    legend_fig.savefig(working_filedir / legend_filename, dpi=500)
+    legend_filename = f"hypothesis_qc/hypothesis{hypothesis}_legend_by_{cat_colname}.{save_type}"
+    legend_fig.savefig(working_filedir / legend_filename, dpi=100, transparent=True, format=save_type)
+    plt.close()
 
 def negative_log_transformation(value):
     if pd.notna(value) and value > 0:
