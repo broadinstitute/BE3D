@@ -104,19 +104,7 @@ def lfc_lfc3d_scatter(
     }, inplace=True)
 
     # Assign p-significance label for hue coloring
-    psig_dict = {'above': f'p>={lfc3d_hit_threshold}', 'below': f'p<{lfc3d_hit_threshold}'}
-
-    def assign_psig_label(row):
-        if row['LFC3D_neg_psig'] == psig_dict['above'] and row['LFC3D_pos_psig'] == psig_dict['above']:
-            return 'not hit'
-        elif row['LFC3D_neg_psig'] == psig_dict['above'] and row['LFC3D_pos_psig'] == psig_dict['below']:
-            return 'positive hit'
-        elif row['LFC3D_neg_psig'] == psig_dict['below'] and row['LFC3D_pos_psig'] == psig_dict['above']:
-            return 'negative hit'
-        elif row['LFC3D_neg_psig'] == psig_dict['below'] and row['LFC3D_pos_psig'] == psig_dict['below']:
-            return 'pos/neg hit'
-        return None
-    df_input['psig_label'] = df_input.apply(assign_psig_label, axis=1)
+    df_input['psig_label'] = df_input.apply(lambda x: assign_psig_label(x, lfc3d_hit_threshold), axis=1)
 
     # Remove dashes from table and replace with 0
     df_input['LFC'] = df_input['LFC'].replace('-', 0.0).astype(float)
@@ -144,6 +132,21 @@ def lfc_lfc3d_scatter(
     out_filename = f'characterization/plots/{input_gene}_LFC_LFC3D_scatter.{save_type}'
     plt.savefig(working_filedir / out_filename, dpi=100, transparent=True, format=save_type)
     plt.close()
+
+### including '-' changes whether we are looking only at hits
+def assign_psig_label(row, lfc3d_hit_threshold):
+    psig_dict = {'above': f'p>={lfc3d_hit_threshold}', 'below': f'p<{lfc3d_hit_threshold}'}
+    neg_str, pos_str = row['LFC3D_neg_psig'], row['LFC3D_pos_psig']
+
+    if (neg_str == psig_dict['above'] or neg_str == '-') and (pos_str == psig_dict['above'] or pos_str == '-'):
+        return 'not hit'
+    elif (neg_str == psig_dict['above'] or neg_str == '-') and pos_str == psig_dict['below']:
+        return 'positive hit'
+    elif neg_str == psig_dict['below'] and (pos_str == psig_dict['above'] or pos_str == '-'):
+        return 'negative hit'
+    elif neg_str == psig_dict['below'] and pos_str == psig_dict['below']:
+        return 'pos/neg hit'
+    return None
 
 def pLDDT_RSA_scatter(
     df_filtered, 
