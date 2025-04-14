@@ -97,8 +97,11 @@ def hypothesis_two(
             df_case = pd.DataFrame()
             for case in cases: 
                 df_case = pd.concat([df_case, df_edits.loc[df_edits[mut_col]==case].reset_index(drop=True)])
-            new_row.extend(add_to_row(df_case, df_control, val_col, testtype, gene_col, current_gene))
-            new_row.extend([len(df_case),len(df_control)])
+
+            df_control_in = df_control[df_control[gene_col]==current_gene]
+            df_case_in = df_case[df_case[gene_col]==current_gene]
+            new_row.extend(add_to_row(df_control_in, df_case_in, val_col, testtype))
+            # new_row.extend([len(df_case),len(df_control)]) ### what is the point of this, mismatch in row length
             
             # ADD NEW ROW #
             df_output.loc[len(df_output)] = new_row
@@ -113,12 +116,7 @@ def hypothesis_two(
 
 def add_to_row(
     df1, df2, val_col, function, 
-    gene_col=None, gene_name=None, 
 ): 
-    if gene_col is not None and gene_name is not None: 
-        df1 = df1[df1[gene_col] == gene_name]
-        df2 = df2[df2[gene_col] == gene_name]
-
     if len(df1) > 0 and len(df2) > 0: 
         if function == 'KolmogorovSmirnov': 
             U1, p = ks_2samp(df1[val_col], df2[val_col])
