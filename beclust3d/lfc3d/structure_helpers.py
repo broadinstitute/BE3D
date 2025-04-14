@@ -136,7 +136,7 @@ def parse_coord(
     working_filedir, 
     af_processed_filename, 
     fastalist_filename, coord_filename, 
-    chain, 
+    chains, 
 ): 
     """
     Description
@@ -164,7 +164,7 @@ def parse_coord(
         unipos = unipos_dict[i]
         uniaa = uniaa_dict[i]
         entry = atom_df.loc[atom_df['residue_number'] == int(unipos), ] ###
-        ca_entry = entry.loc[(entry['atom_name'] == "CA") & (entry['chain_id'] == chain), ] ###
+        ca_entry = entry.loc[(entry['atom_name'] == "CA") & (entry['chain_id'].isin(chains)), ] ###
 
         x_coord, y_coord, z_coord, chain_id, b_factor = "-", "-", "-", "-", "-"
         
@@ -222,7 +222,7 @@ def run_dssp(
 def parse_dssp(
         working_filedir, 
         alphafold_dssp_filename, fastalist_filename, 
-        dssp_parsed_filename, 
+        dssp_parsed_filename, chains, 
 ): 
     """
     Description
@@ -233,7 +233,7 @@ def parse_dssp(
     parser = parseDSSP(working_filedir / alphafold_dssp_filename)
     parser.parse()
     pddict = parser.dictTodataframe()
-    pddict_ch = pddict.loc[pddict['chain'] == 'A']
+    pddict_ch = pddict.loc[pddict['chain'].isin(chains)]
     pddict_ch = pddict_ch.fillna('-')
     pddict_ch = pddict_ch.replace(r'^\s*$', '-', regex=True)
     
