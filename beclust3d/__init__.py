@@ -41,6 +41,9 @@ __all__ = [
     "average_split_score", "bin_score", "znorm_score", 
     "average_split_bin_plots", 
     
+    "clustering", 
+    "plot_clustering", 
+
     "enrichment_test", 
     "plot_enrichment_test", 
     "lfc_lfc3d_scatter", 
