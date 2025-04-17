@@ -16,6 +16,9 @@ from .aggregate.metaaggregate import average_split_meta, bin_meta, znorm_meta
 from .aggregate.nonaggregate import average_split_score, bin_score, znorm_score
 from .aggregate.aggregate_plot import average_split_bin_plots
 
+from .lfc3d.clustering import clustering
+from .lfc3d.clustering_plot import plot_clustering
+
 from .lfc3d.characterization import enrichment_test
 from .lfc3d.characterization_plot import plot_enrichment_test, lfc_lfc3d_scatter, pLDDT_RSA_scatter, hits_feature_barplot
 
@@ -38,6 +41,9 @@ __all__ = [
     "average_split_score", "bin_score", "znorm_score", 
     "average_split_bin_plots", 
     
+    "clustering", 
+    "plot_clustering", 
+
     "enrichment_test", 
     "plot_enrichment_test", 
     "lfc_lfc3d_scatter", 

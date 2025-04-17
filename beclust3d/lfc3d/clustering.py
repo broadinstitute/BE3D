@@ -71,6 +71,7 @@ def clustering(
         np_hits_coord = np.array(df_pvals_temp[coord_columns].copy())
         if np_hits_coord.shape[0] < 2: # NO DATA TO CLUSTER ON #
             warnings.warn(f"Not enough data to perform agglomerative clustering")
+            y_arr.extend([0 for _ in distances])
             continue
 
         # FOR RANGE OF RADIUS, RUN CLUSTERING #

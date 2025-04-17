@@ -13,9 +13,10 @@ from .structure_helpers import *
 
 def sequence_structural_features(
         workdir, 
-        input_gene, input_uniprot, structureid, chain='A', radius=6.0, 
+        input_gene, input_uniprot, structureid, chains=['A'], radius=6.0, 
         user_uniprot=None, user_pdb=None, user_dssp=None, 
         domains_dict=None, 
+        # CHAINS REFERS TO CHAIN OF THE TARGET PROTEIN #
 ): 
     """
     Description
@@ -56,7 +57,7 @@ def sequence_structural_features(
     parse_af(working_filedir, af_filename, af_processed_filename)
 
     coord_filename = f"sequence_structure/{structureid}_coord.tsv"
-    parse_coord(working_filedir, af_processed_filename, out_fasta, coord_filename, chain)
+    parse_coord(working_filedir, af_processed_filename, out_fasta, coord_filename, chains)
 
     # SECONDAY STRUCTURE DSSP #
     dssp_filename = f"sequence_structure/{structureid}_processed.dssp"
@@ -68,7 +69,7 @@ def sequence_structural_features(
         run_dssp(working_filedir, af_filename, dssp_filename)
 
     dssp_parsed_filename = f"sequence_structure/{structureid}_dssp_parsed.tsv"
-    parse_dssp(working_filedir, dssp_filename, out_fasta, dssp_parsed_filename)
+    parse_dssp(working_filedir, dssp_filename, out_fasta, dssp_parsed_filename, chains)
 
     # UNIPROT AND PDB SHOULD MATCH AND THERE ARE CHECKS #
     # DSSP IS BASED ON PDB SO UNIPROT AND DSSP SHOULD ALSO MATCH #

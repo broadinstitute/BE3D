@@ -58,9 +58,10 @@ def query_uniprot(
 
     # QUERY FASTA FILE #
     ffile = input_uniprot + '.fasta'
-    if not os.path.exists(os.path.join(working_filedir, ffile)): 
+    if not os.path.exists(os.path.join(working_filedir, 'sequence_structure', ffile)): 
         _ = wget.download(f'https://rest.uniprot.org/uniprotkb/{ffile}', 
                           out=str(working_filedir / 'sequence_structure'))
+    else: print(f'sequence_structure/{ffile} exists')
 
     uFasta_file = os.path.join(working_filedir, f'sequence_structure/{ffile}')
     return uFasta_file
@@ -136,7 +137,7 @@ def parse_coord(
     working_filedir, 
     af_processed_filename, 
     fastalist_filename, coord_filename, 
-    chain, 
+    chains, 
 ): 
     """
     Description
@@ -164,7 +165,7 @@ def parse_coord(
         unipos = unipos_dict[i]
         uniaa = uniaa_dict[i]
         entry = atom_df.loc[atom_df['residue_number'] == int(unipos), ] ###
-        ca_entry = entry.loc[(entry['atom_name'] == "CA") & (entry['chain_id'] == chain), ] ###
+        ca_entry = entry.loc[(entry['atom_name'] == "CA") & (entry['chain_id'].isin(chains)), ] ###
 
         x_coord, y_coord, z_coord, chain_id, b_factor = "-", "-", "-", "-", "-"
         
@@ -222,7 +223,7 @@ def run_dssp(
 def parse_dssp(
         working_filedir, 
         alphafold_dssp_filename, fastalist_filename, 
-        dssp_parsed_filename, 
+        dssp_parsed_filename, chains, 
 ): 
     """
     Description
@@ -233,7 +234,7 @@ def parse_dssp(
     parser = parseDSSP(working_filedir / alphafold_dssp_filename)
     parser.parse()
     pddict = parser.dictTodataframe()
-    pddict_ch = pddict.loc[pddict['chain'] == 'A']
+    pddict_ch = pddict.loc[pddict['chain'].isin(chains)]
     pddict_ch = pddict_ch.fillna('-')
     pddict_ch = pddict_ch.replace(r'^\s*$', '-', regex=True)
     
@@ -461,7 +462,10 @@ def degree_of_burial(
         sum_dBurial = 0
         for naa_pos in naa_pos_list: 
             if naa_pos != '': 
-                sum_dBurial += round(taa_dBurial_dict[int(naa_pos)-1], 2)
+                dburial = taa_dBurial_dict[int(naa_pos)-1]
+                if dburial != '-': 
+                    sum_dBurial += round(dburial, 2)
+                 ### 250414 only errored on men1 pdb ###
         norm_sum_dBurial = round(sum_dBurial / len(naa_list), 2)
         aa_wise_cdBurial.append(round(norm_sum_dBurial * taa_dBurial, 3))
 

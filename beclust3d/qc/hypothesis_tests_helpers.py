@@ -97,8 +97,11 @@ def hypothesis_two(
             df_case = pd.DataFrame()
             for case in cases: 
                 df_case = pd.concat([df_case, df_edits.loc[df_edits[mut_col]==case].reset_index(drop=True)])
-            new_row.extend(add_to_row(df_case, df_control, val_col, testtype, gene_col, current_gene))
-            new_row.extend([len(df_case),len(df_control)])
+
+            df_control_in = df_control[df_control[gene_col]==current_gene]
+            df_case_in = df_case[df_case[gene_col]==current_gene]
+            new_row.extend(add_to_row(df_control_in, df_case_in, val_col, testtype))
+            # new_row.extend([len(df_case),len(df_control)]) ### what is the point of this, mismatch in row length
             
             # ADD NEW ROW #
             df_output.loc[len(df_output)] = new_row
@@ -112,7 +115,7 @@ def hypothesis_two(
     return df_output
 
 def add_to_row(
-    df1, df2, val_col, function
+    df1, df2, val_col, function, 
 ): 
     if len(df1) > 0 and len(df2) > 0: 
         if function == 'KolmogorovSmirnov': 
@@ -130,7 +133,7 @@ def hypothesis_plot(
         df_MW_input, df_KS_input, 
         category_names, cat_colname, hue_colname, 
         testtype1, testtype2, hypothesis, 
-        header, 
+        header, save_type, 
 ): 
 
     # SETUP PLOT BY NAME (SCREEN or GENE) #
@@ -213,8 +216,9 @@ def hypothesis_plot(
 
     # SAVE PLOT #
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
-    plot_filename = f"hypothesis_qc/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.png"
-    plt.savefig(working_filedir / plot_filename, dpi=500)
+    plot_filename = f"hypothesis_qc/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.{save_type}"
+    plt.savefig(working_filedir / plot_filename, dpi=100, transparent=True, format=save_type)
+    plt.close()
 
     # CREATE SEPARATE LEGEND PLOT #
     legend_fig, legend_ax = plt.subplots(figsize=(4, len(all_handles) * 0.3))
@@ -222,8 +226,9 @@ def hypothesis_plot(
     legend_ax.legend(all_handles, all_labels, title=hue_colname, loc='center', fontsize='small', frameon=False)
 
     # SAVE LEGEND SEPARATELY #
-    legend_filename = f"hypothesis_qc/hypothesis{hypothesis}_legend_by_{cat_colname}.png"
-    legend_fig.savefig(working_filedir / legend_filename, dpi=500)
+    legend_filename = f"hypothesis_qc/hypothesis{hypothesis}_legend_by_{cat_colname}.{save_type}"
+    legend_fig.savefig(working_filedir / legend_filename, dpi=100, transparent=True, format=save_type)
+    plt.close()
 
 def negative_log_transformation(value):
     if pd.notna(value) and value > 0:
