@@ -23,8 +23,53 @@ def calculate_lfc3d(
         # THERE ARE 2 MEAN FUNCTIONS, MEAN FOR CALCULATING LFC3D WHICH IS TUNABLE, AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE #
 ): 
     """
-    Description
-        Calculates LFC 3D scores from structural conservation data
+    Calculates LFC3D scores using structural data. 
+
+    Parameters
+    ----------
+    df_str_cons : pd.DataFrame
+        DataFrame containing structural conservation data for residues. 
+        Must include columns 'unipos', 'unires', 'chain', 'Naa_pos', 'Naa_chain'.
+
+    df_edits_list : list of pd.DataFrame
+        List of mutation DataFrames for each screen. 
+
+    df_rand_list : list of pd.DataFrame
+        List of randomized mutation DataFrames for each screen.
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    screen_names : list of str
+        Names of the different screens corresponding to each DataFrame in df_edits_list and df_rand_list.
+
+    nRandom : int, optional (default=1000)
+        Number of randomizations per screen for calculating randomized LFC and LFC3D scores.
+
+    muttype : str, optional (default='Missense')
+        Type of mutation to focus on (e.g., 'Missense', 'Nonsense', etc.).
+
+    function_type : str, optional (default='mean')
+        String label for the type of aggregation function used to compute LFC3D scores.
+
+    function_aggr : function, optional (default=np.mean)
+        Aggregation function used to summarize neighboring mutation effects when computing LFC3D scores.
+        Function should take a list or array of values and return a scalar (e.g., np.mean, np.median).
+
+    LFC_only : bool, optional (default=False)
+        If True, skips the LFC3D computation.
+
+    conserved_only : bool, optional (default=False)
+        If True, calculates LFC3D only for residues marked as 'conserved' in the conservation data.
+        Non-conserved residues will be skipped (set to NaN or '-').
+
+    Returns
+    -------
+    df_struct_3d : pd.DataFrame
+        DataFrame containing the structural data, LFC, LFC3D, and randomized scores. 
     """
 
     # MKDIR #

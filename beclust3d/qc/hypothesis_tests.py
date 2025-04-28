@@ -24,6 +24,52 @@ def hypothesis_test(
     Description
         Conduct hypothesis 1 (one screen vs control from same screens) and hypothesis 2
         (one screen vs control from all screens) on the set of input screens and genes. 
+
+    Parameters
+    ----------
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_dfs : list of pd.DataFrame
+        List of input dataframes, one for each screen.
+
+    screen_names : list of str
+        Names of the different screens corresponding to each DataFrame in input_dfs.
+
+    cases : list of str
+        List of mutation categories considered as the "case" group (e.g., ['Nonsense']).
+
+    controls : list of str
+        List of mutation categories considered as the "control" group (e.g., ['No Mutation', 'Silent']).
+
+    comp_name : str
+        Comparison label used for naming plots and outputs (e.g., 'Nonsense_vs_Control').
+        
+    mut_col : str, optional (default='Mutation category')
+        Column name in input_dfs specifying the mutation category (e.g., 'Missense', 'Nonsense').
+
+    val_col : str, optional (default='logFC')
+        Column name in input_dfs specifying the value measurement (e.g., log fold-change).
+
+    gene_col : str, optional (default='Target Gene Symbol')
+        Column name specifying the target gene name in input_dfs.
+
+    save_type : str, optional (default='png')
+        Format for saving output plots (e.g., 'png', 'pdf').
+
+    Returns
+    -------
+    df_MW1_input : pd.DataFrame
+        DataFrame containing Mann-Whitney U test results for Hypothesis 1 (within each screen).
+
+    df_MW2_input : pd.DataFrame
+        DataFrame containing Mann-Whitney U test results for Hypothesis 2 (across all screens).
+
+    df_KS1_input : pd.DataFrame
+        DataFrame containing Kolmogorov-Smirnov test results for Hypothesis 1 (within each screen).
+
+    df_KS2_input : pd.DataFrame
+        DataFrame containing Kolmogorov-Smirnov test results for Hypothesis 2 (across all screens).
     """
 
     # MKDIR #

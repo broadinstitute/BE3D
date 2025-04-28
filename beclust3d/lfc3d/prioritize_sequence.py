@@ -27,9 +27,54 @@ def prioritize_by_sequence(
     target_res_pos='original_res_pos', target_res='original_res', 
 ): 
     """
-    Description
-        Takes in results across multiple edit types for a screen, and
-        aggregates the edits for each residue with sequence and conservation information. 
+    Takes in results across multiple edit types for a screen, and
+    aggregates the edits for each residue with sequence and conservation information. 
+    
+    Parameters
+    ----------
+    df_str_cons : pd.DataFrame
+        DataFrame containing structural data for residues. Must include columns ['unipos', 'unires', 'chain'].
+
+    df_str_cons : pd.DataFrame
+        DataFrame containing conservation data for residues. If None, conservation is ignored.
+        Must include columns 'original_res_pos', 'alternate_res_pos', 'alternate_res', and 'conservation'.
+
+    df_control : pd.DataFrame or None
+        DataFrame of control or no-mutation LFC measurements, used to estimate background mean and std for z-scores.
+        Must include 'LFC' column.
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    screen_name : str
+        Name of the screens corresponding to df_missense.
+
+    df_dict : dict of {str: pd.DataFrame}
+        Dictionary mapping mutation types (e.g., 'Missense', 'Nonsense') to their respective DataFrames.
+        Each DataFrame must include columns ['edit_pos', 'LFC', 'this_edit'].
+
+    pval_thr : float, optional (default=0.05)
+        p-value threshold for labeling statistical significance.
+
+    functions : list of callable, optional
+        List of aggregation functions to apply to LFC scores for all edits per residue (e.g., mean, min, max).
+
+    function_names : list of str, optional
+        Names corresponding to the 'functions'. Must be the same length and order as 'functions'.
+
+    target_res_pos : str, optional (default='original_res_pos')
+        Column name specifying the target residue position from df_consrv.
+
+    target_res : str, optional (default='original_res')
+        Column name specifying the alternate residue information from df_consrv.
+
+    Returns
+    -------
+    df_protein : pd.DataFrame
+        DataFrame combining structure, conservation, aggregated LFC values, standard deviations, z-scores, p-values, and significance labels.
     """
     
     # MKDIR #
