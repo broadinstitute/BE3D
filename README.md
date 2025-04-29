@@ -119,10 +119,33 @@ if __name__ == '__main__':
     ...
 ```
 
-### Example 2: MEN1 (Colab)
+## Notes on Structure and Conservation
 
-Try it in Colab:  
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/EmmaEmb/blob/main/examples/Pla2g2/emmaemb_pla2g2.ipynb)
+### Structure
+
+The pipeline automatically queries the UNIPROT sequence and AlphaFold structure of the protein of interest. If users want to use a PDB or other custom structure, they would need to provide the filepath to the structure. \
+The pipeline also automaticlaly queries DSSP to provide annotation for secondary structures. However, this tool is known to sometimes fail on larger structures. Furthermore, for a custom PDB upload, it is recommended that the user uploads their own DSSP file, as DSSP is likely to fail on these structures. The annotations for DSSP are not necessary for the pipeline until the final characterization step, and would not affect finding hits or clustering. \
+The DSSP Web Portal is here: https://pdb-redo.eu/dssp
+
+### Conservation
+
+For MUSCLE, the pipeline runs MUSCLE locally in order to align 2 sequences in order to conmpare isoforms or across species. However, a large file named "components.cif" is downloaded with wget as part of the code. If this fails, users must provide their own "components.cif" file. 
+
+For running CLUSTAL, the associated formating packages do not work for arm machines (ie M1/M2/M3 MacBooks). However, the packages should download for Windows and Linux based machines. If the user is using an arm machine, it is recommended to set the mode to 'query' instead of 'run', which calls the MUSCLE API. 
+
+If MUSCLE or CLUSTAL cannot be run locally, the pipeline queries the MUSCLE API, although this may also fail due to issues with the API. Running the MUSCLE API also skips the next step using CLUSTAL. 
+
+Another option to skip MUSCLE and CLUSTAL is for users to run alignment on their own in a CLUSTAL format, and provide the .align alignment file into the pipeline which is one of the optional inputs. 
+
+## Sample Notebooks
+
+Sample Single Screen Notebook (DNMT3A): 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1HOx6wOEMWNmF_MVBrG3CR3dSfXZrqML3?usp=sharing)
+
+Sample Multi Screen Notebook with Meta-Aggregation (MEN1): 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1YRxJk5UxCOGwLv9kTdgXjqryAosJmpMV?usp=sharing)
+
+Sample Multi Screen Notebook with Meta-Aggregation and Conservation:  
 
 ## License
 
