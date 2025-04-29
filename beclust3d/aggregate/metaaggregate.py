@@ -17,14 +17,43 @@ from .aggregate_helpers import *
 def average_split_meta(
     df_LFC_LFC3D, 
     workdir, input_gene, screen_names, 
-    nRandom=1000, 
-    score_type='LFC3D', aggr_func=np.sum, aggr_func_name='SUM', 
+    score_type='LFC3D', 
+    nRandom=1000, aggr_func=np.sum, aggr_func_name='SUM', 
 ): 
     """
-    Description
-        A point to meta aggregate across multiple screens or just one screen, 
-        calculate signal vs background, bin this new metaaggregated signal 
-        into top and bottom 10 %, and plot QC graphics
+    Aggregates screens into a meta score using the provided function. Then,
+    splits LFC or LFC3D scores into positive and negative components and aggregates randomized scores.
+
+    Parameters
+    ----------
+    df_LFC_LFC3D : pd.DataFrame
+        DataFrame containing per-residue mutation scores (e.g., LFC3D), along with randomization scores.
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    screen_names : list of str
+        Names of the different screens corresponding to each DataFrame in df_edits_list and df_rand_list.
+
+    score_type : str, optional (default='LFC3D')
+        Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
+
+    nRandom : int, optional (default=1000)
+        Number of randomizations per screen for calculating randomized LFC and LFC3D scores.
+
+    aggr_func : callable, optional
+        Aggregation functions to apply to scores for all edits per residue (e.g., sum, mean, min, max).
+
+    aggr_func_name : str, optional
+        Name corresponding to 'aggr_func'. 
+
+    Returns
+    -------
+    df_bidir_meta : pd.DataFrame
+        DataFrame containing split positive/negative scores and randomized averages for each screen.
     """
     
     # MKDIR #
@@ -117,10 +146,35 @@ def bin_meta(
     score_type='LFC3D', aggr_func_name='SUM', 
 ): 
     """
-    Description
-        A point to meta aggregate across multiple screens or just one screen, 
-        calculate signal vs background, bin this new metaaggregated signal 
-        into top and bottom 10 %, and plot QC graphics
+    Bins positive and negative LFC or LFC3D scores into percentile thresholds.
+
+    Parameters
+    ----------
+    df_bidir : pd.DataFrame
+        DataFrame containing split positive/negative scores and randomized averages for each screen.
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    screen_names : list of str
+        Names of the different screens corresponding to each DataFrame in df_edits_list and df_rand_list.
+
+    aggr_func_name : str, optional
+        Name corresponding to 'aggr_func'. 
+
+    Returns
+    -------
+    df_dis : pd.DataFrame
+        DataFrame containing percentile bins and weighted scores for each residue and screen.
+
+    df_neg_stats : list of pd.Series
+        List containing descriptive statistics for negative scores in each screen.
+
+    df_pos_stats : list of pd.Series
+        List containing descriptive statistics for positive scores in each screen.
     """
     
     # MKDIR #
@@ -169,14 +223,44 @@ def bin_meta(
 def znorm_meta(
     df_bidir_meta, neg_stats, pos_stats, 
     workdir, input_gene, 
-    pthrs=[0.05, 0.01, 0.001], score_type='LFC3D', aggr_func_name='SUM', 
+    score_type='LFC3D', pthrs=[0.05, 0.01, 0.001], 
+    aggr_func_name='SUM', 
 ): 
     """
-    Description
-        A point to meta aggregate across multiple screens or just one screen, 
-        calculate signal vs background, bin this new metaaggregated signal 
-        into top and bottom 10 %, and plot QC graphics
+    Z-normalizes scores against randomized control distributions and assigns significance labels.
+
+    Parameters
+    ----------
+    df_dis : pd.DataFrame
+        DataFrame containing percentile bins and weighted scores for each residue and screen.
+
+    neg_stats : pd.Series
+        Series containing descriptive statistics for negative scores in each screen.
+
+    pos_stats : pd.Series
+        Series containing descriptive statistics for positive scores in each screen.
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    score_type : str, optional (default='LFC3D')
+        Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
+
+    pthrs : list of float, optional
+        List of p-value thresholds used to define significance (default [0.05, 0.01, 0.001]).
+
+    aggr_func_name : str, optional
+        Name corresponding to 'aggr_func'. 
+
+    Returns
+    -------
+    df_meta_Z : pd.DataFrame
+        DataFrame containing z-scores, p-values, and significance labels for scores at multiple thresholds.
     """
+
     # THE META-AGGREGATED RESULTS ARE Z SCORED TO THE WHOLE SET OF RANDOMIZED CONTROLS #
     # ASSUMED NEG AND POS FOR EACH #
     

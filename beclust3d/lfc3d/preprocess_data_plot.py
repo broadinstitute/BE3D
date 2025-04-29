@@ -18,15 +18,41 @@ import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 def plot_rawdata(
-    input_dfs, 
-    workdir, screen_names, 
-    mut_col='Mutation category', gene_col='Target Gene Symbol', val_col='logFC', 
+    workdir, 
+    input_dfs, screen_names, 
+    mut_col='Mutation category', val_col='logFC', gene_col='Target Gene Symbol', 
     mut_categories = ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"], 
     save_type='png', 
 ): 
     """
-    Description
-        Parse raw data and create plots for each input screen.
+    Parse raw data and create plots for each input screen.
+
+    Parameters
+    ----------
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_dfs : list of pd.DataFrame
+        List of input dataframes, one for each screen.
+
+    screen_names : list of str
+        Names of the different screens corresponding to each DataFrame in input_dfs.
+
+    mut_col : str, optional (default='Mutation category')
+        Column name in input_dfs specifying the mutation category (e.g., 'Missense', 'Nonsense').
+
+    val_col : str, optional (default='logFC')
+        Column name in input_dfs specifying the value measurement (e.g., log fold-change).
+
+    gene_col : str, optional (default='Target Gene Symbol')
+        Column name specifying the target gene name in input_dfs.
+
+    save_type : str, optional (default='png')
+        Format for saving output plots (e.g., 'png', 'pdf').
+        
+    Returns
+    -------
+    None
     """
 
     # MKDIR #

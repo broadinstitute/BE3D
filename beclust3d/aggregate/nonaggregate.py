@@ -20,9 +20,29 @@ def average_split_score(
         score_type='LFC3D', 
 ): 
     """
-    Description
-        Averages the LFC3D scores, splits into positive and negative, 
-        retrieves randomized LFC3D scores, bins LFC 3D scores into percentiles
+    Splits LFC or LFC3D scores into positive and negative components and aggregates randomized scores.
+
+    Parameters
+    ----------
+    df_LFC_LFC3D : pd.DataFrame
+        DataFrame containing per-residue mutation scores (e.g., LFC3D), along with randomization scores.
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    screen_names : list of str
+        Names of the different screens corresponding to each DataFrame in df_edits_list and df_rand_list.
+
+    score_type : str, optional (default='LFC3D')
+        Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
+
+    Returns
+    -------
+    df_bidir : pd.DataFrame
+        DataFrame containing split positive/negative scores and randomized averages for each screen.
     """
 
     # MKDIR #
@@ -73,9 +93,35 @@ def bin_score(
         score_type='LFC3D', 
 ): 
     """
-    Description
-        Averages the LFC3D scores, splits into positive and negative, 
-        retrieves randomized LFC3D scores, bins LFC 3D scores into percentiles
+    Bins positive and negative LFC or LFC3D scores into percentile thresholds.
+
+    Parameters
+    ----------
+    df_bidir : pd.DataFrame
+        DataFrame containing split positive/negative scores and randomized averages for each screen.
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    screen_names : list of str
+        Names of the different screens corresponding to each DataFrame in df_edits_list and df_rand_list.
+
+    score_type : str, optional (default='LFC3D')
+        Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
+
+    Returns
+    -------
+    df_dis : pd.DataFrame
+        DataFrame containing percentile bins and weighted scores for each residue and screen.
+
+    df_neg_stats_list : list of pd.Series
+        List containing descriptive statistics for negative scores in each screen.
+
+    df_pos_stats_list : list of pd.Series
+        List containing descriptive statistics for positive scores in each screen.
     """
     
     # MKDIR #
@@ -125,12 +171,41 @@ def bin_score(
 def znorm_score(
         df_bidir, neg_stats_list, pos_stats_list, 
         workdir, input_gene, screen_names, 
-        pthrs=[0.05, 0.01, 0.001], score_type='LFC3D', 
+        score_type='LFC3D', pthrs=[0.05, 0.01, 0.001], 
 ): 
     """
-    Description
-        Averages the LFC3D scores, splits into positive and negative, 
-        retrieves randomized LFC3D scores, bins LFC 3D scores into percentiles
+    Z-normalizes scores against randomized control distributions and assigns significance labels.
+
+    Parameters
+    ----------
+    df_dis : pd.DataFrame
+        DataFrame containing percentile bins and weighted scores for each residue and screen.
+
+    neg_stats_list : list of pd.Series
+        List containing descriptive statistics for negative scores in each screen.
+
+    pos_stats_list : list of pd.Series
+        List containing descriptive statistics for positive scores in each screen.
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    screen_names : list of str
+        Names of the different screens corresponding to each DataFrame in df_edits_list and df_rand_list.
+
+    score_type : str, optional (default='LFC3D')
+        Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
+
+    pthrs : list of float, optional
+        List of p-value thresholds used to define significance (default [0.05, 0.01, 0.001]).
+
+    Returns
+    -------
+    df_z : pd.DataFrame
+        DataFrame containing z-scores, p-values, and significance labels for scores at multiple thresholds.
     """
     # EACH SCREEN IS Z SCORED TO ITS OWN SET OF RANDOMIZED CONTROLS #
     # ASSUMED NEG AND POS FOR EACH #

@@ -23,8 +23,54 @@ def parse_be_data(
     conserv_dfs=[], conserv_col='mouse_res_pos', ### conserv_col
 ): 
     """
-    Description
-        Parse raw data and create separate dataframes for each mutation type for each screen. 
+    Parse raw base editing screen data and create separate DataFrames for each mutation type per screen.
+
+    Parameters
+    ----------
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_dfs : list of pd.DataFrame
+        List of input dataframes, one for each screen.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    screen_names : list of str
+        Names of the different screens corresponding to each DataFrame in input_dfs.
+
+    mut_col : str, optional (default='Mutation category')
+        Column name in input_dfs specifying the mutation category (e.g., 'Missense', 'Nonsense').
+
+    val_col : str, optional (default='logFC')
+        Column name in input_dfs specifying the value measurement (e.g., log fold-change).
+
+    gene_col : str, optional (default='Target Gene Symbol')
+        Column name specifying the target gene name in input_dfs.
+
+    edits_col : str, optional (default='Amino Acid Edits')
+        Column name specifying the amino acid edits or mutation information in input_dfs.
+
+    mut_categories : list of str, optional
+        List of mutation categories to extract separately. 
+        Default includes ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"].
+
+    mut_delimiter : str, optional (default=',')
+        Delimiter used to separate multiple mutations within the edits_col field.
+
+    conserv_dfs : list of pd.DataFrame, optional (default=[])
+        List of conservation DataFrames, one per screen, used to optionally filter mutations based on conserved residues.
+
+    conserv_col : str, optional (default='mouse_res_pos')
+        Column name in the conservation DataFrames containing residue positions considered conserved.
+
+    Returns
+    -------
+    mut_dfs : dict
+        Nested dictionary where:
+          - Keys are screen names (from screen_names)
+          - Values are dictionaries mapping mutation types (e.g., 'Missense') to processed DataFrames
+            containing parsed mutation information and LFC values.
     """
 
     # MKDIR #

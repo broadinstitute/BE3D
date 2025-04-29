@@ -26,6 +26,47 @@ def randomize_sequence(
     """
     Description
         Randomizes the scores weighted by structural sequence and conservation fom previous step
+            
+    Parameters
+    ----------
+    df_missense : pd.DataFrame
+        DataFrame from prioritize_sequence which contains the LFC per residue information to be randomized. 
+
+    df_rand : pd.DataFrame
+        DataFrame from randomize_data which contains the randomized LFC values.
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    screen_name : str
+        Name of the screens corresponding to df_missense.
+
+    nRandom : int, optional (default=1000)
+        Number of randomizations per screen for calculating randomized LFC and LFC3D scores.
+
+    muttype : str, optional (default='Missense')
+        Type of mutation to focus on (e.g., 'Missense', 'Nonsense', etc.).
+
+    conservation : bool, optional (default=False)
+        If True, aggregates LFC only for residues marked as 'conserved' in the conservation data.
+        Non-conserved residues will be skipped (set to NaN or '-').
+
+    function_name : str, optional
+        Names corresponding to the functio from prioritize_sequence to randomize.
+    
+    target_pos : str, optional (default='unipos')
+        Column name specifying the target residue position from df_consrv.
+
+    target_res : str, optional (default=None)
+        Column name specifying the alternate residue information from df_consrv.
+
+    Returns
+    -------
+    df_missense : pd.DataFrame
+        DataFrame containing the randomized LFC score per residue. 
     """
 
     # MKDIR #

@@ -31,11 +31,52 @@ def conservation(
         title=None, email=None, wait_time=30, 
 ): 
     """
-    Description
-        Generate dataframes of sequence conservation for each residue. 
-        The default is to query the alignment from protein sequences, but the user can also upload an alignment file.
-        The alternate gene and uniprot is for if the data corresponds to a different sequence, 
-        whether it's a different gene or isoform of species, to be aligned to the sequence and structure. 
+    Generate dataframes of sequence conservation for each residue. 
+    The default is to query the alignment from protein sequences, but the user can also upload an alignment file.
+    The alternate gene and uniprot is for if the data corresponds to a different sequence, 
+    whether it's a different gene or isoform of species, to be aligned to the sequence and structure. 
+
+    Parameters
+    ----------
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    alt_input_gene : str
+        Name of the alternate gene (e.g., mouse ortholog or isoform) to align against.
+
+    input_uniprot : str
+        Uniprot of the gene being processed. 
+
+    alt_input_uniprot : str
+        UniProt for the alternate gene.
+
+    alignment_filename : str or Path or None, optional (default=None)
+        If provided, path to a precomputed sequence alignment file (.afa or other format).
+        If None, the function generates the alignment automatically.
+
+    mode : {'run', 'query'}, optional (default='run')
+        - 'run': Perform local multiple sequence alignment using MUSCLE.
+        - 'query': Submit a remote MUSCLE API job (requires `email` and `title`).
+
+    title : str or None, optional
+        Title for the MUSCLE remote query (required if `mode='query'`).
+
+    email : str or None, optional
+        Email address required for using the remote MUSCLE API (required if `mode='query'`).
+
+    wait_time : int, optional (default=30)
+        Time in seconds to wait before re-polling the MUSCLE API when submitting a remote alignment request.
+
+    Returns
+    -------
+    df_alignconserv : pd.DataFrame
+        DataFrame containing per-residue conservation scores based on the sequence alignment.
+
+    df_residuemap : pd.DataFrame
+        DataFrame mapping residue indices between the primary and alternate sequences 
     """
     # MKDIR #
     working_filedir = Path(workdir)

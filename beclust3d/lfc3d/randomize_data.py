@@ -18,10 +18,41 @@ def randomize_data(
         seed=False, 
 ): 
     """
-    Description
-        Takes reformatted Missense dataframe and randomizes them to provide a baseline signal. 
-        This function is run per gene per screen. 
+    Takes reformatted Missense dataframe and randomizes them to provide a baseline signal. 
+    This function is run per gene per screen. 
+
+    Parameters
+    ----------
+    df_missense : pd.DataFrame
+        DataFrame from preprocess_data which contains the LFC per guide information to be randomized. 
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    screen_name : str
+        Name of the screens corresponding to df_missense.
+
+    nRandom : int, optional (default=1000)
+        Number of randomizations per screen for calculating randomized LFC and LFC3D scores.
+
+    val_colname : str, optional (default='LFC')
+        Column name in df_missense specifying the value measurement.
+
+    muttype : str, optional (default='Missense')
+        Type of mutation to focus on (e.g., 'Missense', 'Nonsense', etc.).
+
+    seed : bool, optional (default=False)
+        Whether or not to randomize with a seed. 
+
+    Returns
+    -------
+    df_missense : pd.DataFrame
+        DataFrame containing the randomized LFC score per guide. 
     """
+
     # NAME VARIABLES, PATHS, CREATE DIRECTORIES #
     working_filedir = Path(workdir)
     if not os.path.exists(working_filedir): 

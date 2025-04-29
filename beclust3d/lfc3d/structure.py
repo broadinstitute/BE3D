@@ -19,10 +19,48 @@ def sequence_structural_features(
         # CHAINS REFERS TO CHAIN OF THE TARGET PROTEIN #
 ): 
     """
-    Description
-        Queries Uniprot, AlphaFold, and DSSP
-        Processes the information for structural features to input into downstream functions
+    Queries Uniprot, AlphaFold, DSSP, and domain features 
+    Generate a combined sequence-structure feature table.
+
+    Parameters
+    ----------
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    input_uniprot : str
+        Uniprot of the gene being processed. 
+
+    structureid : str
+        Identifier for the protein structure (used for naming processed files).
+
+    chains : list of str, optional (default=['A'])
+        Only residues from these chains are included in downstream structural analyses.
+
+    radius : float, optional (default=6.0)
+        Radius in Angstroms used when counting neighboring amino acids.
+
+    user_uniprot : str or None, optional
+        Path to a user-supplied UniProt FASTA file. If provided, bypasses querying UniProt online.
+
+    user_pdb : str or None, optional
+        Path to a user-supplied AlphaFold PDB file. If provided, bypasses querying AlphaFold online.
+
+    user_dssp : str or None, optional
+        Path to a user-supplied DSSP secondary structure file. If provided, bypasses running DSSP locally.
+
+    domains_dict : dict or None, optional
+        Dictionary specifying domain annotations (e.g., Pfam, InterPro) for the protein.
+        If None, domain information will be queried automatically from UniProt or another source.
+
+    Returns
+    -------
+    df_coord_dssp : pd.DataFrame
+        DataFrame containing structural features like coordinates, secondary structure, surface exposure, etc.
     """
+
     # NAME VARIABLES, PATHS, CREATE DIRECTORIES #
     working_filedir = Path(workdir)
     if not os.path.exists(working_filedir): 
