@@ -23,8 +23,34 @@ def plot_screendata_sequence(
     save_type='png', 
 ): 
     """
-    Description
-        Parse raw data and create plots for each input screen.
+    Parse raw data and create plots for each input screen.
+    
+    Parameters
+    ----------
+    df_protein : pd.DataFrame
+        DataFrame from preprocess_data which contains the LFC per guide information to be randomized. 
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    screen_name : str
+        Name of the screens corresponding to df_missense.
+
+    function_name : str, optional
+        Name corresponding to the 'functions'. 
+
+    muttype : str, optional (default='Missense')
+        Type of mutation to focus on (e.g., 'Missense', 'Nonsense', etc.).
+
+    save_type : str, optional (default='png')
+        Format for saving output plots (e.g., 'png', 'pdf').
+
+    Returns
+    -------
+    None
     """
 
     # MKDIR #

@@ -24,7 +24,34 @@ def plot_enrichment_test(
 ):
     """
     Description
-        Plot enrichment test results
+        Plot enrichment test results as odds ratio.
+
+    Parameters
+    ----------
+    enrichment_results : list of dict
+        List of enrichment results, each with 'odds_ratio', 'ci' (confidence interval), and 'p_value'.
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    hit_value : float
+        Significance threshold for highlighting significant odds ratios.
+
+    feature_values : list of str
+        List of specific feature values to test for enrichment (e.g., domain names, "Low pLDDT").
+
+    padding : float, optional (default=0.5)
+        Extra space to pad on the Y-axis above and below plotted points.
+
+    save_type : str, optional (default='png')
+        Format for saving output plots (e.g., 'png', 'pdf').
+
+    Returns
+    -------
+    None
     """
     # MKDIR #
     working_filedir = Path(workdir)
@@ -72,6 +99,7 @@ def plot_enrichment_test(
     out_filename = working_filedir / f"characterization/plots/{input_gene}_enrichment_test.{save_type}"
     plt.savefig(out_filename, dpi=100, transparent=True, format=save_type)
     plt.close()
+    return None
 
 # CHARACTERIZATION PLOTS #
 
@@ -82,8 +110,30 @@ def lfc_lfc3d_scatter(
     lfc3d_hit_threshold=0.05, save_type='png', 
 ): 
     """
-    Description
-        Generate LFC vs LFC3D scatter plot
+    Generate LFC vs LFC3D scatter plot, color-coded by significance categories.
+
+    Parameters
+    ----------
+    df_input : pd.DataFrame
+        Input DataFrame containing LFC, LFC3D, significance scores, and features.
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    screen_name : 
+
+    lfc3d_hit_threshold : float, optional (default=0.05)
+        Threshold used to determine significance coloring.
+
+    save_type : str, optional (default='png')
+        Format for saving output plots (e.g., 'png', 'pdf').
+
+    Returns
+    -------
+    None
     """
     # MKDIR #
     working_filedir = Path(workdir)
@@ -132,6 +182,7 @@ def lfc_lfc3d_scatter(
     out_filename = f'characterization/plots/{input_gene}_LFC_LFC3D_scatter.{save_type}'
     plt.savefig(working_filedir / out_filename, dpi=100, transparent=True, format=save_type)
     plt.close()
+    return None
 
 ### including '-' changes whether we are looking only at hits
 def assign_psig_label(row, lfc3d_hit_threshold):
@@ -149,7 +200,7 @@ def assign_psig_label(row, lfc3d_hit_threshold):
     return None
 
 def pLDDT_RSA_scatter(
-    df_filtered, 
+    df_input, 
     workdir, 
     input_gene, 
     pLDDT_col='bfactor_pLDDT', RSA_col='RSA', size_col='LFC3D_wght', direction_col='direction', 
@@ -157,8 +208,40 @@ def pLDDT_RSA_scatter(
     save_type='png', 
 ):
     """
-    Description
-        Generate RSA vs pLDDT barplot
+    Generates a scatter plot of RSA vs pLDDT scores.
+
+    Parameters
+    ----------
+    df_input : pd.DataFrame
+        DataFrame containing pLDDT, RSA, and directionality annotations.
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    pLDDT_col : str, optional (default='bfactor_pLDDT')
+        Column name for per-residue pLDDT confidence scores.
+
+    RSA_col : str, optional (default='RSA')
+        Column name for relative solvent accessibility.
+
+    size_col : str, optional (default='LFC3D_wght')
+        Column name controlling point size in scatter plot.
+
+    direction_col : str, optional (default='direction')
+        Column name for mutation effect direction (e.g., 'NEG', 'POS').
+
+    color_map : dict, optional
+        Dictionary mapping directions to colors.
+
+    save_type : str, optional (default='png')
+        Format for saving output plots (e.g., 'png', 'pdf').
+        
+    Returns
+    -------
+    None
     """
     # MKDIR #
     working_filedir = Path(workdir)
@@ -169,13 +252,13 @@ def pLDDT_RSA_scatter(
     if not os.path.exists(working_filedir / 'characterization/plots'):
         os.mkdir(working_filedir / 'characterization/plots')
 
-    colors = df_filtered[direction_col].map(color_map)
+    colors = df_input[direction_col].map(color_map)
 
     plt.figure(figsize=(10, 6))
     scatter = plt.scatter(
-        df_filtered[pLDDT_col],
-        df_filtered[RSA_col],
-        s=df_filtered[size_col],
+        df_input[pLDDT_col],
+        df_input[RSA_col],
+        s=df_input[size_col],
         c=colors, alpha=0.7
         )
 
@@ -198,9 +281,10 @@ def pLDDT_RSA_scatter(
     out_filename = working_filedir / f'characterization/plots/{input_gene}_pLDDT_RSA_scatter.{save_type}'
     plt.savefig(out_filename, dpi=100, transparent=True, format=save_type)
     plt.close()
+    return None
 
 def hits_feature_barplot(
-    df, 
+    df_input, 
     workdir, 
     input_gene, 
     category_col,
@@ -209,8 +293,43 @@ def hits_feature_barplot(
     save_type='png', 
 ):
     """
-    Description
-        Generate hit count barplot for specified feature (ex. RSA, pLDDT, Domain, etc.)
+    Generates a barplot of hit counts (or fractions) across categories (e.g., domains, RSA bins).
+
+    Parameters
+    ----------
+    df_input : pd.DataFrame
+        DataFrame containing hit annotations and hits information.
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    category_col : str
+        Column name representing the feature category (e.g., domain, pLDDT bin).
+
+    values_cols : list of str
+        Columns representing hit directions (e.g., negative, positive).
+
+    values_vals : list
+        Values within `values_cols` columns that define "hits".
+
+    value_names : list of str
+        Names for each hit category plotted (used in the legend).
+
+    plot_type : str, optional (default='Count')
+        'Count' for raw counts, 'Fraction' for relative proportions.
+
+    colors : list of str, optional
+        Colors for the different hit categories.
+
+    save_type : str, optional (default='png')
+        Format for saving output plots (e.g., 'png', 'pdf').
+        
+    Returns
+    -------
+    None
     """
     # MKDIR #
     working_filedir = Path(workdir)
@@ -226,7 +345,7 @@ def hits_feature_barplot(
     # CREATE DF WITH ORIGINAL COUNTS FOR EACH XCOL CATEGORY AND DIRECTION #
     count_data_list = []
     for col, val, name in zip(values_cols, values_vals, value_names): 
-        count_data = df.groupby([category_col, col]).size().unstack(fill_value=0)
+        count_data = df_input.groupby([category_col, col]).size().unstack(fill_value=0)
         count_data = count_data[val]
         count_data = count_data.rename(name)
         count_data_list.append(count_data)
@@ -250,3 +369,4 @@ def hits_feature_barplot(
     out_filename = working_filedir / f"characterization/plots/{input_gene}_{plot_type}_{category_col}_barplot.{save_type}"
     plt.savefig(out_filename, dpi=100, transparent=True, format=save_type)
     plt.close()
+    return None

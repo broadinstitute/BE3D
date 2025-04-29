@@ -21,9 +21,8 @@ def hypothesis_test(
     save_type='png', 
 ): 
     """
-    Description
-        Conduct hypothesis 1 (one screen vs control from same screens) and hypothesis 2
-        (one screen vs control from all screens) on the set of input screens and genes. 
+    Conduct hypothesis 1 (one screen vs control from same screens) and hypothesis 2
+    (one screen vs control from all screens) on the set of input screens and genes. 
 
     Parameters
     ----------

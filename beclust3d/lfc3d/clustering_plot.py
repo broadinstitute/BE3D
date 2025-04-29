@@ -35,10 +35,69 @@ def plot_clustering(
     save_type='png', 
 ): 
     """
-    Description
-        Calculates number of clusters for one clustering radius
+    Calculates number of clusters for one clustering radius and its associated plots.
+
+    Parameters
+    ----------
+    df_str_cons : pd.DataFrame
+        DataFrame containing structural data for residues. 
+        Must include ['unipos', 'unires', 'chain', 'x_coord', 'y_coord', 'z_coord'].
+
+    df_pvals : pd.DataFrame
+        DataFrame containing per-residue statistical significance categories.
+        Must include ['unipos', 'unires', 'chain'] plus columns listed in `psig_columns`.
+
+    df_pvals_clust : pd.DataFrame
+        DataFrame containing structure and significance information plus cluster labels assigned at each distance.
+
+    dist : int, optional (default=25)
+        Tadius (in Angstroms) to consider for clustering. 
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    distances : list of int
+        List of distances (from 1 to `max_distances`) at which clustering was performed.
+
+    yvalue_lists : list of list of int
+        List of lists, containing the number of clusters found at each distance for each psig_column.
+
+    psig_columns : list of str, optional
+        List of column names in `df_pvals` indicating categorical significance labels 
+        (e.g., 'p<0.05' for significant residues to cluster).
+
+    names : list of str, optional
+        List of names corresponding to `psig_columns`.
+
+    pthr_cutoffs : list of str, optional
+        List of significance thresholds corresponding to `psig_columns`.
+        Only residues matching the given thresholds are included in clustering.
+
+    screen_name : str
+        Name of the screens corresponding to df_missense.
+
+    score_type : str, optional (default='LFC3D')
+        Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
+
+    max_distances : int, optional (default=25)
+        Maximum radius (in Angstroms) to consider for clustering. Clustering is repeated at every integer from 1 to `max_distances`.
+
+    merge_cols : list of str, optional (default=['unipos', 'chain'])
+        Columns used to merge clustering results back into the main DataFrame.
+
+    clustering_kwargs : dict, optional
+        Dictionary of additional keyword arguments passed to `AgglomerativeClustering`.
+        Must include keys like "metric" and "linkage".
+        "n_clusters" should be set to None to enable distance-threshold clustering.
+
+    Returns
+    -------
+    None
     """
-    
+
     # MKDIR #
     working_filedir = Path(workdir)
     if not os.path.exists(working_filedir): 
@@ -117,7 +176,7 @@ def plot_clustering(
                         f.write(f'{chain}-{unipos} ')
                     f.write(f'\n')
 
-    return clust_indices
+    return None
 
 
 def plot_cluster_distance(

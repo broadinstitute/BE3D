@@ -18,10 +18,48 @@ from scipy.stats import mannwhitneyu
 from .aggregate_helpers import *
 
 def average_split_bin_plots(
-        df_Z, workdir, input_gene, pthr=0.05, 
-        screen_name='', func='SUM', score_type='LFC3D', 
-        aggregate_dir='meta-aggregate', save_type='png', 
+    df_Z, workdir, input_gene, pthr=0.05, 
+    screen_name='', func='SUM', score_type='LFC3D', 
+    aggregate_dir='meta-aggregate', save_type='png', 
 ): 
+    """
+    Generates histograms, histplots, and scatterplots for positive and negative scores 
+    with binning and significance thresholds.
+
+    Parameters
+    ----------
+    df_Z : pd.DataFrame
+        DataFrame containing z-scores, p-values, and significance labels for scores at multiple thresholds.
+
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed. 
+
+    pthr : float, optional (default=0.05)
+        p-value threshold for labeling statistical significance.
+
+    screen_name : str
+        Name of the screens corresponding to df_missense.
+
+    func : str, optional (default='SUM')
+        Name corresponding to 'aggr_func' (e.g., 'SUM', 'MEAN').
+
+    score_type : str, optional (default='LFC3D')
+        Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
+
+    aggregate_dir : str, optional (default='meta-aggregate')
+        Subdirectory name where plots are stored (e.g., 'meta-aggregate', 'LFC3D', 'LFC').
+
+    save_type : str, optional (default='png')
+        Format for saving output plots (e.g., 'png', 'pdf').
+    
+    Returns
+    ----------
+    None
+    """
+
     # MKDIR #
     working_filedir = Path(workdir)
     if not os.path.exists(working_filedir): 
@@ -97,7 +135,7 @@ def average_split_bin_plots(
 
 
 def metaaggregation_histogram(
-        df_input, params, out_filename, save_type, 
+    df_input, params, out_filename, save_type, 
 ): 
     """
     Description
@@ -161,7 +199,7 @@ def metaaggregation_histogram(
     return results_list
 
 def metaaggregation_hisplot(
-        df_input, params, out_name, save_type, 
+    df_input, params, out_name, save_type, 
 ): 
     """
     Description
@@ -189,8 +227,8 @@ def metaaggregation_hisplot(
     return None
 
 def metaaggregation_scatterplot(
-        df_meta, params, input_gene, pthr, 
-        outname, save_type, colors, 
+    df_meta, params, input_gene, pthr, 
+    outname, save_type, colors, 
 ): 
     """
     Description
