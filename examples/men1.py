@@ -279,7 +279,47 @@ def main(**kwargs):
                 screen_name=screen_name, score_type=score_type,
                 merge_col=['unipos', 'chain'],
             )
-             
+    
+    def find_union(input):
+        if input[0] == f'p<{pthr_str}' or input[1] == f'p<{pthr_str}':
+            return f'p<{pthr_str}'
+        else:
+            return f'p>={pthr_str}'
+
+    # Load both LFC and lFC3D dataframes
+    df_pvals_LFC3D = pd.read_csv(f'{output_dir}/LFC3D/{input_gene}_NonAggr_LFC3D.tsv', sep='\t')
+    df_pvals_LFC = pd.read_csv(f'{output_dir}/LFC/{input_gene}_NonAggr_LFC.tsv', sep='\t')
+    df_pvals = pd.concat([df_pvals_LFC3D, df_pvals_LFC.drop(columns=['unipos', 'unires', 'chain'])], axis=1)
+
+    # Find union of LFC and LFC3D
+    for screen_name in screen_names:
+        df_pvals[f'{screen_name}_union_neg_{pthr_str_short}_psig'] = df_pvals[[f'{screen_name}_LFC_neg_{pthr_str_short}_psig', f'{screen_name}_LFC3D_neg_{pthr_str_short}_psig']].apply(find_union, axis=1)
+        df_pvals[f'{screen_name}_union_pos_{pthr_str_short}_psig'] = df_pvals[[f'{screen_name}_LFC_pos_{pthr_str_short}_psig', f'{screen_name}_LFC3D_pos_{pthr_str_short}_psig']].apply(find_union, axis=1)
+
+        df_hits_clust, distances, yvalues = clustering(
+            df_struc, df_pvals,
+            output_dir, input_gene,
+            psig_columns=[f'{screen_name}_union_neg_{pthr_str_short}_psig',
+                        f'{screen_name}_union_pos_{pthr_str_short}_psig'],
+            pthr_cutoffs=[f'p<{pthr_str}', f'p<{pthr_str}'],
+            screen_name=screen_name, score_type='union',
+            max_distances=25, merge_cols=['unipos', 'chain'],
+        )
+
+        # PLOTTING #
+        plot_clustering(
+            df_struc, df_pvals,
+            df_hits_clust, clustering_radius,
+            output_dir, input_gene,
+            distances, yvalues,
+            psig_columns=[f'{screen_name}_union_neg_{pthr_str_short}_psig',
+                        f'{screen_name}_union_pos_{pthr_str_short}_psig'],
+            names=['Negative', 'Positive'],
+            pthr_cutoffs=[f'p<{pthr_str}', f'p<{pthr_str}'],
+            screen_name = screen_name, score_type='union',
+            merge_col=['unipos', 'chain'],
+        )
+
     # META-AGGREGATION ON LFC3D
     df_bidir_meta = average_split_meta(
         df_LFC_LFC3D,
@@ -375,12 +415,6 @@ def main(**kwargs):
         )
 
     ## CLUSTERING ON UNION
-    def find_union(input):
-        if input[0] == f'p<{pthr_str}' or input[1] == f'p<{pthr_str}':
-            return f'p<{pthr_str}'
-        else:
-            return f'p>={pthr_str}'
-
     df_struc = pd.read_csv(f'{output_dir}/sequence_structure/{structureid}_coord_struc_features.tsv', sep='\t')
 
     # Load both LFC and lFC3D dataframes
