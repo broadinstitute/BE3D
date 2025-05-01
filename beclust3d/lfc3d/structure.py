@@ -85,17 +85,17 @@ def sequence_structural_features(
         query_domains(working_filedir, input_uniprot, domains_filename)
 
     # STRUCTURE #
-    af_filename = f"sequence_structure/AF_{input_uniprot}.pdb"
-    af_processed_filename = f"sequence_structure/{structureid}_processed.pdb"
+    pdb_filename = f"sequence_structure/{input_uniprot}.pdb"
+    pdb_processed_filename = f"sequence_structure/{structureid}_processed.pdb"
     if user_pdb is not None: # USER INPUT FOR ALPHAFOLD #
-        assert os.path.isfile(working_filedir / user_pdb), f'{user_pdb} does not exist'
-        af_filename = user_pdb
+        assert os.path.isfile(user_pdb), f'{user_pdb} does not exist'
+        shutil.copy2(user_pdb, os.path.join(working_filedir, pdb_processed_filename))
     else: # QUERY DATABASE #
-        query_af(working_filedir, af_filename, structureid)
-    parse_af(working_filedir, af_filename, af_processed_filename)
+        query_af(working_filedir, pdb_filename, structureid)
+        parse_af(working_filedir, pdb_filename, pdb_processed_filename)
 
     coord_filename = f"sequence_structure/{structureid}_coord.tsv"
-    parse_coord(working_filedir, af_processed_filename, out_fasta, coord_filename, chains)
+    parse_coord(working_filedir, pdb_processed_filename, out_fasta, coord_filename, chains)
 
     # SECONDAY STRUCTURE DSSP #
     dssp_filename = f"sequence_structure/{structureid}_processed.dssp"
@@ -104,7 +104,7 @@ def sequence_structural_features(
         if str(user_dssp) != str(dssp_filename): 
             shutil.copy2(working_filedir / user_dssp, working_filedir / dssp_filename)
     else: # QUERY DATABASE #
-        run_dssp(working_filedir, af_filename, dssp_filename)
+        run_dssp(working_filedir, pdb_processed_filename, dssp_filename)
 
     dssp_parsed_filename = f"sequence_structure/{structureid}_dssp_parsed.tsv"
     parse_dssp(working_filedir, dssp_filename, out_fasta, dssp_parsed_filename, chains)
