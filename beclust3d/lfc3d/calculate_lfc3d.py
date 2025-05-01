@@ -76,8 +76,6 @@ def calculate_lfc3d(
     working_filedir = Path(workdir)
     if not os.path.exists(working_filedir): 
         os.mkdir(working_filedir)
-    if not os.path.exists(working_filedir / 'LFC'):
-        os.mkdir(working_filedir / 'LFC')
     if not os.path.exists(working_filedir / 'LFC3D'):
         os.mkdir(working_filedir / 'LFC3D')
 
