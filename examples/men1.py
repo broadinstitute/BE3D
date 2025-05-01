@@ -1,9 +1,7 @@
 import os
 import sys
-import warnings
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
 def main(**kwargs):
     ## REQUIRED
@@ -146,8 +144,6 @@ def main(**kwargs):
             input_gene, screen_name, function_name='max', muttype='Missense',
         )
 
-        # file_path = f'{output_dir}/screendata_sequence/plots/{input_gene}_{screen_name}_Missense_lfcz_scatter_by_bin_posneg.png'
-
     ## CLUSTERING ON PRIORITIZED
     df_struc = pd.read_csv(f'{output_dir}/sequence_structure/{structureid}_coord_struc_features.tsv', sep='\t')
 
@@ -177,9 +173,7 @@ def main(**kwargs):
             merge_col=['unipos', 'chain'],
         )
 
-        # file_path = f'{output_dir}/cluster_lfc/plots/{input_gene}_{screen_name}_lfc_Bidirection_Dendogram_6A.png'
-
-    ## LFC3D AND META-AGGREGATION ON LFC/LFC3D
+    ## LFC3D 
     df_edits_list = []
     for screen_name in screen_names:
         df = pd.read_csv(f'{output_dir}/screendata_sequence/{input_gene}_{screen_name}_protein_edits.tsv', sep='\t')
@@ -189,7 +183,6 @@ def main(**kwargs):
         df = pd.read_csv(f'{output_dir}/screendata_sequence_rand/{input_gene}_{screen_name}_Missense_protein_edits_rand.tsv', sep='\t')
         df_rand_list.append(df)
 
-
     df_LFC_LFC3D = calculate_lfc3d(
         df_struc, df_edits_list, df_rand_list,
         output_dir, input_gene, screen_names,
@@ -197,8 +190,97 @@ def main(**kwargs):
         function_type='max', function_aggr=np.mean,
         conserved_only=False,
     )
+    
+    # LFC #
+    df_bidir = average_split_score(
+        df_LFC_LFC3D,
+        output_dir, input_gene, screen_names,
+        score_type='LFC',
+    )
+    df_dis, df_neg_stats, df_pos_stats = bin_score(
+        df_bidir,
+        output_dir, input_gene, screen_names,
+        score_type='LFC',
+    )
+    df_z = znorm_score(
+        df_bidir, df_neg_stats, df_pos_stats,
+        output_dir, input_gene, screen_names,
+        pthrs=[0.05, 0.01, 0.001], score_type='LFC',
+    )
 
-    # LFC3D #
+    df_lfc = pd.read_csv(f'{output_dir}/LFC/{input_gene}_NonAggr_LFC.tsv', sep='\t')
+
+    for screen_name in screen_names:
+        average_split_bin_plots(
+            df_lfc,
+            workdir = output_dir,
+            input_gene = input_gene,
+            screen_name=screen_name, # BLANK FOR META #
+            func='', # BLANK FOR NON AGGR #
+            pthr=pthr,
+            score_type='LFC',
+            aggregate_dir='LFC',
+            )
+    
+    df_bidir = average_split_score(
+        df_LFC_LFC3D,
+        output_dir, input_gene, screen_names,
+        score_type='LFC3D',
+    )
+    df_dis, df_neg_stats, df_pos_stats = bin_score(
+        df_bidir,
+        output_dir, input_gene, screen_names,
+        score_type='LFC3D',
+    )
+    df_z = znorm_score(
+        df_bidir, df_neg_stats, df_pos_stats,
+        output_dir, input_gene, screen_names,
+        pthrs=[0.05, 0.01, 0.001], score_type='LFC3D',
+    )
+
+    df_lfc3d = pd.read_csv(f'{output_dir}/LFC3D/{input_gene}_NonAggr_LFC3D.tsv', sep='\t')
+    
+    for screen_name in screen_names:
+        average_split_bin_plots(
+            df_lfc3d,
+            workdir = output_dir,
+            input_gene = input_gene,
+            screen_name=screen_name, # BLANK FOR META #
+            func='', # BLANK FOR NON AGGR #
+            pthr=pthr,
+            score_type='LFC3D',
+            aggregate_dir='LFC3D',
+            )
+   
+    for score_type in ['LFC', 'LFC3D']:
+        df_pvals = pd.read_csv(f'{output_dir}/{score_type}/{input_gene}_NonAggr_{score_type}.tsv', sep='\t')
+
+        for screen_name in screen_names:
+            df_hits_clust, distances, yvalues = clustering(
+                df_struc, df_pvals,
+                output_dir, input_gene,
+                psig_columns=[f'{screen_name}_{score_type}_neg_{pthr_str_short}_psig',
+                            f'{screen_name}_{score_type}_pos_{pthr_str_short}_psig'],
+                pthr_cutoffs=[f'p<{pthr_str}', f'p<{pthr_str}'],
+                screen_name=screen_name, score_type=score_type,
+                max_distances=25, merge_cols=['unipos', 'chain'],
+            )
+
+            # PLOTTING #
+            plot_clustering(
+                df_struc, df_pvals,
+                df_hits_clust, clustering_radius,
+                output_dir, input_gene,
+                distances, yvalues,
+                psig_columns=[f'{screen_name}_{score_type}_neg_{pthr_str_short}_psig',
+                            f'{screen_name}_{score_type}_pos_{pthr_str_short}_psig'],
+                names=['Negative', 'Positive'],
+                pthr_cutoffs=[f'p<{pthr_str}', f'p<{pthr_str}'],
+                screen_name=screen_name, score_type=score_type,
+                merge_col=['unipos', 'chain'],
+            )
+             
+    # META-AGGREGATION ON LFC3D
     df_bidir_meta = average_split_meta(
         df_LFC_LFC3D,
         output_dir, input_gene, screen_names,
@@ -230,7 +312,7 @@ def main(**kwargs):
             aggregate_dir='meta-aggregate',
             )
 
-    # LFC #
+    # META-AGGREGATION ON LFC
     df_bidir_meta = average_split_meta(
         df_LFC_LFC3D,
         output_dir, input_gene, screen_names,
@@ -292,9 +374,6 @@ def main(**kwargs):
             merge_col=['unipos', 'chain'],
         )
 
-        # file_path = f'{output_dir}/meta-aggregate/plots/{input_gene}_{score_type}_cutoff{pthr_str_short}_scatter_colored.png'
-        # file_path = f'{output_dir}/cluster_{score_type}/plots/{input_gene}_Meta_{score_type}_Positive_Dendogram_6A.png'
-
     ## CLUSTERING ON UNION
     def find_union(input):
         if input[0] == f'p<{pthr_str}' or input[1] == f'p<{pthr_str}':
@@ -336,9 +415,7 @@ def main(**kwargs):
         screen_name='Meta', score_type='union',
         merge_col=['unipos', 'chain'],
     )
-
-    # file_path = f'{output_dir}/cluster_union/plots/{input_gene}_Meta_union_Positive_Dendogram_6A.png'
-    
+   
     ## CHARACTERIZATION
     df_domains = pd.read_csv(f'{output_dir}/sequence_structure/{input_gene}_{input_uniprot}_domains.tsv', sep='\t')
     df_struc = pd.read_csv(f'{output_dir}/sequence_structure/{structureid}_coord_struc_features.tsv', sep='\t')
@@ -464,6 +541,7 @@ if __name__ == '__main__':
     from beclust3d.aggregate.aggregate_plot import average_split_bin_plots
     from beclust3d.lfc3d.characterization import enrichment_test
     from beclust3d.lfc3d.characterization_plot import plot_enrichment_test, hits_feature_barplot, lfc_lfc3d_scatter, pLDDT_RSA_scatter
+    from beclust3d.aggregate.nonaggregate import average_split_score, bin_score, znorm_score
 
     ## REQUIRED
     input_gene = 'MEN1'
