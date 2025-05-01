@@ -203,21 +203,21 @@ def parse_coord(
 def run_dssp(
     working_filedir, af_filename, dssp_filename, 
 ): 
-    os.environ["LIBCIFPP_DATA_DIR"] = "src/helpers/libcifpp_data"
+    # os.environ["LIBCIFPP_DATA_DIR"] = "src/helpers/libcifpp_data"
 
     if not os.path.exists(working_filedir / dssp_filename): 
         pdb_file_path = str(working_filedir / af_filename)
         out_file_path = str(os.path.join(working_filedir / dssp_filename))
-        dic_file_path = "src/helpers/mmcif_pdbx_v50.dic"
+        # dic_file_path = "src/helpers/mmcif_pdbx_v50.dic"
 
         # RUN DSSP COMMAND #
         if shutil.which('dssp') is None: 
             subprocess.run(["mkdssp", pdb_file_path, out_file_path, 
-                            "--output-format", "dssp", "--mmcif-dictionary", dic_file_path], 
+                            "--output-format", "dssp"], 
                             check=True)
         else: 
             subprocess.run(["dssp", pdb_file_path, out_file_path, 
-                            "--output-format", "dssp", "--mmcif-dictionary", dic_file_path], 
+                            "--output-format", "dssp"], 
                             check=True)
 
 def parse_dssp(
