@@ -73,7 +73,8 @@ def hypothesis_two(
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('U_', 'p_')])
     if testtype == 'KolmogorovSmirnov': 
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('D_', 'p_')])
-
+    col_names.extend(['num_of_cases','num_of_controls'])
+    
     df_output = pd.DataFrame(columns=col_names)
     df_control = pd.DataFrame()
 
@@ -101,7 +102,7 @@ def hypothesis_two(
             df_control_in = df_control[df_control[gene_col]==current_gene]
             df_case_in = df_case[df_case[gene_col]==current_gene]
             new_row.extend(add_to_row(df_control_in, df_case_in, val_col, testtype))
-            # new_row.extend([len(df_case),len(df_control)]) ### what is the point of this, mismatch in row length
+            new_row.extend([len(df_case),len(df_control)])
             
             # ADD NEW ROW #
             df_output.loc[len(df_output)] = new_row
