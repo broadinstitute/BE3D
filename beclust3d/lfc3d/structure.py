@@ -14,7 +14,7 @@ from .structure_helpers import *
 def sequence_structural_features(
         workdir, 
         input_gene, input_uniprot, structureid, chains=['A'], radius=6.0, 
-        user_uniprot=None, user_pdb=None, user_dssp=None, 
+        user_fasta=None, user_pdb=None, user_dssp=None, 
         domains_dict=None, 
         # CHAINS REFERS TO CHAIN OF THE TARGET PROTEIN #
 ): 
@@ -42,7 +42,7 @@ def sequence_structural_features(
     radius : float, optional (default=6.0)
         Radius in Angstroms used when counting neighboring amino acids.
 
-    user_uniprot : str or None, optional
+    user_fasta : str or None, optional
         Path to a user-supplied UniProt FASTA file. If provided, bypasses querying UniProt online.
 
     user_pdb : str or None, optional
@@ -70,9 +70,9 @@ def sequence_structural_features(
     
     # UNIPROT #
     out_fasta = working_filedir / f"sequence_structure/{input_gene}_{input_uniprot}.tsv"
-    if user_uniprot is not None: # USER INPUT FOR UNIPROT #
-        assert os.path.isfile(working_filedir / user_uniprot), f'{user_uniprot} does not exist'
-        uFasta_file = working_filedir / user_uniprot
+    if user_fasta is not None: # USER INPUT FOR UNIPROT #
+        assert os.path.isfile(user_fasta), f'{user_fasta} does not exist'
+        uFasta_file = user_fasta
     else: # QUERY DATABASE #
         uFasta_file = query_uniprot(working_filedir, input_uniprot)
     parse_uniprot(uFasta_file, out_fasta)
