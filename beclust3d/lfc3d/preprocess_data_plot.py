@@ -123,7 +123,7 @@ def counts_by_gene(
 
     # SAVE BARPLOT #
     plotname = f"screendata/plots/{title}_barplot_by_muttype.pdf"
-    plt.savefig(working_filedir / plotname, dpi=100, transparent=True, format=save_type)
+    plt.savefig(working_filedir / plotname, dpi=100, transparent=False, format=save_type)
     plt.close()
     del df_mutation_counts, df_plot
 
@@ -197,7 +197,7 @@ def violin_by_gene(
 
     # SAVE VIOLIN #
     plotname = f"screendata/plots/{title}_violinplot_by_muttype.pdf"
-    plt.savefig(working_filedir / plotname, dpi=100, transparent=True, format=save_type)
+    plt.savefig(working_filedir / plotname, dpi=100, transparent=False, format=save_type)
 
     # CREATE SEPARATE LEGEND #
     if legend_handles and legend_labels:
@@ -207,7 +207,7 @@ def violin_by_gene(
         legend_ax.legend(legend_handles, legend_labels, loc='center')
         
         legend_path = f"screendata/plots/{title}_legend.pdf"
-        legend_fig.savefig(working_filedir / legend_path, dpi=100, transparent=True, format=save_type)
+        legend_fig.savefig(working_filedir / legend_path, dpi=100, transparent=False, format=save_type)
 
     plt.close()
     

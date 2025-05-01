@@ -138,7 +138,7 @@ def counts_by_residue(
     plt.xticks(np.arange(0, len(df_struc_consvr), 50), rotation = 90)
 
     counts_filename = f"screendata_sequence/plots/{input_gene}_{screen_name}_num_{muttype}_per_res.{save_type}"
-    plt.savefig(working_filedir / counts_filename, dpi=100, transparent=True, format=save_type)
+    plt.savefig(working_filedir / counts_filename, dpi=100, transparent=False, format=save_type)
     plt.close(fig)
 
 def stdev_by_residue(
@@ -175,7 +175,7 @@ def stdev_by_residue(
     plt.xticks(np.arange(0, len(df_struc_consvr), 50), rotation = 90)
 
     stdev_filename = f"screendata_sequence/plots/{input_gene}_{screen_name}_stdev_{muttype}_per_res.{save_type}"
-    plt.savefig(working_filedir / stdev_filename, dpi=100, transparent=True, format=save_type)
+    plt.savefig(working_filedir / stdev_filename, dpi=100, transparent=False, format=save_type)
     plt.close(fig)
     
 def scatterplot_by_residue(
@@ -207,7 +207,7 @@ def scatterplot_by_residue(
     plt.xticks(np.arange(0, len(df_struc_consvr), 50), rotation = 90)
 
     scatter_filename = f"screendata_sequence/plots/{input_gene}_{screen_name}_{colname}_score_by_res.{save_type}"
-    plt.savefig(working_filedir / scatter_filename, dpi=100, transparent=True, format=save_type)
+    plt.savefig(working_filedir / scatter_filename, dpi=100, transparent=False, format=save_type)
     plt.close(fig)
 
 def dual_scatterplot_by_residue(
@@ -249,7 +249,7 @@ def dual_scatterplot_by_residue(
     plt.suptitle(f'{input_gene} LFC_Z Score {screen_name}')
 
     scatter_filename = f"screendata_sequence/plots/{input_gene}_{screen_name}_{muttype}_lfcz_scatter_by_bin_posneg.{save_type}"
-    plt.savefig(working_filedir / scatter_filename, dpi=100, transparent=True, format=save_type)
+    plt.savefig(working_filedir / scatter_filename, dpi=100, transparent=False, format=save_type)
     plt.close(fig)
 
 def dual_histogram_by_residue(
@@ -280,5 +280,5 @@ def dual_histogram_by_residue(
     plt.subplots_adjust(wspace=0.1)
 
     hist_filename = f"screendata_sequence/plots/{input_gene}_{screen_name}_{muttype}_lfc_hist_by_bin_posneg.{save_type}"
-    plt.savefig(working_filedir / hist_filename, dpi=100, transparent=True, format=save_type)
+    plt.savefig(working_filedir / hist_filename, dpi=100, transparent=False, format=save_type)
     plt.close(fig)

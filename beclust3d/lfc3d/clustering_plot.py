@@ -199,7 +199,7 @@ def plot_cluster_distance(
     plt.xlabel('Cluster Radius')
     plt.ylabel('Number of Clusters')
     plt.title(f'Positive vs Negative Clusters {input_gene}')
-    plt.savefig(plot_filename, dpi=100, transparent=True, format=save_type)
+    plt.savefig(plot_filename, dpi=100, transparent=False, format=save_type)
     plt.close()
 
 def plot_dendrogram(
@@ -232,5 +232,5 @@ def plot_dendrogram(
     else: dendrogram(linkage_matrix, color_threshold=dist, labels=xlbl, leaf_rotation=90.)
 
     plt.title(title)
-    plt.savefig(dend_filename, dpi=100, transparent=True, format=save_type)
+    plt.savefig(dend_filename, dpi=100, transparent=False, format=save_type)
     plt.close()

@@ -97,7 +97,7 @@ def plot_enrichment_test(
     ax.set_title(f'{input_gene} Enrichment Test Odds Ratios')
     
     out_filename = working_filedir / f"characterization/plots/{input_gene}_enrichment_test.{save_type}"
-    plt.savefig(out_filename, dpi=100, transparent=True, format=save_type)
+    plt.savefig(out_filename, dpi=100, transparent=False, format=save_type)
     plt.close()
     return None
 
@@ -180,7 +180,7 @@ def lfc_lfc3d_scatter(
     plt.grid(True, linestyle="--", alpha=0.5)
 
     out_filename = f'characterization/plots/{input_gene}_LFC_LFC3D_scatter.{save_type}'
-    plt.savefig(working_filedir / out_filename, dpi=100, transparent=True, format=save_type)
+    plt.savefig(working_filedir / out_filename, dpi=100, transparent=False, format=save_type)
     plt.close()
     return None
 
@@ -279,7 +279,7 @@ def pLDDT_RSA_scatter(
     plt.title(f"{input_gene} RSA vs. pLDDT Scatterplot")
 
     out_filename = working_filedir / f'characterization/plots/{input_gene}_pLDDT_RSA_scatter.{save_type}'
-    plt.savefig(out_filename, dpi=100, transparent=True, format=save_type)
+    plt.savefig(out_filename, dpi=100, transparent=False, format=save_type)
     plt.close()
     return None
 
@@ -367,6 +367,6 @@ def hits_feature_barplot(
     plt.legend(title='Direction')
 
     out_filename = working_filedir / f"characterization/plots/{input_gene}_{plot_type}_{category_col}_barplot.{save_type}"
-    plt.savefig(out_filename, dpi=100, transparent=True, format=save_type)
+    plt.savefig(out_filename, dpi=100, transparent=False, format=save_type)
     plt.close()
     return None
