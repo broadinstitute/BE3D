@@ -218,7 +218,7 @@ def hypothesis_plot(
     # SAVE PLOT #
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
     plot_filename = f"hypothesis_qc/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.{save_type}"
-    plt.savefig(working_filedir / plot_filename, dpi=100, transparent=True, format=save_type)
+    plt.savefig(working_filedir / plot_filename, dpi=100, transparent=False, format=save_type)
     plt.close()
 
     # CREATE SEPARATE LEGEND PLOT #
@@ -228,7 +228,7 @@ def hypothesis_plot(
 
     # SAVE LEGEND SEPARATELY #
     legend_filename = f"hypothesis_qc/hypothesis{hypothesis}_legend_by_{cat_colname}.{save_type}"
-    legend_fig.savefig(working_filedir / legend_filename, dpi=100, transparent=True, format=save_type)
+    legend_fig.savefig(working_filedir / legend_filename, dpi=100, transparent=False, format=save_type)
     plt.close()
 
 def negative_log_transformation(value):
