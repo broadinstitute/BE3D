@@ -194,8 +194,9 @@ def plot_cluster_distance(
 
     fig, ax = plt.subplots(**subplots_kwargs)
     for n in names: 
-        sns.lineplot(data=dist_stat, x="clust_dist", y=n)
+        sns.lineplot(data=dist_stat, x="clust_dist", y=n, ax=ax, label=n)
 
+    ax.legend(title='')
     plt.xlabel('Cluster Radius')
     plt.ylabel('Number of Clusters')
     plt.title(f'Positive vs Negative Clusters {input_gene}')
