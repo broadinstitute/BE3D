@@ -166,10 +166,10 @@ def calculate_lfc3d(
         df_struct_3d[f"{screen_name}_AVG_LFCr"]     = df_struct_3d[LFC_colnames].mean(axis=1) # AVG ALL
         df_struct_3d[f"{screen_name}_AVG_LFCr_neg"] = (df_struct_3d[LFC_colnames]
                                                        .apply(lambda col: col.map(lambda x: x if x < 0 else np.nan))
-                                                       .sum(axis=1) / nRandom) # AVG NEG
+                                                       .mean(axis=1)) # AVG NEG
         df_struct_3d[f"{screen_name}_AVG_LFCr_pos"] = (df_struct_3d[LFC_colnames]
                                                        .apply(lambda col: col.map(lambda x: x if x > 0 else np.nan))
-                                                       .sum(axis=1) / nRandom) # AVG POS
+                                                       .mean(axis=1)) # AVG POS
         
         # AVG OVER LFC3D RANDOMIZATION COLUMNS FROM DF #
         if not LFC_only: 
@@ -177,10 +177,10 @@ def calculate_lfc3d(
             df_struct_3d[f"{screen_name}_AVG_LFC3Dr"]     = df_struct_3d[LFC3D_colnames].mean(axis=1) # AVG ALL
             df_struct_3d[f"{screen_name}_AVG_LFC3Dr_neg"] = (df_struct_3d[LFC3D_colnames]
                                                             .apply(lambda col: col.map(lambda x: x if x < 0 else np.nan))
-                                                            .sum(axis=1) / nRandom) # AVG NEG
+                                                            .mean(axis=1)) # AVG NEG
             df_struct_3d[f"{screen_name}_AVG_LFC3Dr_pos"] = (df_struct_3d[LFC3D_colnames]
                                                             .apply(lambda col: col.map(lambda x: x if x > 0 else np.nan))
-                                                            .sum(axis=1) / nRandom) # AVG POS
+                                                            .mean(axis=1)) # AVG POS
         
         # CONVERT NAN TO '-' FOR REPRESENTATION #
         df_struct_3d = df_struct_3d.fillna('-')
