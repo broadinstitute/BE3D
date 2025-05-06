@@ -100,9 +100,9 @@ def sequence_structural_features(
     # SECONDAY STRUCTURE DSSP #
     dssp_filename = f"sequence_structure/{structureid}_processed.dssp"
     if user_dssp is not None: # USER INPUT FOR DSSP #
-        assert os.path.isfile(working_filedir / user_dssp), f'{user_dssp} does not exist'
-        if str(user_dssp) != str(dssp_filename): 
-            shutil.copy2(working_filedir / user_dssp, working_filedir / dssp_filename)
+        assert os.path.isfile(user_dssp), f'{user_dssp} does not exist'
+        if str(user_dssp) != str(working_filedir / dssp_filename): 
+            shutil.copy2(user_dssp, working_filedir / dssp_filename)
     else: # QUERY DATABASE #
         run_dssp(working_filedir, pdb_processed_filename, dssp_filename)
 
