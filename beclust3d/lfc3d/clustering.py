@@ -17,10 +17,11 @@ from sklearn.cluster import AgglomerativeClustering
 def clustering(
         df_struc, df_pvals, 
         workdir, input_gene, 
+        max_distances=25, 
         psig_columns=[f'SUM_LFC3D_neg_05_psig', f'SUM_LFC3D_pos_05_psig'], # CATEGORICAL NOT QUANTITATIVE #
         pthr_cutoffs=['p<0.05', 'p<0.05'], 
         screen_name='Meta', score_type='LFC3D', 
-        max_distances=25, merge_cols=['unipos', 'chain'], 
+        merge_cols=['unipos', 'chain'], 
         clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single"}, 
 ): 
     """

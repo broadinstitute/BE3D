@@ -14,7 +14,7 @@ def hypothesis_test(
     workdir, 
     input_dfs, screen_names, 
     cases, controls, 
-    comp_name, 
+    comp_name='CaseVsControl', 
     mut_col='Mutation category', 
     val_col='logFC', 
     gene_col='Target Gene Symbol', 

@@ -18,7 +18,7 @@ from scipy.stats import mannwhitneyu
 from .aggregate_helpers import *
 
 def average_split_bin_plots(
-    df_Z, workdir, input_gene, pthr=0.05, 
+    df_z, workdir, input_gene, pthr=0.05, 
     screen_name='', func='SUM', score_type='LFC3D', 
     aggregate_dir='meta-aggregate', save_type='png', 
 ): 
@@ -28,7 +28,7 @@ def average_split_bin_plots(
 
     Parameters
     ----------
-    df_Z : pd.DataFrame
+    df_z : pd.DataFrame
         DataFrame containing z-scores, p-values, and significance labels for scores at multiple thresholds.
 
     workdir : str
@@ -90,7 +90,7 @@ def average_split_bin_plots(
     histogram_filename = f"{output_prefix}_signal_vs_background.{save_type}"
     histogram_filename = histogram_filename.replace('__','_')
     (res_neg, res_pos) = metaaggregation_histogram(
-        df_Z, histogram_params, 
+        df_z, histogram_params, 
         working_filedir / f"{aggregate_dir}/plots/{histogram_filename}", save_type)
 
     # ERROR #
@@ -99,7 +99,7 @@ def average_split_bin_plots(
         return None
     
     # BINNING FOR FUTURE STEPS #
-    df_Z = binning_lfc3d(df_Z, neg_label, pos_label)
+    df_z = binning_lfc3d(df_z, neg_label, pos_label)
 
     # HISPLOTS #
     hisplots_params = [(f'{neg_label}_dis', neg_label, f'{neg_label}_{pthr_str}_psig', 'Negative P-Value'), 
@@ -110,7 +110,7 @@ def average_split_bin_plots(
     histplot_filename = f"{output_prefix}_histplot.{save_type}"
     histplot_filename = histplot_filename.replace('__','_')
     metaaggregation_hisplot(
-        df_Z, hisplots_params, 
+        df_z, hisplots_params, 
         working_filedir / f"{aggregate_dir}/plots/{histplot_filename}", save_type)
 
     # SCATTERPLOT #
@@ -120,7 +120,7 @@ def average_split_bin_plots(
     scatterplot_filename = f"{output_prefix}_scatter_cutoff.{save_type}"
     scatterplot_filename = scatterplot_filename.replace('__','_')
     metaaggregation_scatterplot(
-        df_Z, scatterplot_params, input_gene, pthr, 
+        df_z, scatterplot_params, input_gene, pthr, 
         working_filedir / f"{aggregate_dir}/plots/{scatterplot_filename}", save_type, colors=False)
     
     # Z SCORE SCATTERPLOT #
@@ -130,7 +130,7 @@ def average_split_bin_plots(
     scatterplot_filename = f"{output_prefix}_scatter_colored.{save_type}"
     scatterplot_filename = scatterplot_filename.replace('__','_')
     metaaggregation_scatterplot(
-        df_Z, scatterplot_params, input_gene, pthr, 
+        df_z, scatterplot_params, input_gene, pthr, 
         working_filedir / f"{aggregate_dir}/plots/{scatterplot_filename}", save_type, colors=True)
 
 

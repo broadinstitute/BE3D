@@ -107,7 +107,7 @@ def lfc_lfc3d_scatter(
     df_input, 
     workdir, 
     input_gene, screen_name, 
-    lfc3d_hit_threshold=0.05, save_type='png', 
+    pthr=0.05, save_type='png', 
 ): 
     """
     Generate LFC vs LFC3D scatter plot, color-coded by significance categories.
