@@ -17,11 +17,11 @@ import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 def prioritize_by_sequence(
+    df_dict, 
     df_struc, df_consrv, df_control, 
     workdir, 
     input_gene, screen_name, 
-    df_dict, 
-    pval_thr=0.05, 
+    pthr=0.05, 
     functions=[statistics.mean, min, max], 
     function_names=['mean', 'min', 'max'], 
     target_res_pos='original_res_pos', target_res='original_res', 
@@ -56,7 +56,7 @@ def prioritize_by_sequence(
         Dictionary mapping mutation types (e.g., 'Missense', 'Nonsense') to their respective DataFrames.
         Each DataFrame must include columns ['edit_pos', 'LFC', 'this_edit'].
 
-    pval_thr : float, optional (default=0.05)
+    pthr : float, optional (default=0.05)
         p-value threshold for labeling statistical significance.
 
     functions : list of callable, optional
@@ -183,12 +183,12 @@ def prioritize_by_sequence(
                         z_LFC = statistics.NormalDist(mu=mu_neg, sigma=sigma_neg).zscore(LFC)
                         p_LFC = norm.sf(abs(z_LFC))
                         plab_LFC = get_plabel(z_LFC, direction='negative')
-                        plab_thr = f'p<{str(pval_thr)}' if p_LFC < pval_thr else f'p>={str(pval_thr)}' ### 1 or 2 tail
+                        plab_thr = f'p<{str(pthr)}' if p_LFC < pthr else f'p>={str(pthr)}' ### 1 or 2 tail
                     elif (LFC > 0.0):
                         z_LFC = statistics.NormalDist(mu=mu_pos, sigma=sigma_pos).zscore(LFC)
                         p_LFC = norm.sf(abs(z_LFC))
                         plab_LFC = get_plabel(z_LFC, direction='positive')
-                        plab_thr = f'p<{str(pval_thr)}' if p_LFC < pval_thr else f'p>={str(pval_thr)}' ### 1 or 2 tail
+                        plab_thr = f'p<{str(pthr)}' if p_LFC < pthr else f'p>={str(pthr)}' ### 1 or 2 tail
 
                 list_z_LFC.append(z_LFC)
                 list_p_LFC.append(p_LFC)

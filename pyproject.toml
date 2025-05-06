@@ -24,3 +24,6 @@ requires-python = ">=3.10"
 description = "Package for prioritizing and clustering base editing screen scores based on structure and conservation."
 readme = "README.md"
 license = {file = "LICENSE.txt"}
+
+[tool.setuptools.packages.find]
+exclude = ["data*"]  # excludes data files
