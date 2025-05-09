@@ -16,9 +16,9 @@ import warnings
 warnings.filterwarnings('ignore')
 
 def calculate_lfc3d(
-        df_str_cons, df_edits_list, df_rand_list, 
+        df_struc, df_edits_list, df_rand_list, 
         workdir, input_gene, screen_names, 
-        nRandom=1000, muttype='Missense', function_type='mean', function_aggr=np.mean, 
+        nRandom=1000, muttype='Missense', function_aggr=np.mean, function_type='mean', 
         LFC_only=False, conserved_only=False, 
         # THERE ARE 2 MEAN FUNCTIONS, MEAN FOR CALCULATING LFC3D WHICH IS TUNABLE, AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE #
 ): 
@@ -27,7 +27,7 @@ def calculate_lfc3d(
 
     Parameters
     ----------
-    df_str_cons : pd.DataFrame
+    df_struc : pd.DataFrame
         DataFrame containing structural conservation data for residues. 
         Must include columns 'unipos', 'unires', 'chain', 'Naa_pos', 'Naa_chain'.
 
@@ -81,21 +81,21 @@ def calculate_lfc3d(
 
     # CHECK INPUTS ARE SELF CONSISTENT #
     for str_cons_df, str_cons_rand_df in zip(df_edits_list, df_rand_list): 
-        assert len(df_str_cons) == len(str_cons_df) == len(str_cons_rand_df)
-    assert 'unipos' in df_str_cons.columns and 'unires' in df_str_cons.columns and 'chain' in df_str_cons.columns
+        assert len(df_struc) == len(str_cons_df) == len(str_cons_rand_df)
+    assert 'unipos' in df_struc.columns and 'unires' in df_struc.columns and 'chain' in df_struc.columns
     # COLUMNS FOR SMOOTHING ACROSS RESIDUES AND#
-    assert 'Naa_pos' in df_str_cons.columns
-    assert 'Naa_chain' in df_str_cons.columns
+    assert 'Naa_pos' in df_struc.columns
+    assert 'Naa_chain' in df_struc.columns
     structure_columns = ['Naa_pos', 'Naa_chain']
     core_columns = ['unipos', 'unires', 'chain']
 
     assert len(df_edits_list) == len(df_rand_list) == len(screen_names)
 
-    df_struct_3d = df_str_cons[core_columns + structure_columns].copy()
-    naa_pos_dict = df_str_cons['Naa_pos'].to_dict()
+    df_struct_3d = df_struc[core_columns + structure_columns].copy()
+    naa_pos_dict = df_struc['Naa_pos'].to_dict()
     naa_pos_chain_dict = {
         (row['unipos'], row['chain']) : (row['Naa_pos'], row['Naa_chain'])
-        for _, row in df_str_cons.iterrows()
+        for _, row in df_struc.iterrows()
     }
 
     # FOR EVERY SCREEN #
@@ -186,7 +186,7 @@ def calculate_lfc3d(
         df_struct_3d = df_struct_3d.fillna('-')
         print('Calculated LFC3D for', screen_name)
 
-    df_struct_3d[core_columns + structure_columns] = df_str_cons[core_columns + structure_columns]
+    df_struct_3d[core_columns + structure_columns] = df_struc[core_columns + structure_columns]
     out_filename = working_filedir / f"LFC3D/{input_gene}_LFC_LFC3D_LFC3Dr.tsv"
     df_struct_3d.to_csv(out_filename, sep = '\t', index=False)
 

@@ -107,7 +107,7 @@ def lfc_lfc3d_scatter(
     df_input, 
     workdir, 
     input_gene, screen_name, 
-    lfc3d_hit_threshold=0.05, save_type='png', 
+    pthr=0.05, save_type='png', 
 ): 
     """
     Generate LFC vs LFC3D scatter plot, color-coded by significance categories.
@@ -154,7 +154,7 @@ def lfc_lfc3d_scatter(
     }, inplace=True)
 
     # Assign p-significance label for hue coloring
-    df_input['psig_label'] = df_input.apply(lambda x: assign_psig_label(x, lfc3d_hit_threshold), axis=1)
+    df_input['psig_label'] = df_input.apply(lambda x: assign_psig_label(x, pthr), axis=1)
 
     # Remove dashes from table and replace with 0
     df_input['LFC'] = df_input['LFC'].replace('-', 0.0).astype(float)
@@ -185,8 +185,8 @@ def lfc_lfc3d_scatter(
     return None
 
 ### including '-' changes whether we are looking only at hits
-def assign_psig_label(row, lfc3d_hit_threshold):
-    psig_dict = {'above': f'p>={lfc3d_hit_threshold}', 'below': f'p<{lfc3d_hit_threshold}'}
+def assign_psig_label(row, pthr):
+    psig_dict = {'above': f'p>={pthr}', 'below': f'p<{pthr}'}
     neg_str, pos_str = row['LFC3D_neg_psig'], row['LFC3D_pos_psig']
 
     if (neg_str == psig_dict['above'] or neg_str == '-') and (pos_str == psig_dict['above'] or pos_str == '-'):
