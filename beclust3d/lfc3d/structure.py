@@ -89,10 +89,10 @@ def sequence_structural_features(
     pdb_processed_filename = f"sequence_structure/{structureid}_processed.pdb"
     if user_pdb is not None: # USER INPUT FOR ALPHAFOLD #
         assert os.path.isfile(user_pdb), f'{user_pdb} does not exist'
-        shutil.copy2(user_pdb, os.path.join(working_filedir, pdb_processed_filename))
+        shutil.copy2(user_pdb, os.path.join(working_filedir, pdb_filename))        
     else: # QUERY DATABASE #
         query_af(working_filedir, pdb_filename, structureid)
-        parse_af(working_filedir, pdb_filename, pdb_processed_filename)
+    parse_af(working_filedir, pdb_filename, pdb_processed_filename)
 
     coord_filename = f"sequence_structure/{structureid}_coord.tsv"
     parse_coord(working_filedir, pdb_processed_filename, out_fasta, coord_filename, chains)
