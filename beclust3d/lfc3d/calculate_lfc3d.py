@@ -209,6 +209,7 @@ def helper(
     if isinstance(naa_pos_str, str):  ###
         naa_pos_list = naa_pos_str.split(';') ###
         for naa_pos in naa_pos_list:  ###
+            if naa_pos == '': continue
             # VALUE FOR NEIGHBORING RESIDUE #
             if not conserved_only or df_struc_edits_dict[int(naa_pos)-1] == 'conserved': ###
                 naa_LFC = taa_LFC_dict[int(naa_pos)-1] ###
