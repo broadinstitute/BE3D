@@ -145,6 +145,9 @@ Sample Single Screen Notebook (DNMT3A):
 Sample Multi Screen Notebook with Meta-Aggregation (MEN1): 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1YRxJk5UxCOGwLv9kTdgXjqryAosJmpMV?usp=sharing)
 
+Sample Multi Screen Notebook with Meta-Aggregation and Conservation (SETDB1): 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1JIz_79kcZhXJXuAe_tOjRGPiLnoo3yJf?usp=sharing)
+
 Sample Multi Screen Notebook with Meta-Aggregation and Conservation:  
 
 ## License
