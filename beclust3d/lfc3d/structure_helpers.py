@@ -14,6 +14,7 @@ import pandas as pd
 import shutil
 import subprocess
 import csv
+import tempfile
 
 from biopandas.pdb import PandasPdb
 
@@ -485,3 +486,52 @@ def degree_of_burial(
 
     df_coord_dssp.to_csv(working_filedir / coord_dssp_filename, sep="\t", index=False)
     return df_coord_dssp
+
+def infer_element_symbol(atom_name):
+    """
+    Infers the chemical element symbol from the atom name.
+    """
+    atom_name = atom_name.strip()
+    if not atom_name:
+        return "  "
+    # If the first character is a digit (e.g., '1H'), the element is the second character
+    if atom_name[0].isdigit():
+        return atom_name[1].upper().rjust(2)
+    # If the first two characters are letters and the second is lowercase, it's a two-letter element
+    if len(atom_name) >= 2 and atom_name[1].islower():
+        return atom_name[:2].capitalize().rjust(2)
+    # Otherwise, it's a one-letter element
+    return atom_name[0].upper().rjust(2)
+
+def update_pdb_element_symbols(input_pdb_path, output_pdb_path=None):
+    if output_pdb_path is None or input_pdb_path == output_pdb_path:
+        # In-place edit: use a temp file
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp_outfile:
+            tmp_path = tmp_outfile.name
+            with open(input_pdb_path, 'r') as infile:
+                for line in infile:
+                    if line.startswith(('ATOM  ', 'HETATM')):
+                        atom_name = line[12:16]
+                        element_symbol = infer_element_symbol(atom_name)
+                        line = line.rstrip('\n')
+                        if len(line) < 78:
+                            line = line.ljust(78)
+                        updated_line = line[:76] + element_symbol + line[78:] + '\n'
+                        tmp_outfile.write(updated_line)
+                    else:
+                        tmp_outfile.write(line)
+        shutil.move(tmp_path, input_pdb_path)  # Replace original file
+    else:
+        # Normal input → output
+        with open(input_pdb_path, 'r') as infile, open(output_pdb_path, 'w') as outfile:
+            for line in infile:
+                if line.startswith(('ATOM  ', 'HETATM')):
+                    atom_name = line[12:16]
+                    element_symbol = infer_element_symbol(atom_name)
+                    line = line.rstrip('\n')
+                    if len(line) < 78:
+                        line = line.ljust(78)
+                    updated_line = line[:76] + element_symbol + line[78:] + '\n'
+                    outfile.write(updated_line)
+                else:
+                    outfile.write(line)

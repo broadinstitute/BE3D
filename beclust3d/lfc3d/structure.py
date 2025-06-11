@@ -93,7 +93,8 @@ def sequence_structural_features(
     else: # QUERY DATABASE #
         query_af(working_filedir, pdb_filename, structureid)
     parse_af(working_filedir, pdb_filename, pdb_processed_filename)
-
+    update_pdb_element_symbols(os.path.join(working_filedir, pdb_processed_filename),os.path.join(working_filedir, pdb_processed_filename))
+    
     coord_filename = f"sequence_structure/{structureid}_coord.tsv"
     parse_coord(working_filedir, pdb_processed_filename, out_fasta, coord_filename, chains)
 
