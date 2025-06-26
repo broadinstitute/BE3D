@@ -10,6 +10,7 @@ import pandas as pd
 
 import statistics
 import scipy.stats as stats
+import glob, os
 
 # HELPER FUNCTIONS #
 
@@ -103,3 +104,54 @@ def binning_lfc3d(
         df_meta[colname+'_dis'] = arr_LFC3D_disc
 
     return df_meta
+
+def pooled_mean_std(means, stds, ns):
+    """
+    Description
+        Compute pooled mean and standard deviation.
+    
+    Parameters:
+    - means: list of means (mu_i)
+    - stds: list of standard deviations (sigma_i)
+    - ns: list of sample sizes (n_i)
+    
+    Returns:
+    - pooled_mean: combined mean
+    - pooled_std: combined standard deviation
+    """
+    # Total sample size
+    N = sum(ns)
+    
+    # Pooled mean
+    pooled_mean = sum(n * mu for n, mu in zip(ns, means)) / N
+    
+    # Pooled variance
+    pooled_var = sum(n * (s**2 + (mu - pooled_mean)**2) for n, mu, s in zip(ns, means, stds)) / N
+    
+    # Standard deviation
+    pooled_std = np.sqrt(pooled_var)
+    
+    return pooled_mean, pooled_std
+
+def mu_sigma_screens(
+    workdir, screen_names,
+):        
+    neg_stats_list = list()
+    pos_stats_list = list()
+    
+    for screen_name in screen_names:
+        neg_mean, neg_std, pos_mean, pos_std = float(), float(), float(), float()
+        control_tsv = glob.glob(os.path.join(f'{workdir}/screendata/',f'*_{screen_name}_No_Mutation.tsv'))[0]
+        df_control = pd.read_csv(control_tsv, sep='\t', index_col=0)        
+        neg_mask = df_control['LFC'] < 0.0 # NEG #
+        pos_mask = df_control['LFC'] > 0.0 # POS #
+        df_nomut_neg = df_control.loc[neg_mask, 'LFC'] # NEG #
+        df_nomut_pos = df_control.loc[pos_mask, 'LFC'] # POS #
+        
+        neg_mean, neg_std, neg_count = df_nomut_neg.mean(), df_nomut_neg.std(), df_nomut_neg.count()
+        pos_mean, pos_std, pos_count = df_nomut_pos.mean(), df_nomut_pos.std(), df_nomut_pos.count()
+        
+        neg_stats_list.append({'mean':neg_mean,'std':neg_std,'count':neg_count})       
+        pos_stats_list.append({'mean':pos_mean,'std':pos_std,'count':pos_count})
+        
+    return (neg_stats_list,pos_stats_list)
