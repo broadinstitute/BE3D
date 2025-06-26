@@ -120,8 +120,8 @@ def add_to_row(
 ): 
     if len(df1) > 0 and len(df2) > 0: 
         if function == 'KolmogorovSmirnov': 
-            U1, p = ks_2samp(df1[val_col], df2[val_col])
-            return [U1, p]
+            D, p = ks_2samp(df1[val_col], df2[val_col])
+            return [D, p]
         if function == 'MannWhitney': 
             U1, p = mannwhitneyu(df1[val_col], df2[val_col], method="asymptotic")
             return [U1, p]
