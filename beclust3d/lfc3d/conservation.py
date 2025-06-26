@@ -177,9 +177,8 @@ def run_muscle(
         Run local MUSCLE for sequence alignment
     """
     # Run MUSCLE alignment
-    # muscle_path = "/Users/calvinxyh/opt/anaconda3/lib/python3.9/site-packages/gget/bins/Darwin/muscle" ###
     subprocess.run([
-        "src/helpers/align/muscle-osx-arm64.v5.3", 
+        "muscle", 
         "-align", str(edits_filedir / seqs_filename), 
         "-output", str(edits_filedir / afa_filename), 
         "-threads", "1", 
