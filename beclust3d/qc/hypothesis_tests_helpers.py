@@ -30,6 +30,7 @@ def hypothesis_one(
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('U_', 'p_')])
     if testtype == 'KolmogorovSmirnov': 
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('D_', 'p_')])
+    col_names.extend(['num_of_cases','num_of_controls'])
 
     df_output = pd.DataFrame(columns=col_names)
     # PER SCREEN PER GENE #
@@ -46,6 +47,7 @@ def hypothesis_one(
             for control in controls: 
                 df_control = pd.concat([df_control, df_edits.loc[df_edits[mut_col]==control].reset_index(drop=True)])
             new_row.extend(add_to_row(df_case, df_control, val_col, testtype))
+            new_row.extend([len(df_case),len(df_control)])
 
             # ADD NEW ROW #
             df_output.loc[len(df_output)] = new_row
