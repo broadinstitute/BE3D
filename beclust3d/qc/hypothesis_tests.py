@@ -108,10 +108,10 @@ def hypothesis_test(
                                   gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
     
     if len(unique_genes) > 1:
-        hypothesis_plot(working_filedir, df_MW1_input, df_KS1_input, screen_names, 'screenid', 'gene_name', 
+        hypothesis_plot(working_filedir, df_MW1_input.copy(), df_KS1_input.copy(), screen_names, 'screenid', 'gene_name', 
                         testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1', header=comp_name, save_type=save_type)
     if len(screen_names) > 1:
-        hypothesis_plot(working_filedir, df_MW1_input, df_KS1_input, unique_genes, 'gene_name', 'screenid', 
+        hypothesis_plot(working_filedir, df_MW1_input.copy(), df_KS1_input.copy(), unique_genes, 'gene_name', 'screenid', 
                         testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='1', header=comp_name, save_type=save_type)
 
     # MW AND KS TESTS HYPOTHESIS 2 #
@@ -121,10 +121,10 @@ def hypothesis_test(
                                   gene_col, mut_col, val_col, testtype='KolmogorovSmirnov')
     
     if len(unique_genes) > 1:
-        hypothesis_plot(working_filedir, df_MW2_input, df_KS2_input, screen_names, 'screenid', 'gene_name', 
+        hypothesis_plot(working_filedir, df_MW2_input.copy(), df_KS2_input.copy(), screen_names, 'screenid', 'gene_name', 
                         testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2', header=comp_name, save_type=save_type)
     if len(screen_names) > 1:
-        hypothesis_plot(working_filedir, df_MW2_input, df_KS2_input, unique_genes, 'gene_name', 'screenid', 
+        hypothesis_plot(working_filedir, df_MW2_input.copy(), df_KS2_input.copy(), unique_genes, 'gene_name', 'screenid', 
                         testtype1='MannWhitney', testtype2='KolmogorovSmirnov', hypothesis='2', header=comp_name, save_type=save_type)
     
     return df_MW1_input, df_MW2_input, df_KS1_input, df_KS2_input
