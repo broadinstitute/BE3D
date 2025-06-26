@@ -242,8 +242,8 @@ def parse_alignment(
             j += 1
         mouse_res_pos.append(j)
 
-    colnames = ['alignment_pos', 'human_res_pos', 'human_res', 'mouse_res_pos', 'mouse_res', 'conservation']
-    colvals  = [index, human_res_pos, human_align_res, mouse_res_pos, mouse_align_res, dis]
+    colnames = ['alignment_pos', 'human_res_pos', 'human_res', 'mouse_res_pos', 'mouse_res', 'conservation', 'v_score']
+    colvals  = [index, human_res_pos, human_align_res, mouse_res_pos, mouse_align_res, dis, v]
     df_residuemap = pd.DataFrame()
     for name, col in zip(colnames, colvals): 
         df_residuemap[name] = col
