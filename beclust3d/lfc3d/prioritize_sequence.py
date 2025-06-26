@@ -24,7 +24,9 @@ def prioritize_by_sequence(
     pthr=0.05, 
     functions=[statistics.mean, min, max], 
     function_names=['mean', 'min', 'max'], 
-    target_res_pos='original_res_pos', target_res='original_res', 
+    target_res_pos='human_res_pos',
+    alt_res_pos='mouse_res_pos',
+    alt_res='mouse_res', 
 ): 
     """
     Takes in results across multiple edit types for a screen, and
@@ -32,10 +34,14 @@ def prioritize_by_sequence(
     
     Parameters
     ----------
-    df_str_cons : pd.DataFrame
+    df_dict : dict of {str: pd.DataFrame}
+        Dictionary mapping mutation types (e.g., 'Missense', 'Nonsense') to their respective DataFrames.
+        Each DataFrame must include columns ['edit_pos', 'LFC', 'this_edit'].
+            
+    df_struc : pd.DataFrame
         DataFrame containing structural data for residues. Must include columns ['unipos', 'unires', 'chain'].
 
-    df_str_cons : pd.DataFrame
+    df_consrv : pd.DataFrame
         DataFrame containing conservation data for residues. If None, conservation is ignored.
         Must include columns 'original_res_pos', 'alternate_res_pos', 'alternate_res', and 'conservation'.
 
@@ -52,10 +58,6 @@ def prioritize_by_sequence(
     screen_name : str
         Name of the screens corresponding to df_missense.
 
-    df_dict : dict of {str: pd.DataFrame}
-        Dictionary mapping mutation types (e.g., 'Missense', 'Nonsense') to their respective DataFrames.
-        Each DataFrame must include columns ['edit_pos', 'LFC', 'this_edit'].
-
     pthr : float, optional (default=0.05)
         p-value threshold for labeling statistical significance.
 
@@ -65,10 +67,13 @@ def prioritize_by_sequence(
     function_names : list of str, optional
         Names corresponding to the 'functions'. Must be the same length and order as 'functions'.
 
-    target_res_pos : str, optional (default='original_res_pos')
+    target_res_pos : str, optional (default='human_res_pos')
         Column name specifying the target residue position from df_consrv.
+        
+    alternate_res_pos : str, optional (default='mouse_res_pos')
+        Column name specifying the alternate residue position from df_consrv.
 
-    target_res : str, optional (default='original_res')
+    alternate_res : str, optional (default='mouse_res')
         Column name specifying the alternate residue information from df_consrv.
 
     Returns
@@ -90,9 +95,9 @@ def prioritize_by_sequence(
         assert col in df_struc.columns
     # BOTH df_consrv AND df_control SHOULD BE OPTIONAL #
     if df_consrv is not None: 
-        assert 'original_res_pos' in df_consrv.columns, 'Check [df_consrv]'
-        assert 'alternate_res_pos' in df_consrv.columns, 'Check [df_consrv]'
-        assert 'alternate_res' in df_consrv.columns, 'Check [df_consrv]'
+        # assert 'original_res_pos' in df_consrv.columns, 'Check [df_consrv]'
+        # assert 'alternate_res_pos' in df_consrv.columns, 'Check [df_consrv]'
+        # assert 'alternate_res' in df_consrv.columns, 'Check [df_consrv]'
         assert 'conservation' in df_consrv.columns, 'Check [df_consrv]'
         assert len(df_struc) == len(df_consrv)
     if df_control is not None: 
@@ -102,13 +107,13 @@ def prioritize_by_sequence(
     # ADD COLUMNS FROM CONSERVATION #
     df_protein = df_struc[required_columns]
     if df_consrv is None: 
-        df_protein['original_res_pos']  = df_protein['unipos']
+        df_protein[target_res_pos]  = df_protein['unipos']
         df_protein['conservation']      = 'None'
     else: 
-        df_protein['original_res_pos']  = df_consrv['original_res_pos']
-        df_protein['alternate_res_pos'] = df_consrv['alternate_res_pos']
-        df_protein['alternate_res']     = df_consrv['alternate_res']
-        df_protein['conservation']      = df_consrv['conservation']
+        df_protein[target_res_pos]  = df_consrv[target_res_pos].to_list()
+        df_protein[alt_res_pos] = df_consrv[alt_res_pos].to_list()
+        df_protein[alt_res]     = df_consrv[alt_res].to_list()
+        df_protein['conservation']      = df_consrv['conservation'].to_list()
 
     # THIS IS FOR Z-SCORE CALCULATION LATER #
     # FOR NEG POS SEPARATELY, CALC Z SCORE BASED ON THE MEAN STD PER SCREEN / GENE / DIRECTION #
@@ -124,7 +129,6 @@ def prioritize_by_sequence(
     for mut, df_edit in df_dict.items(): 
 
         for function, function_name in zip(functions, function_names): 
-        
             # CALCULATE LFC SCORE PER POSITION #
             arr_LFC, arr_LFC_stdev, arr_all_edits = [], [], []
             # COLLAPSE DOWN DATA BY POSITION [edit_pos] #
@@ -132,31 +136,39 @@ def prioritize_by_sequence(
 
             # PRECOMPUTE MAPPING ORIGINAL POS AND ALT RES DICTS #
             original_res_pos_dict = df_protein[target_res_pos].to_dict()
-            if df_consrv is not None: df_consrv_res_dict = df_protein[target_res].to_dict()
 
             # FOR EACH RESIDUE #
             for i in range(len(df_protein)): 
-                original_res_pos = original_res_pos_dict[i]
-
+                res_pos = int()
+                structured_res = True if df_protein.iloc[i]['chain'] != '-' else False
+                df_consrv_res_pos_dict,df_consrv_res_dict = dict(), dict()
+                if df_consrv is not None:     
+                    df_consrv_res_pos_dict = df_protein[alt_res_pos].to_dict()
+                    df_consrv_res_dict = df_protein[alt_res].to_dict()
+                    res_pos = df_consrv_res_pos_dict[i]
+                else:
+                    res_pos = original_res_pos_dict[i]
+                
                 # PULL DATAFRAME FOR THE CURRENT POSITION, KEEP VALUE AND EDIT #
-                df_pos_edits = df_edit_grouped.get(int(original_res_pos), 
-                                                   pd.DataFrame(columns=['LFC', 'this_edit']))
-
+                df_pos_edits = df_edit_grouped.get(int(res_pos), 
+                                                pd.DataFrame(columns=['LFC', 'this_edit']))
+                
                 LFC_res, all_edits_res, stdev_res = '-', '-', '-'
                 # IF df_conserv IS NOT PROVIDED, AND THERE IS A VALUE AT THAT POSITION #
                 # IF df_conserv IS PROVIDED, POSITION IS CONSERVED, AND THERE IS A VALUE AT THAT POSITION #
-                if (df_consrv is None) or (df_consrv_res_dict[i] != '-'):
-                    if len(df_pos_edits) > 1: 
-                        score_list = df_pos_edits['LFC'].tolist()
-                        LFC_res = function(score_list)
-                        stdev_res = np.std(score_list)
+                if structured_res:
+                    if (df_consrv is None) or (df_consrv_res_dict[i] != '-'):
+                        if len(df_pos_edits) > 1: 
+                            score_list = df_pos_edits['LFC'].tolist()
+                            LFC_res = function(score_list)
+                            stdev_res = np.std(score_list)
 
-                        pos_edits_list = df_pos_edits['this_edit'].tolist()
-                        all_edits_res = ';'.join(set(pos_edits_list))
-                    elif len(df_pos_edits) == 1: 
-                        LFC_res = df_pos_edits.at[0, 'LFC']
-                        stdev_res = 0
-                        all_edits_res = df_pos_edits.at[0, 'this_edit']
+                            pos_edits_list = df_pos_edits['this_edit'].tolist()
+                            all_edits_res = ';'.join(set(pos_edits_list))
+                        elif len(df_pos_edits) == 1: 
+                            LFC_res = df_pos_edits.at[0, 'LFC']
+                            stdev_res = 0
+                            all_edits_res = df_pos_edits.at[0, 'this_edit']
 
                 arr_LFC.append(LFC_res)
                 arr_LFC_stdev.append(stdev_res)
