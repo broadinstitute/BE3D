@@ -18,7 +18,9 @@ warnings.filterwarnings('ignore')
 def calculate_lfc3d(
         df_struc, df_edits_list, df_rand_list, 
         workdir, input_gene, screen_names, 
-        nRandom=1000, muttype='Missense', function_aggr=np.mean, function_type='mean', 
+        nRandom=1000, muttype='Missense', 
+        function_type_lfc='mean', 
+        function_type_lfc3d='mean',
         LFC_only=False, conserved_only=False, 
         # THERE ARE 2 MEAN FUNCTIONS, MEAN FOR CALCULATING LFC3D WHICH IS TUNABLE, AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE #
 ): 
@@ -52,10 +54,13 @@ def calculate_lfc3d(
     muttype : str, optional (default='Missense')
         Type of mutation to focus on (e.g., 'Missense', 'Nonsense', etc.).
 
-    function_type : str, optional (default='mean')
+    function_type_lfc : str, optional (default='mean')
         String label for the type of aggregation function used to compute LFC3D scores.
 
-    function_aggr : function, optional (default=np.mean)
+    function_type_lfc3d : str, optional (default='mean')
+        String label for the type of aggregation function used to compute LFC3D scores.        
+
+    function_aggr_lfc3d : function, optional (default=np.mean)
         Aggregation function used to summarize neighboring mutation effects when computing LFC3D scores.
         Function should take a list or array of values and return a scalar (e.g., np.mean, np.median).
 
@@ -97,13 +102,23 @@ def calculate_lfc3d(
         (row['unipos'], row['chain']) : (row['Naa_pos'], row['Naa_chain'])
         for _, row in df_struc.iterrows()
     }
-
+    
+    # MAP AGGREGATION FUNCTION #
+    func_map = {'mean':np.mean,
+                'min':np.min,
+                'max':np.max,
+                'median':np.median,
+                'sum':np.sum
+                }
+    function_aggr_lfc3d = func_map[function_type_lfc3d]
+    
+    assert function_type_lfc3d in func_map.keys()
     # FOR EVERY SCREEN #
     for screen_name, df_edits, df_rand in zip(screen_names, df_edits_list, df_rand_list):
 
         taa_conserv_dict = df_edits['conservation'].to_dict() ###
         # ADD LFC COLUMNS FROM DF #
-        lfc_colname = f'{function_type}_{muttype}_LFC'
+        lfc_colname = f'{function_type_lfc}_{muttype}_LFC'
         df_struct_3d = pd.concat([df_struct_3d, 
                                   df_edits[[lfc_colname]].rename(columns={lfc_colname: f"{screen_name}_LFC"}), 
                                   df_edits[[f'{lfc_colname}_Z']].rename(columns={f'{lfc_colname}_Z': f"{screen_name}_LFC_Z"})], axis=1)
@@ -123,7 +138,7 @@ def calculate_lfc3d(
                 if len(taa_naa_LFC_vals) == 0:
                     aggr_vals.append('-')
                 else: 
-                    aggr_vals.append(str(function_aggr(taa_naa_LFC_vals)))
+                    aggr_vals.append(str(function_aggr_lfc3d(taa_naa_LFC_vals)))
             
             df_struct_3d = pd.concat([df_struct_3d, pd.DataFrame({f"{screen_name}_LFC3D": aggr_vals})], axis=1)
             del taa_LFC_dict, aggr_vals
@@ -150,7 +165,7 @@ def calculate_lfc3d(
                     if len(taa_naa_LFC_vals) == 0:
                         aggr_vals.append('-')
                     else:
-                        aggr_vals.append(function_aggr(taa_naa_LFC_vals))
+                        aggr_vals.append(function_aggr_lfc3d(taa_naa_LFC_vals))
                 
                 dict_temp[f"{screen_name}_LFC3Dr{str(r+1)}"] = aggr_vals
                 del aggr_vals
