@@ -221,8 +221,8 @@ def bin_meta(
     return df_dis, df_neg_stats, df_pos_stats
 
 def znorm_meta(
-    df_bidir_meta, neg_stats, pos_stats, 
-    workdir, input_gene, 
+    df_bidir_meta,
+    workdir, input_gene, screen_names,
     score_type='LFC3D', pthrs=[0.05, 0.01, 0.001], 
     aggr_func_name='SUM', 
 ): 
@@ -234,11 +234,6 @@ def znorm_meta(
     df_dis : pd.DataFrame
         DataFrame containing percentile bins and weighted scores for each residue and screen.
 
-    neg_stats : pd.Series
-        Series containing descriptive statistics for negative scores in each screen.
-
-    pos_stats : pd.Series
-        Series containing descriptive statistics for positive scores in each screen.
 
     workdir : str
         Path to the working directory where output files and results will be saved.
@@ -287,10 +282,36 @@ def znorm_meta(
     df_meta_Z[f'{header_main}r_neg'] = df_bidir_meta[f'{header_main}r_neg']
     df_meta_Z[f'{header_main}r_pos'] = df_bidir_meta[f'{header_main}r_pos']
 
+    neg_mean, neg_std, pos_mean, pos_std = float(), float(), float(), float()
+
+    if score_type == 'LFC':
+        neg_stats_list, pos_stats_list = mu_sigma_screens(workdir,screen_names)            
+        
+        neg_mean_list = [x['mean'] for x in neg_stats_list]
+        neg_std_list = [x['std'] for x in neg_stats_list]
+        neg_count_list = [x['count'] for x in neg_stats_list]
+        
+        pos_mean_list = [x['mean'] for x in pos_stats_list]
+        pos_std_list = [x['std'] for x in pos_stats_list]
+        pos_count_list = [x['count'] for x in pos_stats_list]        
+        
+        neg_mean, neg_std = pooled_mean_std(neg_mean_list,neg_std_list,neg_count_list)
+        pos_mean, pos_std = pooled_mean_std(pos_mean_list,pos_std_list,pos_count_list)
+
+    else:        
+        _temp_neg_pd = df_meta_Z[df_meta_Z[f'{header_main}r_neg'].notna()]
+        _temp_pos_pd = df_meta_Z[df_meta_Z[f'{header_main}r_pos'].notna()]        
+        avgr_neg_list = _temp_neg_pd[f'{header_main}r_neg'].to_list()
+        avgr_pos_list = _temp_pos_pd[f'{header_main}r_pos'].to_list()
+        neg_mean = np.mean(avgr_neg_list)
+        neg_std = np.std(avgr_neg_list)
+        pos_mean = np.mean(avgr_pos_list)
+        pos_std = np.std(avgr_pos_list)
+        
     # SETUP PARAMS FOR CALCULATING Z SCORE #
     colnames = [f'{header_main}_neg', f'{header_main}_pos']
-    params = [{'mu': neg_stats['mean'], 's': neg_stats['std']}, 
-              {'mu': pos_stats['mean'], 's': pos_stats['std']}, ]
+    params = [{'mu': neg_mean, 's': neg_std}, 
+              {'mu': pos_mean, 's': pos_std}, ]
 
     result_data = {f'{header_main}_{sign}_{pthr_str}_{suffix}': [] 
                    for sign in ['neg', 'pos'] 
