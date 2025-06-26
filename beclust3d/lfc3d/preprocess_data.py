@@ -88,9 +88,10 @@ def parse_be_data(
         assert val_col in df.columns, 'Check [val_col] input'
         assert gene_col in df.columns, 'Check [gene_col] input'
         assert edits_col in df.columns, 'Check [edits_col] input'
-    for df in conserv_dfs: 
-        if df is not None: 
-            assert conserv_col in df.columns, 'Check [conserv_col] input'
+    # for df in conserv_dfs: 
+    #     if df is not None: 
+    #         assert conserv_col in df.columns, 'Check [conserv_col] input'
+    #         assert conserv_score_col in df.columns, 'Check [conserv_col] input'
 
     assert len(input_dfs) == len(screen_names) == len(conserv_dfs), 'Lengths of [input_dfs] and [screen_names] and [conservation_dfs] must match'
 
