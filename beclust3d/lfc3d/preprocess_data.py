@@ -20,7 +20,9 @@ def parse_be_data(
     edits_col='Amino Acid Edits', 
     mut_categories = ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"], 
     mut_delimiter = ',', 
-    conserv_dfs=[], conserv_col='mouse_res_pos', ### conserv_col
+    conserv_dfs=[], conserv_col='mouse_res_pos',
+    conserv_score_col='v_score', ### conserv_col
+    gene_list = False
 ): 
     """
     Parse raw base editing screen data and create separate DataFrames for each mutation type per screen.
@@ -97,12 +99,11 @@ def parse_be_data(
 
     mut_dfs = {}
     # OUTPUT TSV BY INDIVIDUAL SCREENS #
-    for screen_df, screen_name, conserv_df in zip(input_dfs, screen_names, conserv_dfs): 
+    for input_gene, screen_df, screen_name, conserv_df in zip(gene_list, input_dfs, screen_names, conserv_dfs): 
         print('Processing', screen_name)
         # IF WE LOOK AT CONSERVATION #
         if conserv_df is not None: 
-            conserv_list = [str(x) for x in conserv_df[conserv_col].tolist()]
-
+            conserv_list = [str(x) for x in conserv_df[conserv_df[conserv_score_col]==3][conserv_col].tolist()]
         # NARROW DOWN TO INPUT_GENE #
         df_gene = screen_df.loc[screen_df[gene_col] == input_gene, ]
         mut_dfs[screen_name] = {}
