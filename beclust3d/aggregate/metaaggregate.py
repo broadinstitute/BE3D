@@ -18,7 +18,8 @@ def average_split_meta(
     df_LFC_LFC3D, 
     workdir, input_gene, screen_names, 
     score_type='LFC3D', 
-    nRandom=1000, aggr_func=np.sum, aggr_func_name='SUM', 
+    nRandom=500,
+    aggr_func_name='SUM', 
 ): 
     """
     Aggregates screens into a meta score using the provided function. Then,
@@ -41,11 +42,8 @@ def average_split_meta(
     score_type : str, optional (default='LFC3D')
         Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
 
-    nRandom : int, optional (default=1000)
+    nRandom : int, optional (default=500)
         Number of randomizations per screen for calculating randomized LFC and LFC3D scores.
-
-    aggr_func : callable, optional
-        Aggregation functions to apply to scores for all edits per residue (e.g., sum, mean, min, max).
 
     aggr_func_name : str, optional
         Name corresponding to 'aggr_func'. 
@@ -69,6 +67,15 @@ def average_split_meta(
     # INITALIZE DF #
     df_bidir_meta = df_LFC_LFC3D[['unipos', 'unires', 'chain']].copy()
 
+   # MAP AGGREGATION FUNCTION #
+    func_map = {'MEAN':np.mean,
+                'MIN':np.min,
+                'MAX':np.max,
+                'MEDIAN':np.median,
+                'SUM':np.sum
+                }
+    aggr_func = func_map[aggr_func_name.upper()]
+    
     # AGGR LFC3D VALUES ACROSS SCREENS FOR EACH RESIDUE #
     # EXCLUSIVE TO META-AGGREGATE, NOT IN NON-AGGREGATE #
     # SETUP PARAMS #
@@ -116,23 +123,23 @@ def average_split_meta(
             new_col_pos_list.append(new_col_pos.rename(f"{colname}_pos"))
         df_temp = pd.concat(new_col_neg_list + new_col_pos_list, axis=1)
         
-        # SUM ACROSS ALL SCREENS FOR EACH RANDOMIZATION #
+        # AGGREGATE ACROSS ALL SCREENS FOR EACH RANDOMIZATION #
         headers_neg = [f"{sn}_{score_type}r{str(n+1)}_neg" for sn in screen_names]
         headers_pos = [f"{sn}_{score_type}r{str(n+1)}_pos" for sn in screen_names]
-        aggr_col_neg = df_temp[headers_neg].replace('-', np.nan).sum(axis=1)
-        aggr_col_pos = df_temp[headers_pos].replace('-', np.nan).sum(axis=1)
-        aggr_col_neg = aggr_col_neg.rename(f"SUM_{score_type}r{str(n+1)}_neg").replace(0.0, '-')
-        aggr_col_pos = aggr_col_pos.rename(f"SUM_{score_type}r{str(n+1)}_pos").replace(0.0, '-')
+        aggr_col_neg = df_temp[headers_neg].replace('-', np.nan).apply(aggr_func,axis=1)
+        aggr_col_pos = df_temp[headers_pos].replace('-', np.nan).apply(aggr_func,axis=1)
+        aggr_col_neg = aggr_col_neg.rename(f"{aggr_func_name}_{score_type}r{str(n+1)}_neg").replace(0.0, '-')
+        aggr_col_pos = aggr_col_pos.rename(f"{aggr_func_name}_{score_type}r{str(n+1)}_pos").replace(0.0, '-')
         df_bidir_meta = pd.concat([df_bidir_meta, aggr_col_neg, aggr_col_pos], axis=1)
         del df_temp, new_col_neg_list, new_col_pos_list, aggr_col_neg, aggr_col_pos
 
     # AVG ACROSS ALL RANDOMIZATIONS #
-    headers_neg = [f"SUM_{score_type}r{str(n+1)}_neg" for n in range(nRandom)]
-    headers_pos = [f"SUM_{score_type}r{str(n+1)}_pos" for n in range(nRandom)]
-    new_col_neg = df_bidir_meta[headers_neg].replace({'-': np.nan, 0.0: np.nan}).mean(axis=1)
-    new_col_pos = df_bidir_meta[headers_pos].replace({'-': np.nan, 0.0: np.nan}).mean(axis=1)
-    new_col_neg = new_col_neg.rename(f"SUM_{score_type}r_neg").replace(0.0, '-')
-    new_col_pos = new_col_pos.rename(f"SUM_{score_type}r_pos").replace(0.0, '-')
+    headers_neg = [f"{aggr_func_name}_{score_type}r{str(n+1)}_neg" for n in range(nRandom)]
+    headers_pos = [f"{aggr_func_name}_{score_type}r{str(n+1)}_pos" for n in range(nRandom)]
+    new_col_neg = df_bidir_meta[headers_neg].replace({'-': np.nan, 0.0: np.nan}).apply(np.mean,axis=1)
+    new_col_pos = df_bidir_meta[headers_pos].replace({'-': np.nan, 0.0: np.nan}).apply(np.mean,axis=1)
+    new_col_neg = new_col_neg.rename(f"{aggr_func_name}_{score_type}r_neg").replace(0.0, '-')
+    new_col_pos = new_col_pos.rename(f"{aggr_func_name}_{score_type}r_pos").replace(0.0, '-')
     df_bidir_meta = pd.concat([df_bidir_meta, new_col_neg, new_col_pos], axis=1)
     
     # SAVE #
@@ -186,7 +193,7 @@ def bin_meta(
 
     # SETUP PARAMS #
     header_main = f'{aggr_func_name}_{score_type}'
-    random_neg, random_pos = f'SUM_{score_type}r_neg', f'SUM_{score_type}r_pos'
+    random_neg, random_pos = f'{aggr_func_name}_{score_type}r_neg', f'{aggr_func_name}_{score_type}r_pos'
     headers = [header_main, f'{header_main}_neg', f'{header_main}_pos', random_neg, random_pos]
     quantiles = {'NEG_10p_v':0.1, 'POS_90p_v':0.9, 'NEG_05p_v':0.05, 'POS_95p_v':0.95}
 
