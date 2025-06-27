@@ -114,8 +114,8 @@ def average_split_bin_plots(
         working_filedir / f"{aggregate_dir}/plots/{histplot_filename}", save_type)
 
     # SCATTERPLOT #
-    scatterplot_params = [(f'{neg_label}_dis', f'{neg_label}_{pthr_str}_psig', neg_label, 'Negative'), 
-                          (f'{pos_label}_dis', f'{pos_label}_{pthr_str}_psig', pos_label, 'Positive')]
+    scatterplot_params = [(f'{neg_label}', f'{neg_label}_{pthr_str}_psig', neg_label, 'Negative'), 
+                          (f'{pos_label}', f'{pos_label}_{pthr_str}_psig', pos_label, 'Positive')]
     
     scatterplot_filename = f"{output_prefix}_scatter_cutoff.{save_type}"
     scatterplot_filename = scatterplot_filename.replace('__','_')
