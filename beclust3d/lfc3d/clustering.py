@@ -59,7 +59,7 @@ def clustering(
         Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
 
     max_distances : int, optional (default=25)
-        Maximum radius (in Angstroms) to consider for clustering. Clustering is repeated at every integer from 1 to `max_distances`.
+        Maximum radius (in Angstroms) to consider for clustering. Clustering is repeated at every integer from 4 to `max_distances`.
 
     merge_cols : list of str, optional (default=['unipos', 'chain'])
         Columns used to merge clustering results back into the main DataFrame.
@@ -106,7 +106,7 @@ def clustering(
     df_hits_clust = pd.concat([df_struc[structure_columns], df_pvals[psig_columns]], axis=1)
 
     # CLUSTERING #
-    distances = [int(i+1) for i in range(max_distances)] # CLUSTERING DISTANCE HYPERPARAM
+    distances = [int(i+1) for i in range(3,max_distances)] # CLUSTERING DISTANCE HYPERPARAM
     yvalue_lists = [[] for _ in psig_columns]
     
     for column, pthr, y_arr in zip(psig_columns, pthr_cutoffs, yvalue_lists): 
