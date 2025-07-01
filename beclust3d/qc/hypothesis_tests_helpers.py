@@ -78,20 +78,23 @@ def hypothesis_two(
     col_names.extend(['num_of_cases','num_of_controls'])
     
     df_output = pd.DataFrame(columns=col_names)
-    df_control = pd.DataFrame()
+    df_controls = list()
 
     # GLOBAL SILENT AND NO MUTATION #
     # PER SCREEN PER GENE #
     for df_input, screen_name in zip(df_inputs, screen_names): 
+        df_control = pd.DataFrame()
         for current_gene in unique_genes:
             df_edits = df_input[df_input[gene_col] == current_gene]
 
             # PARSE DF FOR EACH MUT TYPE, CONCAT TO PREVIOUS GENE #
             for control in controls: 
                 df_control = pd.concat([df_control, df_edits.loc[df_edits[mut_col]==control].reset_index(drop=True)])
-
+                
+        df_controls.append(df_control)
+        
     # PER SCREEN PER GENE #
-    for df_input, screen_name in zip(df_inputs, screen_names): 
+    for df_input, screen_name, df_control in zip(df_inputs, screen_names, df_controls): 
         for current_gene in unique_genes: 
             df_edits = df_input[df_input[gene_col] == current_gene]
             new_row = [screen_name, current_gene]
