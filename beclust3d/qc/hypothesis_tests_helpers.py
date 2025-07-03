@@ -104,9 +104,8 @@ def hypothesis_two(
             for case in cases: 
                 df_case = pd.concat([df_case, df_edits.loc[df_edits[mut_col]==case].reset_index(drop=True)])
 
-            df_control_in = df_control[df_control[gene_col]==current_gene]
             df_case_in = df_case[df_case[gene_col]==current_gene]
-            new_row.extend(add_to_row(df_control_in, df_case_in, val_col, testtype))
+            new_row.extend(add_to_row(df_control, df_case_in, val_col, testtype))
             new_row.extend([len(df_case),len(df_control)])
             
             # ADD NEW ROW #
