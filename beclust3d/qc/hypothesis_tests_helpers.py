@@ -46,7 +46,7 @@ def hypothesis_one(
             df_control = pd.DataFrame()
             for control in controls: 
                 df_control = pd.concat([df_control, df_edits.loc[df_edits[mut_col]==control].reset_index(drop=True)])
-            new_row.extend(add_to_row(df_case, df_control, val_col, testtype))
+            new_row.extend(add_to_row(df_control, df_case, val_col, testtype))
             new_row.extend([len(df_case),len(df_control)])
 
             # ADD NEW ROW #
