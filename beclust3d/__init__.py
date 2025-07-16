@@ -22,6 +22,8 @@ from .lfc3d.clustering_plot import plot_clustering
 from .lfc3d.characterization import enrichment_test
 from .lfc3d.characterization_plot import plot_enrichment_test, lfc_lfc3d_scatter, pLDDT_RSA_scatter, hits_feature_barplot
 
+from .helpers.visualization.g2p import g2p_formatted_hit_cluster
+
 __all__ = [
     "hypothesis_test", 
 
@@ -48,5 +50,7 @@ __all__ = [
     "plot_enrichment_test", 
     "lfc_lfc3d_scatter", 
     "pLDDT_RSA_scatter", 
-    "hits_feature_barplot", 
+    "hits_feature_barplot",
+    
+    "g2p_formatted_hit_cluster"
 ]
