@@ -52,8 +52,8 @@ def g2p_formatted_hit_cluster(results_dir,
     result_neg_pd = pd.DataFrame()
     
     for screen_name in screen_names:        
-        lfc_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_lfc',f'{gene_name}_{screen_name}_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
-        lfc3d_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_lfc3d',f'{gene_name}_{screen_name}_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
+        lfc_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_LFC',f'{gene_name}_{screen_name}_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
+        lfc3d_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_LFC3d',f'{gene_name}_{screen_name}_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
         union_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_union',f'{gene_name}_{screen_name}_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
         lfc_scores_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'LFC',f'{gene_name}_NonAggr_LFC.tsv'))[0],sep='\t').set_index('unipos')
         lfc3d_scores_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'LFC3D',f'{gene_name}_NonAggr_LFC3D.tsv'))[0],sep='\t').set_index('unipos')
@@ -121,8 +121,8 @@ def g2p_formatted_hit_cluster(results_dir,
                 
     if meta:
         screen_name = 'SUM'
-        lfc_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_lfc',f'{gene_name}_Meta_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
-        lfc3d_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_lfc3d',f'{gene_name}_Meta_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
+        lfc_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_LFC',f'{gene_name}_Meta_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
+        lfc3d_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_LFC3d',f'{gene_name}_Meta_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
         union_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_union',f'{gene_name}_Meta_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
        
         for direction in ['pos','neg']:
