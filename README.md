@@ -140,10 +140,11 @@ Another option to skip MUSCLE and CLUSTAL is for users to run alignment on their
 ## Sample Notebooks
 
 Sample Single Screen Notebook (DNMT3A): 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1HOx6wOEMWNmF_MVBrG3CR3dSfXZrqML3?usp=sharing)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5-SingleScreen-Notebook.ipynb)
 
 Sample Multi Screen Notebook with Meta-Aggregation (MEN1): 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1YRxJk5UxCOGwLv9kTdgXjqryAosJmpMV?usp=sharing)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5-MultipleScreens-Notebook.ipynb)
+
 
 Sample Multi Screen Notebook with Meta-Aggregation and Conservation:  
 
