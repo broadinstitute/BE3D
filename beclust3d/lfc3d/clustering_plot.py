@@ -31,7 +31,7 @@ def plot_clustering(
 
     horizontal=False, 
     line_subplots_kwargs={'figsize':(10,7)}, 
-    dendogram_subplots_kwargs={'figsize':(15, 12)}, 
+    dendrogram_subplots_kwargs={'figsize':(15, 12)}, 
     save_type='png', 
 ): 
     """
@@ -150,12 +150,12 @@ def plot_clustering(
         func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=dist)
         clustering = func_clustering.fit(np_hits_coord)
 
-        dend_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{name}_Dendogram_{str(int(dist))}A.{save_type}"
+        dend_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{name}_Dendrogram_{str(int(dist))}A.{save_type}"
         title = f'{input_gene} {score_type} {name} Clusters'
         plot_dendrogram(clustering, df_pvals_temp, 
                         dist, horizontal, pos_col, chain_col, 
                         title, dend_filename, 
-                        dendogram_subplots_kwargs, save_type)
+                        dendrogram_subplots_kwargs, save_type)
 
         # CLUSTERS RESIDUES AND LENGTH OF EACH CLUSTER #
         df_pvals_clust_i = df_pvals_clust.loc[(df_pvals_clust[colname] == pthr), ].reset_index(drop=True)
