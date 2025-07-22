@@ -14,18 +14,27 @@ import glob, os
 
 # HELPER FUNCTIONS #
 
-def sum_dash(values): 
+def sum_dash(
+    values
+): 
     new_values = [x for x in values if x != '-']
     if len(new_values) == 0: return '-'
     else: return sum(new_values)
 
-def filter_dash(x, mode): 
+def filter_dash(
+    x, 
+    mode
+): 
     if mode == 'neg': 
         return float(x) if x != '-' and float(x) < 0 else np.nan
     if mode == 'pos': 
         return float(x) if x != '-' and float(x) > 0 else np.nan
 
-def calculate_stats(signal, param, pthr):
+def calculate_stats(
+    signal, 
+    param, 
+    pthr
+):
     """
     Helper function to calculate stats: z, p, plabel
     """
@@ -39,8 +48,11 @@ def calculate_stats(signal, param, pthr):
     return signal_z, signal_p, signal_plabel
 
 def binning_neg_pos(
-        df_LFC_LFC3D, df_neg_stats, df_pos_stats, 
-        quantile_vals, LFC3D_header
+    df_LFC_LFC3D, 
+    df_neg_stats, 
+    df_pos_stats, 
+    quantile_vals, 
+    LFC3D_header
 ): 
     NEG_10p_v, POS_90p_v, NEG_05p_v, POS_95p_v = quantile_vals
     # BIN AND WEIGHT #
@@ -74,7 +86,9 @@ def binning_neg_pos(
     return arr_LFC3D_disc, arr_LFC3D_weight
 
 def binning_lfc3d(
-        df_meta, neg, pos
+    df_meta, 
+    neg, 
+    pos
 ): 
     """
     Description
@@ -105,7 +119,11 @@ def binning_lfc3d(
 
     return df_meta
 
-def pooled_mean_std(means, stds, ns):
+def pooled_mean_std(
+    means, 
+    stds, 
+    ns
+):
     """
     Description
         Compute pooled mean and standard deviation.
@@ -134,7 +152,8 @@ def pooled_mean_std(means, stds, ns):
     return pooled_mean, pooled_std
 
 def mu_sigma_screens(
-    workdir, screen_names,
+    workdir, 
+    screen_names,
 ):        
     neg_stats_list = list()
     pos_stats_list = list()
