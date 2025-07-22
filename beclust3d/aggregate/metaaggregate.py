@@ -161,7 +161,7 @@ def bin_meta(
 
     Parameters
     ----------
-    df_bidir : pd.DataFrame
+    df_bidir_meta : pd.DataFrame
         DataFrame containing split positive/negative scores and randomized averages for each screen.
 
     workdir : str
@@ -245,9 +245,8 @@ def znorm_meta(
 
     Parameters
     ----------
-    df_dis : pd.DataFrame
+    df_bidir_meta : pd.DataFrame
         DataFrame containing percentile bins and weighted scores for each residue and screen.
-
 
     workdir : str
         Path to the working directory where output files and results will be saved.
@@ -255,6 +254,9 @@ def znorm_meta(
     input_gene : str
         Name of the gene being processed. 
 
+    screen_names : list of str
+        Names of the different screens corresponding to each DataFrame in df_edits_list and df_rand_list.
+        
     score_type : str, optional (default='LFC3D')
         Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
 
@@ -299,7 +301,7 @@ def znorm_meta(
     neg_mean, neg_std, pos_mean, pos_std = float(), float(), float(), float()
 
     if score_type == 'LFC':
-        neg_stats_list, pos_stats_list = mu_sigma_screens(workdir,screen_names)            
+        neg_stats_list, pos_stats_list = mu_sigma_screens(workdir, screen_names)            
         
         neg_mean_list = [x['mean'] for x in neg_stats_list]
         neg_std_list = [x['std'] for x in neg_stats_list]
@@ -309,8 +311,8 @@ def znorm_meta(
         pos_std_list = [x['std'] for x in pos_stats_list]
         pos_count_list = [x['count'] for x in pos_stats_list]        
         
-        neg_mean, neg_std = pooled_mean_std(neg_mean_list,neg_std_list,neg_count_list)
-        pos_mean, pos_std = pooled_mean_std(pos_mean_list,pos_std_list,pos_count_list)
+        neg_mean, neg_std = pooled_mean_std(neg_mean_list, neg_std_list, neg_count_list)
+        pos_mean, pos_std = pooled_mean_std(pos_mean_list, pos_std_list, pos_count_list)
 
     else:        
         _temp_neg_pd = df_meta_Z[df_meta_Z[f'{header_main}r_neg'].notna()]
