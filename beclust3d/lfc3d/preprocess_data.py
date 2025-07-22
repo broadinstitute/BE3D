@@ -13,16 +13,19 @@ from .preprocess_data_helpers import *
 
 def parse_be_data(
     workdir, 
-    input_dfs, input_gene, screen_names, 
+    input_dfs, 
+    input_gene, 
+    screen_names, 
     mut_col='Mutation category', 
     val_col='logFC', 
     gene_col='Target Gene Symbol', 
     edits_col='Amino Acid Edits', 
-    mut_categories = ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"], 
-    mut_delimiter = ',', 
-    conserv_dfs=[], conserv_col='mouse_res_pos',
+    mut_categories=["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"], 
+    mut_delimiter=',', 
+    conserv_dfs=[], 
+    conserv_col='mouse_res_pos',
     conserv_score_col='v_score', ### conserv_col
-    gene_list = False
+    gene_list=False, 
 ): 
     """
     Parse raw base editing screen data and create separate DataFrames for each mutation type per screen.
@@ -65,6 +68,10 @@ def parse_be_data(
 
     conserv_col : str, optional (default='mouse_res_pos')
         Column name in the conservation DataFrames containing residue positions considered conserved.
+
+    conserv_score_col : 
+
+    gene_list : 
 
     Returns
     -------
