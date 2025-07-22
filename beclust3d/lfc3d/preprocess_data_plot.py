@@ -1,9 +1,8 @@
 """
-File: preprocess_be_results.py
-Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+File: preprocess_data_plot.py
+Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
 Description: Translated from Notebook 3.1
-
 """
 
 import os
@@ -19,9 +18,12 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 def plot_rawdata(
     workdir, 
-    input_dfs, screen_names, 
-    mut_col='Mutation category', val_col='logFC', gene_col='Target Gene Symbol', 
-    mut_categories = ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"], 
+    input_dfs, 
+    screen_names, 
+    mut_col='Mutation category', 
+    val_col='logFC', 
+    gene_col='Target Gene Symbol', 
+    mut_categories=["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"], 
     save_type='png', 
 ): 
     """
@@ -47,6 +49,10 @@ def plot_rawdata(
     gene_col : str, optional (default='Target Gene Symbol')
         Column name specifying the target gene name in input_dfs.
 
+    mut_categories : list of str, optional
+        List of mutation categories to extract separately. 
+        Default includes ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"].
+        
     save_type : str, optional (default='png')
         Format for saving output plots (e.g., 'png', 'pdf').
         
@@ -74,20 +80,24 @@ def plot_rawdata(
 
     # INDIVIDUAL BARPLOTS AND VIOLIN PLOTS FOR EACH SCREEN #
     for df, screen_name in zip(input_dfs, screen_names): 
-        counts_by_gene(df=df, working_filedir=working_filedir, 
-                        gene_col=gene_col, mut_col=mut_col, title=screen_name, 
-                        mut_categories=mut_categories, save_type=save_type)
-        violin_by_gene(df=df, working_filedir=working_filedir, 
-                        gene_col=gene_col, mut_col=mut_col, val_col=val_col, title=screen_name, 
-                        mut_categories=mut_categories, save_type=save_type)
+        counts_by_gene(
+            df=df, working_filedir=working_filedir, 
+            gene_col=gene_col, mut_col=mut_col, title=screen_name, 
+            mut_categories=mut_categories, save_type=save_type)
+        violin_by_gene(
+            df=df, working_filedir=working_filedir, 
+            gene_col=gene_col, mut_col=mut_col, val_col=val_col, title=screen_name, 
+            mut_categories=mut_categories, save_type=save_type)
 
     return None
 
 def counts_by_gene(
     df, 
     working_filedir, 
-    gene_col, mut_col, 
-    title, mut_categories, 
+    gene_col, 
+    mut_col, 
+    title, 
+    mut_categories, 
     save_type, 
 ): 
     """
@@ -130,7 +140,9 @@ def counts_by_gene(
 def violin_by_gene(
     df, 
     working_filedir, 
-    gene_col, mut_col, val_col, 
+    gene_col, 
+    mut_col, 
+    val_col, 
     title, 
     mut_categories, 
     save_type, 
