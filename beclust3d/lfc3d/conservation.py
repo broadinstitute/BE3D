@@ -3,7 +3,6 @@ File: conservation.py
 Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-25
 Description: Translated from Notebook 2
-
 """
 
 import pandas as pd
@@ -24,11 +23,16 @@ cons_dict = {
 }
 
 def conservation(
-        workdir, 
-        input_gene, alt_input_gene, 
-        input_uniprot, alt_input_uniprot, 
-        alignment_filename=None, mode='run', 
-        title=None, email=None, wait_time=30, 
+    workdir, 
+    input_gene, 
+    alt_input_gene, 
+    input_uniprot, 
+    alt_input_uniprot, 
+    alignment_filename=None, 
+    mode='run', 
+    title=None, 
+    email=None, 
+    wait_time=30, 
 ): 
     """
     Generate dataframes of sequence conservation for each residue. 
@@ -117,7 +121,8 @@ def conservation(
     return df_alignconserv, df_residuemap
 
 def query_protein_fasta(
-    edits_filedir, request_filename
+    edits_filedir, 
+    request_filename, 
 ): 
     """
     Description
@@ -140,8 +145,11 @@ def query_protein_fasta(
 
 def query_muscle(
     edits_filedir, 
-    seqs_filename, align_filename, 
-    email, title, wait_time, 
+    seqs_filename, 
+    align_filename, 
+    email, 
+    title, 
+    wait_time, 
 ): 
     """
     Description
@@ -170,7 +178,9 @@ def query_muscle(
 
 def run_muscle(
     edits_filedir, 
-    seqs_filename, afa_filename, align_filename, 
+    seqs_filename, 
+    afa_filename, 
+    align_filename, 
 ): 
     """
     Description
@@ -193,18 +203,6 @@ def run_muscle(
         "-o", edits_filedir / align_filename,
         "--force"
     ], check=True)
-
-    # # "chmod +x src/helpers/align/muscle-osx-arm64.v5.3"
-    # muscle_exe = "src/helpers/align/muscle-osx-arm64.v5.3"
-    # in_file = str(edits_filedir / seqs_filename)
-    # inter_file = str(edits_filedir / afa_filename)
-    # out_file = str(edits_filedir / align_filename)
-
-    # subprocess.run([
-    #     muscle_exe,
-    #     "-align", in_file,
-    #     "-output", inter_file
-    # ], check=True)
     
 def parse_alignment(
     edits_filedir, 
