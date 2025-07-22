@@ -18,9 +18,15 @@ from scipy.stats import mannwhitneyu
 from .aggregate_helpers import *
 
 def average_split_bin_plots(
-    df_z, workdir, input_gene, pthr=0.05, 
-    screen_name='', func='SUM', score_type='LFC3D', 
-    aggregate_dir='meta-aggregate', save_type='png', 
+    df_z, 
+    workdir, 
+    input_gene, 
+    pthr=0.05, 
+    screen_name='', 
+    func='SUM', 
+    score_type='LFC3D', 
+    aggregate_dir='meta-aggregate', 
+    save_type='png', 
 ): 
     """
     Generates histograms, histplots, and scatterplots for positive and negative scores 
@@ -135,7 +141,10 @@ def average_split_bin_plots(
 
 
 def metaaggregation_histogram(
-    df_input, params, out_filename, save_type, 
+    df_input, 
+    params, 
+    out_filename, 
+    save_type, 
 ): 
     """
     Description
@@ -199,7 +208,10 @@ def metaaggregation_histogram(
     return results_list
 
 def metaaggregation_hisplot(
-    df_input, params, out_name, save_type, 
+    df_input, 
+    params, 
+    out_name, 
+    save_type, 
 ): 
     """
     Description
@@ -227,8 +239,13 @@ def metaaggregation_hisplot(
     return None
 
 def metaaggregation_scatterplot(
-    df_meta, params, input_gene, pthr, 
-    outname, save_type, colors, 
+    df_meta, 
+    params, 
+    input_gene, 
+    pthr, 
+    outname, 
+    save_type, 
+    colors, 
 ): 
     """
     Description
