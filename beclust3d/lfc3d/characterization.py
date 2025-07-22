@@ -1,6 +1,6 @@
 """
 File: characterization.py
-Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2025-02-23
 Description: 
 """
@@ -18,11 +18,16 @@ from scipy.stats import fisher_exact
 from pathlib import Path
 
 def enrichment_test(
-        df, 
-        workdir, input_gene, 
-        hit_columns, hit_threshold, # HITS DESCRIBED BY P-VALUE
-        feature_column, feature_values, # FEATURES SUCH AS DOMAINS, pLDDT
-        confidence_level=0.95, 
+    df, 
+    workdir, 
+    input_gene, 
+    # HITS DESCRIBED BY P-VALUE #
+    hit_columns, 
+    hit_threshold, 
+    # FEATURES SUCH AS DOMAINS, pLDDT #
+    feature_column, 
+    feature_values, 
+    confidence_level=0.95, 
 ): 
     """
     Description
@@ -55,9 +60,6 @@ def enrichment_test(
     confidence_level : float, optional (default=0.95)
         Confidence level for calculating confidence intervals on the odds ratios.
         
-    save_type : str, optional (default='png')
-        Format for saving output plots (e.g., 'png', 'pdf').
-
     Returns
     -------
     results : list of dict
@@ -90,10 +92,12 @@ def enrichment_test(
 
     for hit_col in hit_columns: 
         try: 
-            test1, odds1, ci1 = category_test(data=df, 
-                                              hit_col=hit_col, hit_threshold=hit_threshold, 
-                                              feature_col=feature_column, feature_values=feature_values, 
-                                              confidence_level=confidence_level)
+            test1, odds1, ci1 = category_test(
+                data=df, 
+                hit_col=hit_col, hit_threshold=hit_threshold, 
+                feature_col=feature_column, feature_values=feature_values, 
+                confidence_level=confidence_level
+            )
             results.append({
                 'score_type': hit_col, 
                 'odds_ratio': test1[0], 'ci': ci1, 'p_value': test1[1]
@@ -109,9 +113,14 @@ def enrichment_test(
         pickle.dump(results, f)
     return results
 
-def category_test(data, hit_col, hit_threshold, 
-                  feature_col, feature_values, 
-                  confidence_level):
+def category_test(
+    data, 
+    hit_col, 
+    hit_threshold, 
+    feature_col, 
+    feature_values, 
+    confidence_level
+):
     
     # SEPARATE DATA INTO ABOVE AND BELOW A THRESHOLD #
     below = data[data[hit_col].astype(float) < hit_threshold]

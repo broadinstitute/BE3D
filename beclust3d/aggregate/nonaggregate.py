@@ -1,6 +1,6 @@
 """
 File: nonaggregate.py
-Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
 Description: 
 """
@@ -15,9 +15,11 @@ warnings.filterwarnings('ignore')
 from .aggregate_helpers import *
 
 def average_split_score(
-        df_LFC_LFC3D, 
-        workdir, input_gene, screen_names, 
-        score_type='LFC3D', 
+    df_LFC_LFC3D, 
+    workdir, 
+    input_gene, 
+    screen_names, 
+    score_type='LFC3D', 
 ): 
     """
     Splits LFC or LFC3D scores into positive and negative components and aggregates randomized scores.
@@ -89,7 +91,9 @@ def average_split_score(
 
 def bin_score(
         df_bidir, 
-        workdir, input_gene, screen_names, 
+        workdir, 
+        input_gene, 
+        screen_names, 
         score_type='LFC3D', 
 ): 
     """
@@ -169,7 +173,10 @@ def bin_score(
     return df_dis, df_neg_stats_list, df_pos_stats_list
 
 def znorm_score(
-        df_bidir, workdir, input_gene, screen_names, 
+        df_bidir, 
+        workdir, 
+        input_gene, 
+        screen_names, 
         score_type='LFC3D',
         pthrs=[0.05, 0.01, 0.001], 
 ): 
@@ -178,7 +185,7 @@ def znorm_score(
 
     Parameters
     ----------
-    df_dis : pd.DataFrame
+    df_bidir : pd.DataFrame
         DataFrame containing percentile bins and weighted scores for each residue and screen.
 
     workdir : str

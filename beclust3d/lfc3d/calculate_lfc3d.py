@@ -1,9 +1,8 @@
 """
 File: calculate_lfc3d.py
-Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
 Description: Translated from Notebook 3.3
-
 """
 
 import pandas as pd
@@ -16,13 +15,19 @@ import warnings
 warnings.filterwarnings('ignore')
 
 def calculate_lfc3d(
-        df_struc, df_edits_list, df_rand_list, 
-        workdir, input_gene, screen_names, 
-        nRandom=1000, muttype='Missense', 
-        function_type_lfc='mean', 
-        function_type_lfc3d='mean',
-        LFC_only=False, conserved_only=False, 
-        # THERE ARE 2 MEAN FUNCTIONS, MEAN FOR CALCULATING LFC3D WHICH IS TUNABLE, AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE #
+    df_struc, 
+    df_edits_list, 
+    df_rand_list, 
+    workdir, 
+    input_gene, 
+    screen_names, 
+    nRandom=1000, 
+    muttype='Missense', 
+    function_type_lfc='mean', 
+    function_type_lfc3d='mean',
+    LFC_only=False, 
+    conserved_only=False, 
+    # THERE ARE 2 MEAN FUNCTIONS, MEAN FOR CALCULATING LFC3D WHICH IS TUNABLE, AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE #
 ): 
     """
     Calculates LFC3D scores using structural data. 
@@ -59,10 +64,6 @@ def calculate_lfc3d(
 
     function_type_lfc3d : str, optional (default='mean')
         String label for the type of aggregation function used to compute LFC3D scores.        
-
-    function_aggr_lfc3d : function, optional (default=np.mean)
-        Aggregation function used to summarize neighboring mutation effects when computing LFC3D scores.
-        Function should take a list or array of values and return a scalar (e.g., np.mean, np.median).
 
     LFC_only : bool, optional (default=False)
         If True, skips the LFC3D computation.
@@ -208,7 +209,11 @@ def calculate_lfc3d(
     return df_struct_3d
 
 def helper(
-    aa, taa_LFC_dict, df_struc_edits_dict, naa_pos_str, conserved_only
+    aa, 
+    taa_LFC_dict, 
+    df_struc_edits_dict, 
+    naa_pos_str, 
+    conserved_only, 
 ): 
     # naa IS NEIGHBORING AMINO ACIDS #
     # taa IS THIS AMINO ACID #
