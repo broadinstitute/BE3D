@@ -1,6 +1,6 @@
 """
 File: randomize_sequence.py
-Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-25
 Description: 
 """
@@ -13,12 +13,17 @@ import warnings
 warnings.filterwarnings('ignore')
 
 def randomize_sequence(
-    df_missense, df_rand, 
+    df_missense, 
+    df_rand, 
     workdir, 
-    input_gene, screen_name, 
-    nRandom=1000, conservation=False, 
+    input_gene, 
+    screen_name, 
+    nRandom=1000, 
+    conservation=False, 
     muttype='Missense', 
-    function_name='mean', target_pos='unipos', target_res=None, 
+    function_name='mean', 
+    target_pos='unipos', 
+    target_res=None, 
     # THERE ARE 2 MEAN FUNCTIONS, 
         # MEAN FOR CALCULATING LFC3D WHICH IS TUNABLE, 
         # AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE, SO MEAN IS HARD CODED HERE #
@@ -47,13 +52,13 @@ def randomize_sequence(
     nRandom : int, optional (default=1000)
         Number of randomizations per screen for calculating randomized LFC and LFC3D scores.
 
-    muttype : str, optional (default='Missense')
-        Type of mutation to focus on (e.g., 'Missense', 'Nonsense', etc.).
-
     conservation : bool, optional (default=False)
         If True, aggregates LFC only for residues marked as 'conserved' in the conservation data.
         Non-conserved residues will be skipped (set to NaN or '-').
 
+    muttype : str, optional (default='Missense')
+        Type of mutation to focus on (e.g., 'Missense', 'Nonsense', etc.).
+        
     function_name : str, optional
         Names corresponding to the functio from prioritize_sequence to randomize.
     
@@ -103,8 +108,7 @@ def randomize_sequence(
     missense_columns = ['unipos', 'unires', 'chain', 'conservation', 
                         f'{function_name}_{muttype}_LFC', f'{function_name}_{muttype}_LFC_stdev', 
                         f'{function_name}_{muttype}_LFC_Z', f'{function_name}_{muttype}_LFC_p', 
-                        f'{function_name}_{muttype}_LFC_plab', f'all_{muttype}_edits'
-                        ]
+                        f'{function_name}_{muttype}_LFC_plab', f'all_{muttype}_edits', ]
     if conservation: missense_columns += ['alternate_res_pos', 'alternate_res']
 
     # CONSTRUCT FINAL DF FROM RELEVANT df_missense COLUMNS, AND COLLAPSED df_rand COLUMNS #
