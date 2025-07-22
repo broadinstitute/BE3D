@@ -1,9 +1,7 @@
 """
-File: .py
-Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+File: prioritize_sequence.py
 Date: 2024-06-25
 Description: Translated from Notebook 3.2
-
 """
 
 import os
@@ -18,9 +16,12 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 def prioritize_by_sequence(
     df_dict, 
-    df_struc, df_consrv, df_control, 
+    df_struc, 
+    df_consrv, 
+    df_control, 
     workdir, 
-    input_gene, screen_name, 
+    input_gene, 
+    screen_name, 
     pthr=0.05, 
     functions=[statistics.mean, min, max], 
     function_names=['mean', 'min', 'max'], 
@@ -70,10 +71,10 @@ def prioritize_by_sequence(
     target_res_pos : str, optional (default='human_res_pos')
         Column name specifying the target residue position from df_consrv.
         
-    alternate_res_pos : str, optional (default='mouse_res_pos')
+    alt_res_pos : str, optional (default='mouse_res_pos')
         Column name specifying the alternate residue position from df_consrv.
 
-    alternate_res : str, optional (default='mouse_res')
+    alt_res : str, optional (default='mouse_res')
         Column name specifying the alternate residue information from df_consrv.
 
     Returns
@@ -217,7 +218,10 @@ def prioritize_by_sequence(
     df_protein.to_csv(working_filedir / strcons_edits_filename, sep = '\t', index=False)
     return df_protein
 
-def get_plabel(z_LFC, direction):
+def get_plabel(
+    z_LFC, 
+    direction
+):
     # # TWO TAIl #
     # if direction == 'negative': 
     #     thresholds = [(-3.29, '-p=0.001'), (-2.58, '-p=0.01'), 
