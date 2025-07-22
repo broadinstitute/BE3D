@@ -1,6 +1,6 @@
 """
-File: af_structural_features.py
-Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+File: structure_features.py
+Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
 Description: 
 """
@@ -50,7 +50,8 @@ dssp_dict = {'H':'H', 'G':'H', 'I':'H', 'P':'H',   # alpha-helix, 3-10 helix, pi
 # QUERY UNIPROT AND PARSE IT INTO A TSV FILE #
 
 def query_uniprot(
-        working_filedir, input_uniprot
+    working_filedir, 
+    input_uniprot, 
 ): 
     """
     Description
@@ -68,7 +69,8 @@ def query_uniprot(
     return uFasta_file
 
 def parse_uniprot(
-    uFasta_file, out_fasta
+    uFasta_file, 
+    out_fasta, 
 ): 
     """
     Description
@@ -98,7 +100,9 @@ def parse_uniprot(
 # QUERY PDB FILE AND PARSE IT INTO A TSV FILE #
 
 def query_af(
-    working_filedir, af_filename, structureid
+    working_filedir, 
+    af_filename, 
+    structureid, 
 ): 
     """
     Description
@@ -114,7 +118,8 @@ def query_af(
 
 def parse_af(
     working_filedir, 
-    af_filename, af_processed_filename, 
+    af_filename, 
+    af_processed_filename, 
 ): 
     """
     Description
@@ -137,7 +142,8 @@ def parse_af(
 def parse_coord(
     working_filedir, 
     af_processed_filename, 
-    fastalist_filename, coord_filename, 
+    fastalist_filename, 
+    coord_filename, 
     chains, 
 ): 
     """
@@ -202,7 +208,9 @@ def parse_coord(
 # RUN DSSP AND PARSE IT INTO A TSV FILE #
 
 def run_dssp(
-    working_filedir, af_filename, dssp_filename, 
+    working_filedir, 
+    af_filename, 
+    dssp_filename, 
 ): 
     # os.environ["LIBCIFPP_DATA_DIR"] = "src/helpers/libcifpp_data"
 
@@ -222,9 +230,11 @@ def run_dssp(
                             check=True)
 
 def parse_dssp(
-        working_filedir, 
-        alphafold_dssp_filename, fastalist_filename, 
-        dssp_parsed_filename, chains, 
+    working_filedir, 
+    alphafold_dssp_filename, 
+    fastalist_filename, 
+    dssp_parsed_filename, 
+    chains, 
 ): 
     """
     Description
@@ -291,7 +301,11 @@ def parse_dssp(
 
 # QUERY DOMAINS AND PARSE IT INTO A TSV FILE #
 
-def query_domains(working_filedir, uniprot_id, output_file):
+def query_domains(
+    working_filedir, 
+    uniprot_id, 
+    output_file
+):
     """
     Fetches domain annotations from UniProt given a Uniprot ID and saves as a TSV file
     """
@@ -330,7 +344,12 @@ def query_domains(working_filedir, uniprot_id, output_file):
             writer.writerow([i, residue, domain])
     return
 
-def parse_domains(working_filedir, out_fasta, domains_filename, domains_dict): 
+def parse_domains(
+    working_filedir, 
+    out_fasta, 
+    domains_filename, 
+    domains_dict
+): 
     df_sequence = pd.read_csv(out_fasta, sep='\t')
     df_sequence = df_sequence.rename(columns={'unipos':'Position', 'unires':'Residue'})
 
@@ -338,7 +357,10 @@ def parse_domains(working_filedir, out_fasta, domains_filename, domains_dict):
     df_sequence.to_csv(working_filedir / domains_filename, sep='\t',index=False)
     return None
 
-def get_domain(pos, domains):
+def get_domain(
+    pos, 
+    domains, 
+):
     for name, (start, end) in domains.items():
         if start <= pos <= end:
             return name
@@ -347,13 +369,14 @@ def get_domain(pos, domains):
 # OTHER PREPROCESS #
 
 def count_aa_within_radius(
-        working_filedir, coord_filename, coord_radius_filename, 
-        radius=6.0, 
+    working_filedir, 
+    coord_filename, 
+    coord_radius_filename, 
+    radius=6.0, 
 ): 
     """
     Description
-        Count the number of residues within [radius] Angstroms
-        of the focal residue
+        Count the number of residues within [radius] Angstroms of the focal residue
     """
 
     # COUNT AMINO ACIDS IN 6A DISTANCE AND TEIR IDENTITY #
@@ -425,8 +448,10 @@ def count_aa_within_radius(
     return df_coord
 
 def degree_of_burial(
-        df_dssp, df_coord, 
-        working_filedir, coord_dssp_filename, 
+    df_dssp, 
+    df_coord, 
+    working_filedir, 
+    coord_dssp_filename, 
 ): 
     """
     Description
@@ -487,7 +512,9 @@ def degree_of_burial(
     df_coord_dssp.to_csv(working_filedir / coord_dssp_filename, sep="\t", index=False)
     return df_coord_dssp
 
-def infer_element_symbol(atom_name):
+def infer_element_symbol(
+    atom_name, 
+):
     """
     Infers the chemical element symbol from the atom name.
     """
@@ -503,7 +530,10 @@ def infer_element_symbol(atom_name):
     # Otherwise, it's a one-letter element
     return atom_name[0].upper().rjust(2)
 
-def update_pdb_element_symbols(input_pdb_path, output_pdb_path=None):
+def update_pdb_element_symbols(
+    input_pdb_path, 
+    output_pdb_path=None, 
+):
     if output_pdb_path is None or input_pdb_path == output_pdb_path:
         # In-place edit: use a temp file
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp_outfile:
@@ -535,3 +565,4 @@ def update_pdb_element_symbols(input_pdb_path, output_pdb_path=None):
                     outfile.write(updated_line)
                 else:
                     outfile.write(line)
+                    
