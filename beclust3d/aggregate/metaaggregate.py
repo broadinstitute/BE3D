@@ -16,7 +16,9 @@ from .aggregate_helpers import *
 
 def average_split_meta(
     df_LFC_LFC3D, 
-    workdir, input_gene, screen_names, 
+    workdir, 
+    input_gene, 
+    screen_names, 
     score_type='LFC3D', 
     nRandom=500,
     aggr_func_name='SUM', 
@@ -149,8 +151,10 @@ def average_split_meta(
 
 def bin_meta(
     df_bidir_meta, 
-    workdir, input_gene, 
-    score_type='LFC3D', aggr_func_name='SUM', 
+    workdir, 
+    input_gene, 
+    score_type='LFC3D', 
+    aggr_func_name='SUM', 
 ): 
     """
     Bins positive and negative LFC or LFC3D scores into percentile thresholds.
@@ -229,8 +233,11 @@ def bin_meta(
 
 def znorm_meta(
     df_bidir_meta,
-    workdir, input_gene, screen_names,
-    score_type='LFC3D', pthrs=[0.05, 0.01, 0.001], 
+    workdir, 
+    input_gene, 
+    screen_names,
+    score_type='LFC3D', 
+    pthrs=[0.05, 0.01, 0.001], 
     aggr_func_name='SUM', 
 ): 
     """
