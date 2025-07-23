@@ -80,25 +80,27 @@ BE3D requires the following inputs:
 
 ### Quality Assessment: Hypothesis Test Visualization
 
-BE-QA performs Mann-Whitney and Kolmogorov-Smirnov tests on LFC distributions, comparing knockout and neutral mutations. Results are visualized with statistical annotations.
+BE-QA performs Mann-Whitney and Kolmogorov-Smirnov tests on LFC distributions, comparing knockout and neutral mutations. Knowckout mutations of a single gene in a single screen are compared against neutral mutations of that single gene (hypothesis 1) or neutral mutations of all genes in that screen (hypotehsis 2). Results are visualized with statistical annotations.
 
 ![QA](imgs/QA.png)
 
 ### BE-Clust3D: Visualization of LFC and LFC3D Hits
 
-BE-Clust3D prioritizes residues by aggregating LFC values within a defined spatial range. This enhances signal detection by computing LFC3D scores. Results are visualized and can be clustered.
+BE-Clust3D prioritizes residues by aggregating LFC values within a defined spatial range. This enhances signal detection by computing LFC3D scores. Results are visualized and can be clustered. 
+
+This step also includes the preprocessing of scores organized by sgRNA to scores organized by residues, running sequence alignment to combine screens on different genes, and the calculation of p-values to define statistical thresholds for defining a hit. 
 
 ![LFC/LFC3D](imgs/LFC_and_LFC3D.png)
 
 ### BE-MetaClust3D
 
-Supports aggregation across multiple screens to identify consensus hotspots or hidden signals.
+BE-MetaClust3D aggregates across multiple screens to identify consensus hotspots or enhance weaker signals across multiple screens. 
 
 ![Meta-Aggregation](imgs/Meta-aggregation.png)
 
 ### Visualization on the Genomics 2 Portal
 
-Results are provided in G2P-compatible TSVs, viewable at [Genomics 2 Portal](https://g2p.broadinstitute.org/mapping).
+Results are provided in G2P-compatible TSV file, which can be downloaded and interactively viewable in [Genomics 2 Portal](https://g2p.broadinstitute.org/mapping).
 
 ![G2P](imgs/G2P.png)
 
