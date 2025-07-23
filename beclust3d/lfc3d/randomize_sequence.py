@@ -2,7 +2,7 @@
 File: randomize_sequence.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-25
-Description: 
+Description: Randomizes scores based on structural sequence and conservation information.
 """
 
 import os
