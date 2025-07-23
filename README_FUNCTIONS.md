@@ -4,9 +4,41 @@ This document summarizes the major functions used in the analysis pipeline. Each
 
 ---
 
-# Structure and Conservation
+# BE-QA
 
-## 1. `sequence_structural_features`
+## Quality Assessment Hypothesis Testing
+
+### 1. `hypothesis_test`
+
+**Description:**
+Conducts hypothesis 1 (for one gene) and hypothesis 2 (across multiple genes) statistical tests.
+
+```python
+hypothesis_test(
+    workdir = 'PATH/TO/WORKING/DIRECTORY',
+    input_dfs = [pd.DataFrame()], # LIST OF DFs, ONE FOR EACH SCREEN
+    screen_names = ['screen_name_1'], # LIST OF UNIQUE SCREEN IDENTIFIERS
+    cases = ['Nonsense', 'Splice Site'], # DELETERIOUS TYPES OF MUTATIONS UNDER mut_col
+    controls = ['Silent', 'No Mutation'], # DELETERIOUS TYPES OF MUTATIONS UNDER mut_col
+
+    # Optional
+    comp_name = 'CaseVsControl', # FOR NAMING HYPOTHESIS DF COLUMNS
+    mut_col = 'Mutation category', # MUTATION CATEGORY COLUMN IN input_dfs
+    val_col = 'logFC', # SCORE COLUMN IN input_dfs
+    gene_col = 'Target Gene Symbol', # GENE NAME COLUMN IN input_dfs
+    save_type = 'png', # OUTPUT GRAPH SAVE TYPE (ie 'png', 'pdf', 'svg', etc)
+)
+```
+
+Files are output to ```'[workdir]/hypothesis_qc'```
+
+---
+
+# BE-Clust3D
+
+## Structure and Conservation
+
+### 2. `sequence_structural_features`
 
 **Description:**
 Queries UniProt, AlphaFold, DSSP, and domain features.
@@ -33,7 +65,7 @@ Files are output to ```'[workdir]/sequence_structure'```
 
 ---
 
-## 2. `conservation`
+### 3. `conservation`
 
 **Description:**
 Generates dataframes of sequence conservation by aligning sequences across species or isoforms.
@@ -60,35 +92,9 @@ Files are output to ```'[workdir]/conservation'```
 
 ---
 
-# Raw Data to LFC
+## Raw Data to LFC
 
-## 3. `hypothesis_test`
-
-**Description:**
-Conducts hypothesis 1 (within screen) and hypothesis 2 (across screens) statistical tests.
-
-```python
-hypothesis_test(
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_dfs = [pd.DataFrame()], # LIST OF DFs, ONE FOR EACH SCREEN
-    screen_names = ['screen_name_1'], # LIST OF UNIQUE SCREEN IDENTIFIERS
-    cases = ['Nonsense', 'Splice Site'], # DELETERIOUS TYPES OF MUTATIONS UNDER mut_col
-    controls = ['Silent', 'No Mutation'], # DELETERIOUS TYPES OF MUTATIONS UNDER mut_col
-
-    # Optional
-    comp_name = 'CaseVsControl', # FOR NAMING HYPOTHESIS DF COLUMNS
-    mut_col = 'Mutation category', # MUTATION CATEGORY COLUMN IN input_dfs
-    val_col = 'logFC', # SCORE COLUMN IN input_dfs
-    gene_col = 'Target Gene Symbol', # GENE NAME COLUMN IN input_dfs
-    save_type = 'png', # OUTPUT GRAPH SAVE TYPE (ie 'png', 'pdf', 'svg', etc)
-)
-```
-
-Files are output to ```'[workdir]/hypothesis_qc'```
-
----
-
-## 4. `parse_be_data`
+### 4. `parse_be_data`
 
 **Description:**
 Parses raw base editing screen data into DataFrames for each mutation type.
@@ -109,6 +115,8 @@ parse_be_data(
     mut_delimiter = ',', # DELIMITER IN edits_col
     conserv_dfs = [], # CONSERVATION DFs FROM conservation()
     conserv_col = 'alt_res_pos', # ALTERNATE RES POS ALIGNED WITH MAIN SEQUENCE
+    conserv_score_col='v_score', ###
+    gene_list=False, ###
 )
 ```
 
@@ -116,7 +124,7 @@ Files are output to ```'[workdir]/screendata'```
 
 ---
 
-## 5. `plot_rawdata`
+### 5. `plot_rawdata`
 
 **Description:**
 Parses raw screen data and generates summary plots per mutation category.
@@ -140,7 +148,7 @@ Files are output to ```'[workdir]/screendata/plots'```
 
 ---
 
-## 6. `randomize_data`
+### 6. `randomize_data`
 
 **Description:**
 Randomizes missense mutation scores to create a baseline distribution.
@@ -164,9 +172,9 @@ Files are output to ```'[workdir]/screendata_rand'```
 
 ---
 
-# LFC by Sequence to LFC3D
+## LFC by Sequence to LFC3D
 
-## 7. `prioritize_by_sequence`
+### 7. `prioritize_by_sequence`
 
 **Description:**
 Aggregates mutation effects across edit types, sequence positions, and conservation features.
@@ -187,6 +195,8 @@ prioritize_by_sequence(
     function_names = ['mean', 'min', 'max'], # LIST OF ASSOCIATED FUNCTION NAMES
     target_res_pos = 'original_res_pos', # ORIGINAL RES POS OF THE MAIN SEQUENCE
     target_res = 'original_res', # ORIGINAL RES OF THE MAIN SEQUENCE
+    alt_res_pos='mouse_res_pos', # ALTERNATIVE RES POS OF THE SECONDARY SEQUENCE TO BE ALIGNED TO THE MAIN
+    alt_res='mouse_res', # ALTERNATIVE RES OF THE MAIN SEQUENCE TO BE ALIGNED TO THE MAIN
 )
 ```
 
@@ -194,7 +204,7 @@ Files are output to ```'[workdir]/screendata_sequence'```
 
 ---
 
-## 8. `randomize_sequence`
+### 8. `randomize_sequence`
 
 **Description:**
 Randomizes scores based on structural sequence and conservation information.
@@ -221,7 +231,7 @@ Files are output to ```'[workdir]/screendata_sequence_rand'```
 
 ---
 
-## 9. `calculate_lfc3d`
+### 9. `calculate_lfc3d`
 
 **Description:**
 Calculates LFC3D scores by aggregating local neighborhood mutation effects.
@@ -249,9 +259,9 @@ Files are output to ```'[workdir]/LFC3D'```
 
 ---
 
-# Non Aggregating for Single Screens
+## Non Aggregating for Single Screens
 
-## 10. `average_split_score`
+### 10. `average_split_score`
 
 **Description:**
 Splits LFC/LFC3D scores into positive and negative components and aggregates randomized scores.
@@ -272,7 +282,7 @@ Files are output to ```'[workdir]/[score_type]'```
 
 ---
 
-## 11. `bin_score`
+### 11. `bin_score`
 
 **Description:**
 Bins positive and negative LFC3D scores into percentile thresholds.
@@ -293,7 +303,7 @@ Files are output to ```'[workdir]/[score_type]'```
 
 ---
 
-## 12. `znorm_score`
+### 12. `znorm_score`
 
 **Description:**
 Z-normalizes scores against randomized controls and labels significance.
@@ -301,15 +311,13 @@ Z-normalizes scores against randomized controls and labels significance.
 ```python
 znorm_score(
     df_bidir, # OUTPUT DF FROM average_split_score()
-    neg_stats_list, # OUTPUT NEG STATS DF FROM bin_score()
-    pos_stats_list, # OUTPUT POS STATS DF FROM bin_score()
     workdir = 'PATH/TO/WORKING/DIRECTORY',
     input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
     screen_names = ['screen_name_1'], # LIST OF UNIQUE SCREEN IDENTIFIERS
 
     # Optional
-    pthrs = [0.05, 0.01, 0.001], # LIST OF P-VALUE CUTOFF TO Z-SCORE ON
     score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
+    pthrs = [0.05, 0.01, 0.001], # LIST OF P-VALUE CUTOFF TO Z-SCORE ON
 )
 ```
 
@@ -317,7 +325,7 @@ Files are output to ```'[workdir]/[score_type]'```
 
 ---
 
-## 16. `average_split_bin_plots`
+### 13. `average_split_bin_plots`
 
 **Description:**
 Generates histograms, histplots, and scatterplots for positive and negative scores after binning.
@@ -342,105 +350,9 @@ Files are output to ```'[workdir]/[score_type]/plots'```
 
 ---
 
-# Meta Aggregating for Multiple Screens
+## Clustering
 
-## 13. `average_split_meta`
-
-**Description:**
-Aggregates scores across multiple screens into a meta score before splitting and averaging.
-
-```python
-average_split_meta(
-    df_LFC_LFC3D, # OUTPUT DF FROM calculate_lfc3d()
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-    screen_names = ['screen_name_1'], # LIST OF UNIQUE SCREEN IDENTIFIERS
-
-    # Optional
-    score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
-    nRandom=1000, # NUMBER OF RANDOMIZATIONS
-    aggr_func = np.sum, # FUNCTIONS TO APPLY TO ALL SCORES PER POSITION TO AGGREGATE
-    aggr_func_name = 'SUM', # ASSOCIATED FUNCTION NAME
-)
-```
-
-Files are output to ```'[workdir]/meta-aggregate'```
-
----
-
-## 14. `bin_meta`
-
-**Description:**
-Bins meta-aggregated LFC3D scores into percentile thresholds.
-
-```python
-bin_meta(
-    df_bidir_meta, # OUTPUT DF FROM average_split_meta()
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-
-    # Optional
-    score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
-    aggr_func_name = 'SUM', # ASSOCIATED FUNCTION NAME FROM average_split_meta()
-)
-```
-
-Files are output to ```'[workdir]/meta-aggregate'```
-
----
-
-## 15. `znorm_meta`
-
-**Description:**
-Z-normalizes meta-aggregated scores against randomized controls and labels significance.
-
-```python
-znorm_meta(
-    df_bidir_meta, # OUTPUT DF FROM average_split_meta()
-    neg_stats, # OUTPUT NEG STATS DF FROM bin_meta()
-    pos_stats, # OUTPUT POS STATS DF FROM bin_meta()
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-
-    # Optional
-    score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
-    pthrs = [0.05, 0.01, 0.001], # LIST OF P-VALUE CUTOFF TO Z-SCORE ON
-    aggr_func_name = 'SUM', # ASSOCIATED FUNCTION NAME FROM average_split_meta()
-)
-```
-
-Files are output to ```'[workdir]/meta-aggregate'```
-
----
-
-## 16. `average_split_bin_plots`
-
-**Description:**
-Generates histograms, histplots, and scatterplots for positive and negative scores after binning.
-
-```python
-average_split_bin_plots(
-    df_z, # OUTPUT DF FROM znorm_meta()
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-
-    # Optional
-    pthr=0.05,
-    screen_name = '', # '' IF META-AGGREGATE, OR A UNIQUE SCREEN IDENTIFIER FOR NON-AGGREGATE
-    func = 'SUM', # '' IF NON-AGGREGATE, OR aggr_func_name FROM znorm_meta() IF META-AGGREGATE
-    score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
-    aggregate_dir = 'meta-aggregate', # DIRECTORY TO SAVE TO, SIMILAR TO score_type
-    save_type = 'png', # OUTPUT GRAPH SAVE TYPE (ie 'png', 'pdf', 'svg', etc)
-)
-```
-
-Files are output to ```'[workdir]/meta-aggregate/plots'```
-
----
-
-# Clustering
-
-## 17. `clustering`
+### 14. `clustering`
 
 **Description:**
 Performs spatial clustering of significant residues over a range of distance thresholds.
@@ -471,7 +383,7 @@ Files are output to ```'[workdir]/cluster_[score_type]'```
 
 ---
 
-## 18. `plot_clustering`
+### 15. `plot_clustering`
 
 **Description:**
 Plots clustering results including line plots and dendrograms.
@@ -510,9 +422,9 @@ Files are output to ```'[workdir]/cluster_[score_type]/plots'```
 
 ---
 
-# Characterization
+## Characterization
 
-## 19. `enrichment_test`
+### 16. `enrichment_test`
 
 **Description:**
 Performs enrichment tests (e.g., Fisher's exact test) for structural features.
@@ -536,7 +448,7 @@ Files are output to ```'[workdir]/characterization'```
 
 ---
 
-## 20. `plot_enrichment_test`
+### 17. `plot_enrichment_test`
 
 **Description:**
 Plots enrichment test results as odds ratios with confidence intervals.
@@ -559,7 +471,7 @@ Files are output to ```'[workdir]/characterization/plots''```
 
 ---
 
-## 21. `lfc_lfc3d_scatter`
+### 18. `lfc_lfc3d_scatter`
 
 **Description:**
 Generates LFC vs LFC3D scatter plots colored by hit significance.
@@ -581,7 +493,7 @@ Files are output to ```'[workdir]/characterization/plots''```
 
 ---
 
-## 22. `pLDDT_RSA_scatter`
+### 19. `pLDDT_RSA_scatter`
 
 **Description:**
 Generates scatter plot of RSA vs pLDDT scores, scaled by mutation weight.
@@ -606,7 +518,7 @@ Files are output to ```'[workdir]/characterization/plots''```
 
 ---
 
-## 23. `hits_feature_barplot`
+### 20. `hits_feature_barplot`
 
 **Description:**
 Generates bar plots of hit counts (or fractions) across different structural categories.
@@ -629,6 +541,106 @@ hits_feature_barplot(
 ```
 
 Files are output to ```'[workdir]/characterization/plots'```
+
+---
+
+# BE-MetaClust3D
+
+## Meta-Aggregation for Multiple Screens
+
+Replaces Steps 10-13 under Non Aggregating for Single Screens
+
+### 21. `average_split_meta`
+
+**Description:**
+Aggregates scores across multiple screens into a meta score before splitting and averaging.
+
+```python
+average_split_meta(
+    df_LFC_LFC3D, # OUTPUT DF FROM calculate_lfc3d()
+    workdir = 'PATH/TO/WORKING/DIRECTORY',
+    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
+    screen_names = ['screen_name_1'], # LIST OF UNIQUE SCREEN IDENTIFIERS
+
+    # Optional
+    score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
+    nRandom=1000, # NUMBER OF RANDOMIZATIONS
+    aggr_func_name = 'SUM', # ASSOCIATED FUNCTION NAME
+)
+```
+
+Files are output to ```'[workdir]/meta-aggregate'```
+
+---
+
+### 22. `bin_meta`
+
+**Description:**
+Bins meta-aggregated LFC3D scores into percentile thresholds.
+
+```python
+bin_meta(
+    df_bidir_meta, # OUTPUT DF FROM average_split_meta()
+    workdir = 'PATH/TO/WORKING/DIRECTORY',
+    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
+
+    # Optional
+    score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
+    aggr_func_name = 'SUM', # ASSOCIATED FUNCTION NAME FROM average_split_meta()
+)
+```
+
+Files are output to ```'[workdir]/meta-aggregate'```
+
+---
+
+### 23. `znorm_meta`
+
+**Description:**
+Z-normalizes meta-aggregated scores against randomized controls and labels significance.
+
+```python
+znorm_meta(
+    df_bidir_meta, # OUTPUT DF FROM average_split_meta()
+    workdir = 'PATH/TO/WORKING/DIRECTORY',
+    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
+    screen_names = ['screen_name_1'], # LIST OF UNIQUE SCREEN IDENTIFIERS
+
+    # Optional
+    score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
+    pthrs = [0.05, 0.01, 0.001], # LIST OF P-VALUE CUTOFF TO Z-SCORE ON
+    aggr_func_name = 'SUM', # ASSOCIATED FUNCTION NAME FROM average_split_meta()
+)
+```
+
+Files are output to ```'[workdir]/meta-aggregate'```
+
+---
+
+### 13. `average_split_bin_plots`
+
+**Description:**
+Generates histograms, histplots, and scatterplots for positive and negative scores after binning.
+
+```python
+average_split_bin_plots(
+    df_z, # OUTPUT DF FROM znorm_meta()
+    workdir = 'PATH/TO/WORKING/DIRECTORY',
+    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
+
+    # Optional
+    pthr=0.05,
+    screen_name = '', # '' IF META-AGGREGATE, OR A UNIQUE SCREEN IDENTIFIER FOR NON-AGGREGATE
+    func = 'SUM', # '' IF NON-AGGREGATE, OR aggr_func_name FROM znorm_meta() IF META-AGGREGATE
+    score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
+    aggregate_dir = 'meta-aggregate', # DIRECTORY TO SAVE TO, SIMILAR TO score_type
+    save_type = 'png', # OUTPUT GRAPH SAVE TYPE (ie 'png', 'pdf', 'svg', etc)
+)
+```
+
+Files are output to ```'[workdir]/meta-aggregate/plots'```
+
+---
 
 # Notes
 

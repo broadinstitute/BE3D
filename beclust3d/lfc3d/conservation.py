@@ -2,7 +2,8 @@
 File: conservation.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-25
-Description: Translated from Notebook 2
+Description: Generates dataframes of sequence conservation by aligning sequences across species or isoforms.
+             Translated from Notebook 2
 """
 
 import pandas as pd

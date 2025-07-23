@@ -2,7 +2,7 @@
 File: clustering_plot.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: 
+Description: Plots clustering results including line plots and dendrograms.
 """
 
 import os

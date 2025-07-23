@@ -2,7 +2,8 @@
 File: calculate_lfc3d.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: Translated from Notebook 3.3
+Description: Calculates LFC3D scores by aggregating local neighborhood mutation effects.
+             Translated from Notebook 3.3
 """
 
 import pandas as pd

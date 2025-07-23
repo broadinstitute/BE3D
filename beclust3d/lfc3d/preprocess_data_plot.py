@@ -2,7 +2,8 @@
 File: preprocess_data_plot.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: Translated from Notebook 3.1
+Description: Parses raw screen data and generates summary plots per mutation category.
+             Translated from Notebook 3.1
 """
 
 import os

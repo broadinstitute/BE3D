@@ -3,6 +3,9 @@ File: metaaggregate.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-25
 Description: 
+    Aggregates scores across multiple screens into a meta score before splitting and averaging.
+    Bins meta-aggregated LFC3D scores into percentile thresholds.
+    Z-normalizes meta-aggregated scores against randomized controls and labels significance.
 """
 
 import os

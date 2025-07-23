@@ -2,7 +2,7 @@
 File: preprocess_data.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: 
+Description: Parses raw base editing screen data into DataFrames for each mutation type.
 """
 
 import os
