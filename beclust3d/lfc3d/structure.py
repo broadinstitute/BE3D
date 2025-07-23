@@ -2,7 +2,7 @@
 File: af_structural_features.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: 
+Description: Queries UniProt, AlphaFold, DSSP, and domain features. Generates a combined sequence-structure feature table.
 """
 
 import os
