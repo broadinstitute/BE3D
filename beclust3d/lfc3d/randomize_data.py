@@ -2,7 +2,7 @@
 File: randomize_data.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: 
+Description: Randomizes missense mutation scores to create a baseline distribution.
 """
 
 import pandas as pd
