@@ -20,6 +20,8 @@ You can run the BE3D pipeline either:
     - **[Genomics 2 Portal Output](#visualization-on-the-genomics-2-portal)**
 - **[Installation](#installation)**
 - **[Examples](#getting-started)**
+- **[Some Extra Notes](#notes)**
+- **[Google Colab Notebooks](#sample-google-colab-notebooks)**
 - **[License](#license)**
 
 ## Workflow Overview
@@ -108,6 +110,8 @@ Install BE3D using pip:
 pip install git+https://github.com/broadinstitute/BEClust3D.git
 ```
 
+This code block is in Google Colab notebooks (see below)
+
 ## Getting Started
 
 ### Example 1: MEN1 (Local)
@@ -125,7 +129,7 @@ if __name__ == '__main__':
     ...
 ```
 
-## Notes on Structure and Conservation
+## Notes
 
 ### Structure
 
@@ -143,16 +147,16 @@ If MUSCLE or CLUSTAL cannot be run locally, the pipeline queries the MUSCLE API,
 
 Another option to skip MUSCLE and CLUSTAL is for users to run alignment on their own in a CLUSTAL format, and provide the .align alignment file into the pipeline which is one of the optional inputs. 
 
-## Sample Notebooks
+## Sample Google Colab Notebooks
 
-Sample Single Screen Notebook (DNMT3A): 
+Single Screen Notebook Example (DNMT3A): 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5-SingleScreen-Notebook.ipynb)
 
-Sample Multi Screen Notebook with Meta-Aggregation (MEN1): 
+Multi Screen Notebook with Meta-Aggregation Example (MEN1): 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5-MultipleScreens-Notebook.ipynb)
 
-
-Sample Multi Screen Notebook with Meta-Aggregation and Conservation:  
+Multi Screen Notebook with Meta-Aggregation and Conservation Example: 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)]()
 
 ## License
 
