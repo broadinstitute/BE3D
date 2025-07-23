@@ -2,7 +2,10 @@
 File: nonaggregate.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: Splits LFC/LFC3D scores into positive and negative components and aggregates randomized scores.
+Description: 
+    Splits LFC/LFC3D scores into positive and negative components and aggregates randomized scores.
+    Bins positive and negative LFC3D scores into percentile thresholds.
+    Z-normalizes scores against randomized controls and labels significance.
 """
 
 import os
