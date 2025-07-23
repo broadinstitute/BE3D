@@ -2,7 +2,7 @@
 File: aggregate_plot.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2025-01-01
-Description: 
+Description: Generates histograms, histplots, and scatterplots for positive and negative scores after binning.
 """
 
 import os
