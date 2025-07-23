@@ -1,7 +1,7 @@
 
-# BE3D
+# BE3D (BEClust3D)
 
-**BE3D** is a Python package for interpreting structure-function relationships in base editor (BE) tiling mutagenesis data. The workflow includes quality assessment of screen data, extrapolation of BE signals onto 3D structures, and identification of significant residues or clusters (hotspots) from a structure-function perspective. 
+**BE3D (or BEClust3D)** is a Python package for interpreting structure-function relationships in base editor (BE) tiling mutagenesis data. The workflow includes 3 main modules: quality assessment of screen data by gene, extrapolation of BE screen signals onto 3D structures and identification of significant residues and clusters (hotspots) from a structure-function perspective, and aggregation of multiple screens for the idenficiation of signficiant residues and clusters. 
 
 You can run the BE3D pipeline either:
 - On **Google Colab** (no installation required), or
@@ -11,7 +11,7 @@ You can run the BE3D pipeline either:
 
 ## Overview
 
-- **[Workflow](#workflow)**
+- **[Workflow Overview](#workflow-overview)**
 - **[Input](#input)**
 - **[Features](#features)**
     - **[Quality Assessment](#quality-assessment-hypothesis-test-visualization)**
@@ -22,49 +22,55 @@ You can run the BE3D pipeline either:
 - **[Examples](#getting-started)**
 - **[License](#license)**
 
-## Workflow
+## Workflow Overview
 
 The following figure provides an overview of the BE3D workflow:
+
+[### Need to replace this with new Figure 1 schematic. ###]
 
 ![BE3D workflow](imgs/BE3D_workflow.png)
 
 BE3D enables structure-function analysis of BE tiling mutagenesis data by mapping mutation readouts (log fold change, LFC) onto 3D protein structures. This can be extended to multiple screens or cross-species comparisons. The workflow consists of:
 
-**A. BE-QA**: Assesses the quality of BE screens by testing if knockout (e.g., nonsense or splice site) and neutral (e.g., silent) mutations have significantly different LFC distributions.
+**A. BE-QA**: Assesses the quality of BE screens by testing if knockout annotated (e.g., nonsense or splice site) and neutral annotated (e.g., silent or no mutation) guides have significantly different LFC score distributions.
 
-**B. BE-Clust3D**: Maps LFC values onto 3D protein structures and computes a per-residue 3D-normalized LFC score (LFC3D), based on spatial proximity (default: 6 Å).
+**B. BE-Clust3D**: Maps LFC values by amino acid residue onto 3D protein structures and computes a per-residue 3D-normalized LFC score (LFC3D score) based on spatial proximity (default: 6 Å). Then, agglomerative clustering is performed with a second spatial proximity parameter (default: 6 Å) to identify hotspots of potential functional importance. 
 
-**C. BE-MetaClust3D**: Aggregates data from multiple screens to enhance signal strength and detect sites that might be missed due to variability.
+**C. BE-MetaClust3D**: Aggregates data from multiple screens to enhance signal strength and detect residues that might be missed due to the noise present base editing screens. 
 
 ## Input
 
 BE3D requires the following inputs:
 
-1. **BE Readouts (TSV)**: Must include Mutation Category, Amino Acid Edit, Gene Name, and Score. You must map column names in the config.
+1. **BE Screen Scores (TSV)**: Must include Mutation Category, Amino Acid Edit, Gene Name, and Score. You must map column names in the config.
 
     Example TSV:
 
     ```tsv
-    predicted_edit	delta_beta_score	mutation_category	Gene Symbol
+    predicted_edits	sgRNA_score	mutation	Gene
     Gly2Arg;Met1Ile	-0.18977	Missense	MEN1
-    Leu10Leu	        -0.22247	Silent		MEN1
+    Leu10Leu	-0.22247	Silent		MEN1
     ```
 
-    Example config (Python):
+    Example input config (Python):
 
     ```python
-    mut_col = "mutation_category"
-    val_col = "delta_beta_score"
-    gene_col = "Gene Symbol"
-    edits_col = "predicted_edit"
+    mut_col   = "mutation"
+    val_col   = "sgRNA_score"
+    gene_col  = "Gene"
+    edits_col = "predicted_edits"
     ```
 
 2. **Uniprot ID**: Required to fetch protein sequence and structure from UniProt/AlphaFold.
 
-3. **Optional FASTA and PDB**: Provide custom protein sequence and structure files for non-human proteins or alternative structures.
+    ```python
+    input_uniprot = "O00255" # (MEN1)
+    ```
+
+4. **Optional FASTA and PDB**: Provide custom protein sequence and structure files for non-canonical sequences, non-canonical proteins, or alternative structures. If these ields are left empty, the pipeline fetches the AlphaFold of the canonical isoform structure for the given Uniprot ID, so any other sequences or PDB structures would need to be linked manually like this. 
 
     ```python
-    input_pdb = 'men1_AF3.pdb'
+    input_pdb   = 'men1_AF3.pdb'
     input_fasta = 'men1.fasta'
     ```
 
@@ -150,4 +156,4 @@ Sample Multi Screen Notebook with Meta-Aggregation and Conservation:
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
