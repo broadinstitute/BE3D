@@ -3,6 +3,10 @@ File: characterization_plot.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2025-02-04
 Description: 
+    Plots enrichment test results as odds ratios with confidence intervals.
+    Generates LFC vs LFC3D scatter plots colored by hit significance.
+    Generates scatter plot of RSA vs pLDDT scores, scaled by mutation weight.
+    Generates bar plots of hit counts (or fractions) across different structural categories.
 """
 
 import os
