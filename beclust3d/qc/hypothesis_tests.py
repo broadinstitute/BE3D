@@ -2,7 +2,7 @@
 File: hypothesis_tests.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2025-02-23
-Description: 
+Description: Conducts hypothesis 1 (for one gene) and hypothesis 2 (across multiple genes) statistical tests.
 """
 
 import os
