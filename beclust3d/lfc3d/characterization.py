@@ -2,7 +2,7 @@
 File: characterization.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2025-02-23
-Description: 
+Description: Performs enrichment tests (e.g., Fisher's exact test) for structural features.
 """
 
 import os
