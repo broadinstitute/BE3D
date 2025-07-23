@@ -2,7 +2,7 @@
 File: clustering.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: 
+Description: Performs spatial clustering of significant residues over a range of distance thresholds.
 """
 
 import os
