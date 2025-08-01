@@ -126,16 +126,26 @@ def plot_clustering(
     prefix = f'{input_gene}_{screen_name}_{score_type}'
     pos_col, chain_col = merge_col[0], merge_col[1]
 
-    # PLOT CLUSTERING DIST VS NUM OF CLUSTERS #
-    clust_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_Aggr_Hits_List.tsv" 
-    plot_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_cluster_distance.{save_type}"
-    plot_cluster_distance(distances, yvalues, 
-                          names, input_gene, 
-                          clust_filename, plot_filename, 
-                          line_subplots_kwargs, save_type)
+    cluster_dist_list = list()
+    for name, pthr, yvalue in zip(names, pthr_cutoffs, yvalues):
+        cluster_dist_list.append([name,pthr,yvalue])
+    cluster_dist_pd = pd.DataFrame(cluster_dist_list,columns=['name','pthr','yvalue'])
+    
+    for gid, gcont in cluster_dist_pd.groupby('pthr'):    
+        clust_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{gid}_Aggr_Hits_List.tsv" 
+        plot_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{gid}_cluster_distance.{save_type}"
 
+        _names = gcont['name'].to_list()
+        _yvalues = gcont['yvalue'].to_list()
+        plot_cluster_distance(
+            distances, _yvalues,
+            _names, input_gene, 
+            clust_filename, plot_filename, 
+            line_subplots_kwargs, save_type)
+        
     # OPEN CLUSTERING FILE #
-    for name, pthr, colname in zip(names, pthr_cutoffs, psig_columns): 
+    for name, pthr, colname in zip(names, pthr_cutoffs, psig_columns):
+        # PLOT CLUSTERING DIST VS NUM OF CLUSTERS #        
         # EXTRACT ROWS ABOVE CUTOFF #
         df_pvals_temp = df_hits_clust.loc[(df_hits_clust[colname] == pthr), ].reset_index(drop=True)
         # REMOVE ROWS WITHOUT POSITION INFO FOR PDBs #
@@ -185,7 +195,7 @@ def plot_cluster_distance(
         clust_filename, plot_filename, 
         subplots_kwargs, save_type, 
 ): 
-
+    # print(distances,yvalues,names)
     dist_dict = {'clust_dist': distances}
     for n, y in zip(names, yvalues): 
         dist_dict[n] = y
