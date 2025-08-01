@@ -150,7 +150,7 @@ def plot_clustering(
         func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=dist)
         clustering = func_clustering.fit(np_hits_coord)
 
-        dend_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{name}_Dendrogram_{str(int(dist))}A.{save_type}"
+        dend_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{name}_Dendrogram_{pthr}_{str(int(dist))}A.{save_type}"
         title = f'{input_gene} {score_type} {name} Clusters'
         plot_dendrogram(clustering, df_pvals_temp, 
                         dist, horizontal, pos_col, chain_col, 
@@ -161,7 +161,7 @@ def plot_clustering(
         df_pvals_clust_i = df_pvals_clust.loc[(df_pvals_clust[colname] == pthr), ].reset_index(drop=True)
         clust_indices = df_pvals_clust_i[f'{colname}_Clust_{str(int(dist))}A'].unique()
 
-        txt_filename = working_filedir / f"cluster_{score_type}/{prefix}_{name}_Dendrogram_{str(int(dist))}A.txt"
+        txt_filename = working_filedir / f"cluster_{score_type}/{prefix}_{name}_Dendrogram_{pthr}_{str(int(dist))}A.txt"
         with open(txt_filename, "w") as f: 
             for c in clust_indices: 
                 c_data = df_pvals_clust_i.loc[df_pvals_clust_i[f'{colname}_Clust_{str(int(dist))}A'] == c, ].reset_index(drop=True)
