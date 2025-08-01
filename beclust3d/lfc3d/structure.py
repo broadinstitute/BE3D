@@ -1,8 +1,8 @@
 """
 File: af_structural_features.py
-Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: 
+Description: Queries UniProt, AlphaFold, DSSP, and domain features. Generates a combined sequence-structure feature table.
 """
 
 import os
@@ -12,11 +12,17 @@ import shutil
 from .structure_helpers import *
 
 def sequence_structural_features(
-        workdir, 
-        input_gene, input_uniprot, structureid, chains=['A'], radius=6.0, 
-        user_fasta=None, user_pdb=None, user_dssp=None, 
-        domains_dict=None, 
-        # CHAINS REFERS TO CHAIN OF THE TARGET PROTEIN #
+    workdir, 
+    input_gene, 
+    input_uniprot, 
+    structureid, 
+    chains=['A'], 
+    radius=6.0, 
+    user_fasta=None, 
+    user_pdb=None, 
+    user_dssp=None, 
+    domains_dict=None, 
+    # CHAINS REFERS TO CHAIN OF THE TARGET PROTEIN #
 ): 
     """
     Queries Uniprot, AlphaFold, DSSP, and domain features 

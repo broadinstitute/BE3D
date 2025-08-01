@@ -1,8 +1,8 @@
 """
 File: randomize_data.py
-Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: 
+Description: Randomizes missense mutation scores to create a baseline distribution.
 """
 
 import pandas as pd
@@ -11,11 +11,14 @@ import numpy as np
 import os
 
 def randomize_data(
-        df_missense, 
-        workdir, input_gene, 
-        screen_name, 
-        nRandom=1000, val_colname = 'LFC', muttype='Missense', 
-        seed=False, 
+    df_missense, 
+    workdir, 
+    input_gene, 
+    screen_name, 
+    nRandom=1000, 
+    val_colname = 'LFC', 
+    muttype='Missense', 
+    seed=False, 
 ): 
     """
     Takes reformatted Missense dataframe and randomizes them to provide a baseline signal. 
