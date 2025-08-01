@@ -4,9 +4,10 @@ build-backend = "hatchling.build"
 
 [project]
 name = "beclust3d"
-version = "2025.0.0"
+version = "1.0.0"
 authors = [
-  {name = "Calvin XiaoYang Hu", email = "xiaohu@g.harvard.edu"}
+  {name = "Calvin XiaoYang Hu", email = "xiaohu@g.harvard.edu"}, 
+  {name = "Yoochan Myung", email = "ymyung@broadinstitute.org"}, 
 ]
 dependencies = [
   "numpy",

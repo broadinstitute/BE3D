@@ -1,8 +1,12 @@
 """
 File: characterization_plot.py
-Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2025-02-04
 Description: 
+    Plots enrichment test results as odds ratios with confidence intervals.
+    Generates LFC vs LFC3D scatter plots colored by hit significance.
+    Generates scatter plot of RSA vs pLDDT scores, scaled by mutation weight.
+    Generates bar plots of hit counts (or fractions) across different structural categories.
 """
 
 import os
@@ -19,8 +23,11 @@ from matplotlib.lines import Line2D
 def plot_enrichment_test(
     enrichment_results, 
     workdir, 
-    input_gene, hit_value, feature_values, 
-    padding=0.5, save_type='png', 
+    input_gene, 
+    hit_value, 
+    feature_values, 
+    padding=0.5, 
+    save_type='png', 
 ):
     """
     Description
@@ -106,8 +113,10 @@ def plot_enrichment_test(
 def lfc_lfc3d_scatter(
     df_input, 
     workdir, 
-    input_gene, screen_name, 
-    pthr=0.05, save_type='png', 
+    input_gene, 
+    screen_name, 
+    pthr=0.05, 
+    save_type='png', 
 ): 
     """
     Generate LFC vs LFC3D scatter plot, color-coded by significance categories.
@@ -123,8 +132,9 @@ def lfc_lfc3d_scatter(
     input_gene : str
         Name of the gene being processed. 
 
-    screen_name : 
-
+    screen_name : list of str
+        Name of a screen corresponding to df_input.
+        
     lfc3d_hit_threshold : float, optional (default=0.05)
         Threshold used to determine significance coloring.
 
@@ -185,7 +195,10 @@ def lfc_lfc3d_scatter(
     return None
 
 ### including '-' changes whether we are looking only at hits
-def assign_psig_label(row, pthr):
+def assign_psig_label(
+    row, 
+    pthr
+):
     psig_dict = {'above': f'p>={pthr}', 'below': f'p<{pthr}'}
     neg_str, pos_str = row['LFC3D_neg_psig'], row['LFC3D_pos_psig']
 
@@ -203,8 +216,11 @@ def pLDDT_RSA_scatter(
     df_input, 
     workdir, 
     input_gene, 
-    pLDDT_col='bfactor_pLDDT', RSA_col='RSA', size_col='LFC3D_wght', direction_col='direction', 
-    color_map = {'NEG': 'darkred', 'POS': 'darkblue'}, 
+    pLDDT_col='bfactor_pLDDT', 
+    RSA_col='RSA', 
+    size_col='LFC3D_wght', 
+    direction_col='direction', 
+    color_map={'NEG': 'darkred', 'POS': 'darkblue'}, 
     save_type='png', 
 ):
     """
@@ -288,8 +304,11 @@ def hits_feature_barplot(
     workdir, 
     input_gene, 
     category_col,
-    values_cols, values_vals, value_names, 
-    plot_type='Count', colors = ['darkred', 'darkblue'], 
+    values_cols, 
+    values_vals, 
+    value_names, 
+    plot_type='Count', 
+    colors=['darkred', 'darkblue'], 
     save_type='png', 
 ):
     """

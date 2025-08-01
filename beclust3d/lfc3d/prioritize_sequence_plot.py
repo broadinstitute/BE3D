@@ -1,6 +1,6 @@
 """
 File: prioritize_sequence_plot.py
-Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
 Description: 
 """
@@ -19,7 +19,10 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 def plot_screendata_sequence(
     df_protein, 
     workdir, 
-    input_gene, screen_name, function_name='mean', muttype='Missense', 
+    input_gene, 
+    screen_name, 
+    function_name='mean', 
+    muttype='Missense', 
     save_type='png', 
 ): 
     """
@@ -63,51 +66,62 @@ def plot_screendata_sequence(
         os.mkdir(working_filedir / 'screendata_sequence/plots')
 
     # PLOT SCATTERPLOT AND COUNTS PLOT #
-    counts_by_residue(df_protein, working_filedir, 
-                      input_gene=input_gene, 
-                      screen_name=screen_name, 
-                      muttype=muttype, 
-                      save_type=save_type)
+    counts_by_residue(
+        df_protein, working_filedir, 
+        input_gene=input_gene, 
+        screen_name=screen_name, 
+        muttype=muttype, 
+        save_type=save_type)
 
-    stdev_by_residue(df_protein, working_filedir, 
-                     input_gene=input_gene, 
-                     screen_name=screen_name, 
-                     muttype=muttype, 
-                     colname=f'{function_name}_{muttype}_LFC', 
-                     colname_stdev=f'{function_name}_{muttype}_LFC_stdev', 
-                     centered=False, 
-                     save_type=save_type)
-    stdev_by_residue(df_protein, working_filedir, 
-                     input_gene=input_gene, 
-                     screen_name=screen_name, 
-                     muttype=muttype, 
-                     colname=f'{function_name}_{muttype}_LFC', 
-                     colname_stdev=f'{function_name}_{muttype}_LFC_stdev', 
-                     centered=True, 
-                     save_type=save_type)
+    stdev_by_residue(
+        df_protein, 
+        working_filedir, 
+        input_gene=input_gene, 
+        screen_name=screen_name, 
+        muttype=muttype, 
+        colname=f'{function_name}_{muttype}_LFC', 
+        colname_stdev=f'{function_name}_{muttype}_LFC_stdev', 
+        centered=False, 
+        save_type=save_type)
+    stdev_by_residue(
+        df_protein, 
+        working_filedir, 
+        input_gene=input_gene, 
+        screen_name=screen_name, 
+        muttype=muttype, 
+        colname=f'{function_name}_{muttype}_LFC', 
+        colname_stdev=f'{function_name}_{muttype}_LFC_stdev', 
+        centered=True, 
+        save_type=save_type)
     
-    scatterplot_by_residue(df_protein, working_filedir, 
-                           input_gene=input_gene, 
-                           screen_name=screen_name, 
-                           muttype=function_name, 
-                           colname=f'{function_name}_{muttype}_LFC', 
-                           save_type=save_type)
+    scatterplot_by_residue(
+        df_protein, 
+        working_filedir, 
+        input_gene=input_gene, 
+        screen_name=screen_name, 
+        muttype=function_name, 
+        colname=f'{function_name}_{muttype}_LFC', 
+        save_type=save_type)
     
-    dual_scatterplot_by_residue(df_protein, working_filedir, 
-                                input_gene=input_gene, 
-                                screen_name=screen_name, 
-                                muttype=muttype, 
-                                colname=f'{function_name}_{muttype}_LFC', 
-                                colname_z=f'{function_name}_{muttype}_LFC_Z', 
-                                colname_plab=f'{function_name}_{muttype}_LFC_plab', 
-                                save_type=save_type)
-    dual_histogram_by_residue(df_protein, working_filedir, 
-                              input_gene=input_gene, 
-                              screen_name=screen_name, 
-                              muttype=muttype, 
-                              colname=f'{function_name}_{muttype}_LFC', 
-                              colname_plab=f'{function_name}_{muttype}_LFC_plab', 
-                              save_type=save_type)
+    dual_scatterplot_by_residue(
+        df_protein, 
+        working_filedir, 
+        input_gene=input_gene, 
+        screen_name=screen_name, 
+        muttype=muttype, 
+        colname=f'{function_name}_{muttype}_LFC', 
+        colname_z=f'{function_name}_{muttype}_LFC_Z', 
+        colname_plab=f'{function_name}_{muttype}_LFC_plab', 
+        save_type=save_type)
+    dual_histogram_by_residue(
+        df_protein, 
+        working_filedir, 
+        input_gene=input_gene, 
+        screen_name=screen_name, 
+        muttype=muttype, 
+        colname=f'{function_name}_{muttype}_LFC', 
+        colname_plab=f'{function_name}_{muttype}_LFC_plab', 
+        save_type=save_type)
 
     return None
 
@@ -115,7 +129,9 @@ def plot_screendata_sequence(
 def counts_by_residue(
     df_struc_consvr, 
     working_filedir, 
-    input_gene, screen_name, muttype, 
+    input_gene, 
+    screen_name, 
+    muttype, 
     save_type, 
 ): 
     # PREP DATA #
@@ -144,8 +160,11 @@ def counts_by_residue(
 def stdev_by_residue(
     df_struc_consvr, 
     working_filedir, 
-    input_gene, screen_name, muttype, 
-    colname, colname_stdev, 
+    input_gene, 
+    screen_name, 
+    muttype, 
+    colname, 
+    colname_stdev, 
     centered,
     save_type, 
 ): 
@@ -181,7 +200,10 @@ def stdev_by_residue(
 def scatterplot_by_residue(
     df_struc_consvr, 
     working_filedir, 
-    input_gene, screen_name, muttype, colname, 
+    input_gene, 
+    screen_name, 
+    muttype, 
+    colname, 
     save_type, 
 ): 
     # PREP DATA #
@@ -213,8 +235,12 @@ def scatterplot_by_residue(
 def dual_scatterplot_by_residue(
     df_struc_consvr, 
     working_filedir, 
-    input_gene, screen_name, muttype, 
-    colname, colname_z, colname_plab, 
+    input_gene, 
+    screen_name, 
+    muttype, 
+    colname, 
+    colname_z, 
+    colname_plab, 
     save_type, 
 ): 
     df_struc_consvr = df_struc_consvr[df_struc_consvr[colname] != '-']
@@ -255,8 +281,11 @@ def dual_scatterplot_by_residue(
 def dual_histogram_by_residue(
     df_struc_consvr, 
     working_filedir, 
-    input_gene, screen_name, muttype, 
-    colname, colname_plab, 
+    input_gene, 
+    screen_name, 
+    muttype, 
+    colname, 
+    colname_plab, 
     save_type, 
 ):  
     fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(12, 6))

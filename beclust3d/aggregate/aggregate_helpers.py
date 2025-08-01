@@ -1,6 +1,6 @@
 """
 File: aggregate_helpers.py
-Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-25
 Description: 
 """
@@ -14,18 +14,33 @@ import glob, os
 
 # HELPER FUNCTIONS #
 
-def sum_dash(values): 
+def sum_dash(
+    values
+): 
+    """
+    Sum a list that contains '-' that needs to be skipped. 
+    """
     new_values = [x for x in values if x != '-']
     if len(new_values) == 0: return '-'
     else: return sum(new_values)
 
-def filter_dash(x, mode): 
+def filter_dash(
+    x, 
+    mode
+): 
+    """
+    Filter a list for only non dash and neg or non dash and pos. 
+    """
     if mode == 'neg': 
         return float(x) if x != '-' and float(x) < 0 else np.nan
     if mode == 'pos': 
         return float(x) if x != '-' and float(x) > 0 else np.nan
 
-def calculate_stats(signal, param, pthr):
+def calculate_stats(
+    signal, 
+    param, 
+    pthr
+):
     """
     Helper function to calculate stats: z, p, plabel
     """
@@ -39,9 +54,16 @@ def calculate_stats(signal, param, pthr):
     return signal_z, signal_p, signal_plabel
 
 def binning_neg_pos(
-        df_LFC_LFC3D, df_neg_stats, df_pos_stats, 
-        quantile_vals, LFC3D_header
+    df_LFC_LFC3D, 
+    df_neg_stats, 
+    df_pos_stats, 
+    quantile_vals, 
+    LFC3D_header
 ): 
+    """
+    Binning a score in df_LFC_LFC3D into NEG or POS percentiles. 
+    """
+    
     NEG_10p_v, POS_90p_v, NEG_05p_v, POS_95p_v = quantile_vals
     # BIN AND WEIGHT #
     arr_LFC3D_disc, arr_LFC3D_weight = [], []
@@ -74,7 +96,9 @@ def binning_neg_pos(
     return arr_LFC3D_disc, arr_LFC3D_weight
 
 def binning_lfc3d(
-        df_meta, neg, pos
+    df_meta, 
+    neg, 
+    pos
 ): 
     """
     Description
@@ -105,20 +129,15 @@ def binning_lfc3d(
 
     return df_meta
 
-def pooled_mean_std(means, stds, ns):
+def pooled_mean_std(
+    means, 
+    stds, 
+    ns
+):
     """
-    Description
-        Compute pooled mean and standard deviation.
-    
-    Parameters:
-    - means: list of means (mu_i)
-    - stds: list of standard deviations (sigma_i)
-    - ns: list of sample sizes (n_i)
-    
-    Returns:
-    - pooled_mean: combined mean
-    - pooled_std: combined standard deviation
+    Compute pooled mean and standard deviation.
     """
+    
     # Total sample size
     N = sum(ns)
     
@@ -134,8 +153,12 @@ def pooled_mean_std(means, stds, ns):
     return pooled_mean, pooled_std
 
 def mu_sigma_screens(
-    workdir, screen_names,
-):        
+    workdir, 
+    screen_names,
+): 
+    """
+    """
+    
     neg_stats_list = list()
     pos_stats_list = list()
     
@@ -154,4 +177,4 @@ def mu_sigma_screens(
         neg_stats_list.append({'mean':neg_mean,'std':neg_std,'count':neg_count})       
         pos_stats_list.append({'mean':pos_mean,'std':pos_std,'count':pos_count})
         
-    return (neg_stats_list,pos_stats_list)
+    return (neg_stats_list, pos_stats_list)

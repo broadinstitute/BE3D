@@ -1,8 +1,8 @@
 """
 File: hypothesis_tests.py
-Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2025-02-23
-Description: 
+Description: Conducts hypothesis 1 (for one gene) and hypothesis 2 (across multiple genes) statistical tests.
 """
 
 import os
@@ -12,8 +12,10 @@ from .hypothesis_tests_helpers import *
 
 def hypothesis_test(
     workdir, 
-    input_dfs, screen_names, 
-    cases, controls, 
+    input_dfs, 
+    screen_names, 
+    cases, 
+    controls, 
     comp_name='CaseVsControl', 
     mut_col='Mutation category', 
     val_col='logFC', 
@@ -21,8 +23,8 @@ def hypothesis_test(
     save_type='png', 
 ): 
     """
-    Conduct hypothesis 1 (one screen vs control from same screens) and hypothesis 2
-    (one screen vs control from all screens) on the set of input screens and genes. 
+    Conduct hypothesis 1 (one gene and one screen vs control from same screen) and hypothesis 2
+    (one gene and one screen vs control from that same gene from all screen) on the set of input screens and genes. 
 
     Parameters
     ----------

@@ -1,8 +1,8 @@
 """
 File: clustering_plot.py
-Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: 
+Description: Plots clustering results including line plots and dendrograms.
 """
 
 import os
@@ -18,14 +18,19 @@ from sklearn.cluster import AgglomerativeClustering
 
 
 def plot_clustering(
-    df_struc, df_pvals, 
-    df_pvals_clust, dist, 
-    workdir, input_gene, 
-    distances, yvalues, 
+    df_struc, 
+    df_pvals, 
+    df_pvals_clust, 
+    dist, 
+    workdir, 
+    input_gene, 
+    distances, 
+    yvalues, 
     psig_columns=[f'SUM_LFC3D_neg_05_psig', f'SUM_LFC3D_pos_05_psig'], 
     names=['Negative', 'Positive'], 
     pthr_cutoffs=['p<0.05', 'p<0.05'], 
-    screen_name = 'Meta', score_type='LFC3D',  
+    screen_name = 'Meta', 
+    score_type='LFC3D',  
     merge_col=['unipos', 'chain'], 
     clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single"}, 
 
@@ -39,7 +44,7 @@ def plot_clustering(
 
     Parameters
     ----------
-    df_str_cons : pd.DataFrame
+    df_struc : pd.DataFrame
         DataFrame containing structural data for residues. 
         Must include ['unipos', 'unires', 'chain', 'x_coord', 'y_coord', 'z_coord'].
 
@@ -81,9 +86,6 @@ def plot_clustering(
 
     score_type : str, optional (default='LFC3D')
         Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
-
-    max_distances : int, optional (default=25)
-        Maximum radius (in Angstroms) to consider for clustering. Clustering is repeated at every integer from 1 to `max_distances`.
 
     merge_cols : list of str, optional (default=['unipos', 'chain'])
         Columns used to merge clustering results back into the main DataFrame.
@@ -129,10 +131,11 @@ def plot_clustering(
     # PLOT CLUSTERING DIST VS NUM OF CLUSTERS #
     clust_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_Aggr_Hits_List.tsv" 
     plot_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_cluster_distance.{save_type}"
-    plot_cluster_distance(distances, yvalues, 
-                          names, input_gene, 
-                          clust_filename, plot_filename, 
-                          line_subplots_kwargs, save_type)
+    plot_cluster_distance(
+        distances, yvalues, 
+        names, input_gene, 
+        clust_filename, plot_filename, 
+        line_subplots_kwargs, save_type)
 
     # OPEN CLUSTERING FILE #
     for name, pthr, colname in zip(names, pthr_cutoffs, psig_columns): 
@@ -152,10 +155,11 @@ def plot_clustering(
 
         dend_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{name}_Dendrogram_{pthr}_{str(int(dist))}A.{save_type}"
         title = f'{input_gene} {score_type} {name} Clusters'
-        plot_dendrogram(clustering, df_pvals_temp, 
-                        dist, horizontal, pos_col, chain_col, 
-                        title, dend_filename, 
-                        dendrogram_subplots_kwargs, save_type)
+        plot_dendrogram(
+            clustering, df_pvals_temp, 
+            dist, horizontal, pos_col, chain_col, 
+            title, dend_filename, 
+            dendrogram_subplots_kwargs, save_type)
 
         # CLUSTERS RESIDUES AND LENGTH OF EACH CLUSTER #
         df_pvals_clust_i = df_pvals_clust.loc[(df_pvals_clust[colname] == pthr), ].reset_index(drop=True)
@@ -180,10 +184,14 @@ def plot_clustering(
 
 
 def plot_cluster_distance(
-        distances, yvalues, 
-        names, input_gene, 
-        clust_filename, plot_filename, 
-        subplots_kwargs, save_type, 
+    distances, 
+    yvalues, 
+    names, 
+    input_gene, 
+    clust_filename, 
+    plot_filename, 
+    subplots_kwargs, 
+    save_type, 
 ): 
 
     dist_dict = {'clust_dist': distances}
@@ -204,10 +212,16 @@ def plot_cluster_distance(
     plt.close()
 
 def plot_dendrogram(
-        clustering, df_pvals_temp, 
-        dist, horizontal, pos_col, chain_col, 
-        title, dend_filename, 
-        subplots_kwargs, save_type, 
+    clustering, 
+    df_pvals_temp, 
+    dist, 
+    horizontal, 
+    pos_col, 
+    chain_col, 
+    title, 
+    dend_filename, 
+    subplots_kwargs, 
+    save_type, 
 ):  
     fig, ax = plt.subplots(**subplots_kwargs)
     counts = np.zeros(clustering.children_.shape[0]) # CREATE COUNTS OF SAMPLE #

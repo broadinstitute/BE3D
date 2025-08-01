@@ -1,6 +1,6 @@
 """
 File: hypothesis_tests_helpers.py
-Author: Calvin XiaoYang Hu, Surya Kiran Mani, Sumaiya Iqbal
+Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2025-02-23
 Description: 
 """
@@ -19,10 +19,15 @@ from scipy.stats import ks_2samp
 
 def hypothesis_one(
     working_filedir, 
-    df_inputs, screen_names, 
+    df_inputs, 
+    screen_names, 
     unique_genes, 
-    cases, controls, comp_name, 
-    gene_col, mut_col, val_col, 
+    cases, 
+    controls, 
+    comp_name, 
+    gene_col, 
+    mut_col, 
+    val_col, 
     testtype, 
 ): 
     col_names = ['screenid', 'gene_name']
@@ -64,10 +69,15 @@ def hypothesis_one(
 
 def hypothesis_two(
     working_filedir, 
-    df_inputs, screen_names, 
+    df_inputs, 
+    screen_names, 
     unique_genes, 
-    cases, controls, comp_name, 
-    gene_col, mut_col, val_col, 
+    cases, 
+    controls, 
+    comp_name, 
+    gene_col, 
+    mut_col, 
+    val_col, 
     testtype, 
 ): 
     col_names = ['screenid', 'gene_name']
@@ -120,7 +130,10 @@ def hypothesis_two(
     return df_output
 
 def add_to_row(
-    df1, df2, val_col, function, 
+    df1, 
+    df2, 
+    val_col, 
+    function, 
 ): 
     if len(df1) > 0 and len(df2) > 0: 
         if function == 'KolmogorovSmirnov': 
@@ -134,11 +147,17 @@ def add_to_row(
 ### PLOTTING FUNCTION #
 
 def hypothesis_plot(
-        working_filedir, 
-        df_MW_input, df_KS_input, 
-        category_names, cat_colname, hue_colname, 
-        testtype1, testtype2, hypothesis, 
-        header, save_type, 
+    working_filedir, 
+    df_MW_input, 
+    df_KS_input, 
+    category_names, 
+    cat_colname, 
+    hue_colname, 
+    testtype1, 
+    testtype2, 
+    hypothesis, 
+    header, 
+    save_type, 
 ): 
 
     # SETUP PLOT BY NAME (SCREEN or GENE) #
@@ -235,7 +254,9 @@ def hypothesis_plot(
     legend_fig.savefig(working_filedir / legend_filename, dpi=100, transparent=False, format=save_type)
     plt.close()
 
-def negative_log_transformation(value):
+def negative_log_transformation(
+    value
+):
     if pd.notna(value) and value > 0:
         return -np.log10(value)
     return value
