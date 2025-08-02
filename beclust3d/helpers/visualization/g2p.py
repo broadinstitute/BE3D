@@ -10,7 +10,8 @@ def g2p_formatted_hit_cluster(results_dir,
                               lfc3d_pthr='05',
                               meta_pthr='001',
                               dist=6,
-                              meta=False):
+                              meta=False,
+                              conservation=False):
     """
     Description
         Prepare TSV for Hit Cluster Visualization on G2P
@@ -40,6 +41,10 @@ def g2p_formatted_hit_cluster(results_dir,
         
     meta : bool
         True for getting Meta-aggregation analysis
+
+    conservation : bool
+        True for changing gene_name to 'Merged'
+       
     Returns
     -------
     None
@@ -51,7 +56,8 @@ def g2p_formatted_hit_cluster(results_dir,
     result_pos_pd = pd.DataFrame()
     result_neg_pd = pd.DataFrame()
     
-    for screen_name in screen_names:        
+    for screen_name in screen_names:
+        print(gene_name,screen_name)      
         lfc_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_LFC',f'{gene_name}_{screen_name}_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
         lfc3d_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_LFC3D',f'{gene_name}_{screen_name}_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
         union_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_union',f'{gene_name}_{screen_name}_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
@@ -120,6 +126,8 @@ def g2p_formatted_hit_cluster(results_dir,
         result_pd = pd.concat([result_pd, lfc_pd[f'{screen_name}_LFC_{lfc_pthr}_hits'],lfc3d_pd[f'{screen_name}_LFC3D_{lfc3d_pthr}_hits']],axis=1)
                 
     if meta:
+        if conservation:
+            gene_name = 'Merged'
         screen_name = 'SUM'
         lfc_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_LFC',f'{gene_name}_Meta_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
         lfc3d_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_LFC3D',f'{gene_name}_Meta_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
