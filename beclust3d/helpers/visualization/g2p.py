@@ -4,7 +4,7 @@ import pandas as pd
 
 
 def g2p_formatted_hit_cluster(results_dir,
-                              gene_name,
+                              gene_list: list,
                               screen_names: list,
                               lfc_pthr='05',
                               lfc3d_pthr='05',
@@ -21,7 +21,7 @@ def g2p_formatted_hit_cluster(results_dir,
     results_dir : str
         Path to the working directory where output files and results will be saved.
 
-    gene_name : str
+    gene_list : list
         Name of the gene being processed. 
 
     screen_names : list
@@ -43,7 +43,7 @@ def g2p_formatted_hit_cluster(results_dir,
         True for getting Meta-aggregation analysis
 
     conservation : bool
-        True for changing gene_name to 'Merged'
+        True for changing gene_list to ['Merged']
        
     Returns
     -------
@@ -56,8 +56,8 @@ def g2p_formatted_hit_cluster(results_dir,
     result_pos_pd = pd.DataFrame()
     result_neg_pd = pd.DataFrame()
     
-    for screen_name in screen_names:
-        print(gene_name,screen_name)      
+    for gene_name, screen_name in zip(gene_list, screen_names):
+        # print(gene_name,screen_name)      
         lfc_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_LFC',f'{gene_name}_{screen_name}_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
         lfc3d_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_LFC3D',f'{gene_name}_{screen_name}_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
         union_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_union',f'{gene_name}_{screen_name}_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
