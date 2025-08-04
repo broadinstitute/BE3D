@@ -128,18 +128,17 @@ def clustering(
         if np_hits_coord.shape[0] < 2: # NO DATA TO CLUSTER ON #
             warnings.warn(f"Not enough data to perform agglomerative clustering")
             y_arr.extend([0 for _ in distances])
-            continue
-
         # FOR RANGE OF RADIUS, RUN CLUSTERING #
         for dist in distances: 
-            func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=dist)
-            clus_lbl = func_clustering.fit(np_hits_coord).labels_
+            if np_hits_coord.shape[0] < 2: # NO DATA TO CLUSTER ON #
+                dict_hits[f"{column}_Clust_{str(dist)}A"] = None
+            else:
+                func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=dist)
+                clus_lbl = func_clustering.fit(np_hits_coord).labels_
 
-            num_clusters = int(max(clus_lbl)+1) 
-            # print(f'Number of clusters for {name} hits: d={dist} {num_clusters}')
-            y_arr.append(num_clusters)
-
-            dict_hits[f"{column}_Clust_{str(dist)}A"] = clus_lbl
+                num_clusters = int(max(clus_lbl)+1) 
+                y_arr.append(num_clusters)
+                dict_hits[f"{column}_Clust_{str(dist)}A"] = clus_lbl
 
         # CONSTRUCT A WHOLE DATAFRAME OF CLUSTERS FOR EVERY RESIDUE #
         df_hits_clust = df_hits_clust.merge(pd.DataFrame(dict_hits), how='left', on=merge_cols)
