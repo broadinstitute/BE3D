@@ -164,6 +164,9 @@ def metaaggregation_histogram(
         df_filtered = df_plot.dropna(subset=[sum, avg])
 
         # MW AND PEARSON TESTS #
+        if len(df_filtered[sum].tolist()) <3: 
+            results_list.append(res)
+            continue        
         U1, p = mannwhitneyu(df_plot[sum], df_plot[avg], method="asymptotic" )
         res['mannwhitneyu U1'], res['mannwhitneyu p'] = U1, p
         r, p = stats.pearsonr(df_filtered[sum].tolist(), df_filtered[avg].tolist())
