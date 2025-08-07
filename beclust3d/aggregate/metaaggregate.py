@@ -303,29 +303,29 @@ def znorm_meta(
 
     neg_mean, neg_std, pos_mean, pos_std = float(), float(), float(), float()
 
-    if score_type == 'LFC':
-        neg_stats_list, pos_stats_list = mu_sigma_screens(workdir, screen_names)            
+    # if score_type == 'LFC':
+    #     neg_stats_list, pos_stats_list = mu_sigma_screens(workdir, screen_names)            
         
-        neg_mean_list = [x['mean'] for x in neg_stats_list]
-        neg_std_list = [x['std'] for x in neg_stats_list]
-        neg_count_list = [x['count'] for x in neg_stats_list]
+    #     neg_mean_list = [x['mean'] for x in neg_stats_list]
+    #     neg_std_list = [x['std'] for x in neg_stats_list]
+    #     neg_count_list = [x['count'] for x in neg_stats_list]
         
-        pos_mean_list = [x['mean'] for x in pos_stats_list]
-        pos_std_list = [x['std'] for x in pos_stats_list]
-        pos_count_list = [x['count'] for x in pos_stats_list]        
+    #     pos_mean_list = [x['mean'] for x in pos_stats_list]
+    #     pos_std_list = [x['std'] for x in pos_stats_list]
+    #     pos_count_list = [x['count'] for x in pos_stats_list]        
         
-        neg_mean, neg_std = pooled_mean_std(neg_mean_list, neg_std_list, neg_count_list)
-        pos_mean, pos_std = pooled_mean_std(pos_mean_list, pos_std_list, pos_count_list)
+    #     neg_mean, neg_std = pooled_mean_std(neg_mean_list, neg_std_list, neg_count_list)
+    #     pos_mean, pos_std = pooled_mean_std(pos_mean_list, pos_std_list, pos_count_list)
 
-    else:        
-        _temp_neg_pd = df_meta_Z[df_meta_Z[f'{header_main}r_neg'].notna()]
-        _temp_pos_pd = df_meta_Z[df_meta_Z[f'{header_main}r_pos'].notna()]        
-        avgr_neg_list = _temp_neg_pd[f'{header_main}r_neg'].to_list()
-        avgr_pos_list = _temp_pos_pd[f'{header_main}r_pos'].to_list()
-        neg_mean = np.mean(avgr_neg_list)
-        neg_std = np.std(avgr_neg_list)
-        pos_mean = np.mean(avgr_pos_list)
-        pos_std = np.std(avgr_pos_list)
+    # else:        
+    _temp_neg_pd = df_meta_Z[df_meta_Z[f'{header_main}r_neg'].notna()]
+    _temp_pos_pd = df_meta_Z[df_meta_Z[f'{header_main}r_pos'].notna()]        
+    avgr_neg_list = _temp_neg_pd[f'{header_main}r_neg'].to_list()
+    avgr_pos_list = _temp_pos_pd[f'{header_main}r_pos'].to_list()
+    neg_mean = np.mean(avgr_neg_list)
+    neg_std = np.std(avgr_neg_list)
+    pos_mean = np.mean(avgr_pos_list)
+    pos_std = np.std(avgr_pos_list)
         
     # SETUP PARAMS FOR CALCULATING Z SCORE #
     colnames = [f'{header_main}_neg', f'{header_main}_pos']
