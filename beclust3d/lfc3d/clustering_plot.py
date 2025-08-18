@@ -12,10 +12,12 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
+import matplotlib as mpl
 
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.cluster import AgglomerativeClustering
-
+mpl.rcParams['svg.fonttype'] = 'none'
+mpl.rcParams['font.family'] = 'Arial'
 
 def plot_clustering(
     df_struc, 
