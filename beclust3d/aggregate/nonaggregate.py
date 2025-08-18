@@ -247,11 +247,13 @@ def znorm_score(
         
         if score_type == 'LFC':
             neg_stats_list, pos_stats_list = mu_sigma_screens(workdir,screen_names)            
+            # all_stats_list = mu_sigma_screens_both(workdir,screen_names) # For two-tailed
             neg_mean = neg_stats_list[idx]['mean']
             neg_std = neg_stats_list[idx]['std']
             pos_mean = pos_stats_list[idx]['mean']
             pos_std = pos_stats_list[idx]['std']
-                        
+            # neg_mean = pos_mean = all_stats_list[idx]['mean'] # For two-tailed
+            # neg_std = pos_std = all_stats_list[idx]['std'] * 4 # For multiplying STDEV
         else:
             _temp_neg_pd = df_z[df_z[f'{screen_name}_AVG_{score_type}r_neg'] != '-']
             _temp_pos_pd = df_z[df_z[f'{screen_name}_AVG_{score_type}r_pos'] != '-']
