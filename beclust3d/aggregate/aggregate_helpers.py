@@ -178,3 +178,22 @@ def mu_sigma_screens(
         pos_stats_list.append({'mean':pos_mean,'std':pos_std,'count':pos_count})
         
     return (neg_stats_list, pos_stats_list)
+
+def mu_sigma_screens_both(
+    workdir, 
+    screen_names,
+): 
+    """
+    """
+    stats_list = list()
+    
+    for screen_name in screen_names:
+        mean_all, std_all = float(), float()
+        control_tsv = glob.glob(os.path.join(f'{workdir}/screendata/',f'*_{screen_name}_No_Mutation.tsv'))[0]
+        df_control = pd.read_csv(control_tsv, sep='\t', index_col=0)        
+        mu_all = df_control[df_control['LFC']!='-'].mean().values[0]
+        sigma_all = df_control[df_control['LFC']!='-'].std().values[0]
+        count_all = df_control.count()
+        stats_list.append({'mean':mu_all,'std':sigma_all,'count': count_all})       
+        
+    return stats_list
