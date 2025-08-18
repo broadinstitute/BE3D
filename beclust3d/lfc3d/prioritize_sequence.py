@@ -126,6 +126,10 @@ def prioritize_by_sequence(
     df_nomut_pos = df_control.loc[pos_mask, 'LFC'] # POS #
     mu_neg, sigma_neg = df_nomut_neg.mean(), df_nomut_neg.std()
     mu_pos, sigma_pos = df_nomut_pos.mean(), df_nomut_pos.std()
+    # mu_all = df_control[df_control['LFC']!='-'].mean().values[0]
+    # sigma_all = df_control[df_control['LFC']!='-'].std().values[0]
+    # mu_neg = mu_pos = mu_all
+    # sigma_neg = sigma_pos = sigma_all * 4
     del df_nomut_neg, df_nomut_pos
 
     # FOR EACH EDIT TYPE, AGGREGATE LFC AND EDITS WITH CONSERVATION #
