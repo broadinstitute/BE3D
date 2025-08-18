@@ -70,10 +70,10 @@ def g2p_formatted_hit_cluster(results_dir,
         for direction in ['pos','neg']:
             lfc_scores_pd[f'{screen_name}_LFC_{direction}'] = lfc_scores_pd[f'{screen_name}_LFC_{direction}'].astype(float)
             lfc3d_scores_pd[f'{screen_name}_LFC3D_{direction}'] = lfc3d_scores_pd[f'{screen_name}_LFC3D_{direction}'].astype(float)            
-            result_both_directions_pd = pd.concat([result_both_directions_pd,lfc_pd.filter(regex=rf'{direction}_{lfc_pthr}_psig$|{direction}_{lfc_pthr}_psig_Clust_{dist}A$'),lfc3d_pd.filter(regex=rf'{direction}_{lfc3d_pthr}_psig$|{direction}_{lfc3d_pthr}_psig_Clust_{dist}A$'),union_pd.filter(regex=rf'{direction}_{lfc3d_pthr}_psig$|{direction}_{lfc3d_pthr}_psig_Clust_{dist}A$')],axis=1)  
+            result_both_directions_pd = pd.concat([result_both_directions_pd,lfc_pd.filter(regex=rf'unires|{direction}_{lfc_pthr}_psig$|{direction}_{lfc_pthr}_psig_Clust_{dist}A$'),lfc3d_pd.filter(regex=rf'{direction}_{lfc3d_pthr}_psig$|{direction}_{lfc3d_pthr}_psig_Clust_{dist}A$'),union_pd.filter(regex=rf'{direction}_{lfc3d_pthr}_psig$|{direction}_{lfc3d_pthr}_psig_Clust_{dist}A$')],axis=1)  
 
         for direction in ['pos']:                        
-            result_pos_pd = pd.concat([result_pos_pd,lfc_pd.filter(regex=rf'{direction}_{lfc_pthr}_psig$|{direction}_{lfc_pthr}_psig_Clust_{dist}A$'),lfc3d_pd.filter(regex=rf'{direction}_{lfc3d_pthr}_psig$|{direction}_{lfc3d_pthr}_psig_Clust_{dist}A$'),union_pd.filter(regex=rf'{direction}_{lfc3d_pthr}_psig$|{direction}_{lfc3d_pthr}_psig_Clust_{dist}A$'),lfc_scores_pd.filter(regex=rf'.*{screen_name}_LFC_{direction}$'),lfc3d_scores_pd.filter(regex=rf'.*{screen_name}_LFC3D_{direction}$')],axis=1)
+            result_pos_pd = pd.concat([result_pos_pd,lfc_pd.filter(regex=rf'unires|{direction}_{lfc_pthr}_psig$|{direction}_{lfc_pthr}_psig_Clust_{dist}A$'),lfc3d_pd.filter(regex=rf'{direction}_{lfc3d_pthr}_psig$|{direction}_{lfc3d_pthr}_psig_Clust_{dist}A$'),union_pd.filter(regex=rf'{direction}_{lfc3d_pthr}_psig$|{direction}_{lfc3d_pthr}_psig_Clust_{dist}A$'),lfc_scores_pd.filter(regex=rf'.*{screen_name}_LFC_{direction}$'),lfc3d_scores_pd.filter(regex=rf'.*{screen_name}_LFC3D_{direction}$')],axis=1)
             
             rename_dict = {f'{screen_name}_LFC_{direction}_{lfc_pthr}_psig':f'{screen_name} LFC hit',
                            f'{screen_name}_LFC3D_{direction}_{lfc3d_pthr}_psig':f'{screen_name} LFC3D hit',
@@ -85,7 +85,7 @@ def g2p_formatted_hit_cluster(results_dir,
             result_pos_pd = result_pos_pd.rename(rename_dict,axis=1)
 
         for direction in ['neg']:
-            result_neg_pd = pd.concat([result_neg_pd,lfc_pd.filter(regex=rf'{direction}_{lfc_pthr}_psig$|{direction}_{lfc_pthr}_psig_Clust_{dist}A$'),lfc3d_pd.filter(regex=rf'{direction}_{lfc3d_pthr}_psig$|{direction}_{lfc3d_pthr}_psig_Clust_{dist}A$'),union_pd.filter(regex=rf'{direction}_{lfc3d_pthr}_psig$|{direction}_{lfc3d_pthr}_psig_Clust_{dist}A$'),lfc_scores_pd.filter(regex=rf'.*{screen_name}_LFC_{direction}$'),lfc3d_scores_pd.filter(regex=rf'.*{screen_name}_LFC3D_{direction}$')],axis=1)           
+            result_neg_pd = pd.concat([result_neg_pd,lfc_pd.filter(regex=rf'unires|{direction}_{lfc_pthr}_psig$|{direction}_{lfc_pthr}_psig_Clust_{dist}A$'),lfc3d_pd.filter(regex=rf'{direction}_{lfc3d_pthr}_psig$|{direction}_{lfc3d_pthr}_psig_Clust_{dist}A$'),union_pd.filter(regex=rf'{direction}_{lfc3d_pthr}_psig$|{direction}_{lfc3d_pthr}_psig_Clust_{dist}A$'),lfc_scores_pd.filter(regex=rf'.*{screen_name}_LFC_{direction}$'),lfc3d_scores_pd.filter(regex=rf'.*{screen_name}_LFC3D_{direction}$')],axis=1)           
             rename_dict = {f'{screen_name}_LFC_{direction}_{lfc_pthr}_psig':f'{screen_name} LFC hit',
                            f'{screen_name}_LFC3D_{direction}_{lfc3d_pthr}_psig':f'{screen_name} LFC3D hit',
                            f'{screen_name}_union_{direction}_{lfc3d_pthr}_psig':f'{screen_name} union hit',
@@ -158,7 +158,6 @@ def g2p_formatted_hit_cluster(results_dir,
             
         for direction in ['neg']:
             result_neg_pd = pd.concat([result_neg_pd,lfc_pd.filter(regex=rf'{direction}_{meta_pthr}_psig$|{direction}_{meta_pthr}_psig_Clust_{dist}A$'),lfc3d_pd.filter(regex=rf'{direction}_{meta_pthr}_psig$|{direction}_{meta_pthr}_psig_Clust_{dist}A$'), union_pd.filter(regex=rf'{direction}_{meta_pthr}_psig$|{direction}_{meta_pthr}_psig_Clust_{dist}A$'),lfc_scores_pd.filter(regex=rf'.*{screen_name}_LFC_{direction}$'),lfc3d_scores_pd.filter(regex=rf'.*{screen_name}_LFC3D_{direction}$')],axis=1)        
-            print(screen_name)
             rename_dict = {f'{screen_name}_LFC_{direction}_{meta_pthr}_psig':f'Meta LFC hit',
                            f'{screen_name}_LFC3D_{direction}_{meta_pthr}_psig':f'Meta LFC3D hit',
                            f'{screen_name}_union_{direction}_{meta_pthr}_psig':f'Meta union hit',
