@@ -11,7 +11,8 @@ def g2p_formatted_hit_cluster(results_dir,
                               meta_pthr='001',
                               dist=6,
                               meta=False,
-                              conservation=False):
+                              conservation=False,
+                              input_gene=None):
     """
     Description
         Prepare TSV for Hit Cluster Visualization on G2P
@@ -61,8 +62,8 @@ def g2p_formatted_hit_cluster(results_dir,
         lfc_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_LFC',f'{gene_name}_{screen_name}_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
         lfc3d_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_LFC3D',f'{gene_name}_{screen_name}_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')        
         union_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_union',f'{gene_name}_{screen_name}_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
-        lfc_scores_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'LFC',f'{gene_name}_NonAggr_LFC.tsv'))[0],sep='\t').set_index('unipos')
-        lfc3d_scores_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'LFC3D',f'{gene_name}_NonAggr_LFC3D.tsv'))[0],sep='\t').set_index('unipos')
+        lfc_scores_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'LFC',f'{input_gene}_NonAggr_LFC.tsv'))[0],sep='\t').set_index('unipos')
+        lfc3d_scores_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'LFC3D',f'{input_gene}_NonAggr_LFC3D.tsv'))[0],sep='\t').set_index('unipos')
         
         lfc_scores_pd = lfc_scores_pd.replace('-',None)
         lfc3d_scores_pd = lfc3d_scores_pd.replace('-',None)

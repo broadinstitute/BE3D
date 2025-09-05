@@ -23,6 +23,7 @@ def average_split_score(
     input_gene, 
     screen_names, 
     score_type='LFC3D', 
+    gene_type='Human'
 ): 
     """
     Splits LFC or LFC3D scores into positive and negative components and aggregates randomized scores.
@@ -88,7 +89,7 @@ def average_split_score(
         df_bidir[f"{screen_name}_AVG_{score_type}r_pos"] = df_LFC_LFC3D[f"{screen_name}_AVG_{score_type}r_pos"] # AVG_LFC3Dr_pos per SCREEN
 
     # SAVE #
-    out_filename_bidir = working_filedir / f"{score_type}/{input_gene}_{score_type}_bidirectional.tsv"
+    out_filename_bidir = working_filedir / f"{score_type}/{gene_type}_{input_gene}_{score_type}_bidirectional.tsv"
     df_bidir.to_csv(out_filename_bidir, sep='\t', index=False)
     return df_bidir
 
@@ -97,7 +98,8 @@ def bin_score(
         workdir, 
         input_gene, 
         screen_names, 
-        score_type='LFC3D', 
+        score_type='LFC3D',
+        gene_type='Human'
 ): 
     """
     Bins positive and negative LFC or LFC3D scores into percentile thresholds.
@@ -171,7 +173,7 @@ def bin_score(
         df_dis[f"{screen_name}_{score_type}_wght"] = arr_weight
 
     # SAVE #
-    out_filename_dis = working_filedir / f"{score_type}/{input_gene}_{score_type}_dis_wght.tsv"
+    out_filename_dis = working_filedir / f"{score_type}/{gene_type}_{input_gene}_{score_type}_dis_wght.tsv"
     df_dis.to_csv(out_filename_dis, sep = '\t', index=False)
     return df_dis, df_neg_stats_list, df_pos_stats_list
 
@@ -181,7 +183,8 @@ def znorm_score(
         input_gene, 
         screen_names, 
         score_type='LFC3D',
-        pthrs=[0.05, 0.01, 0.001], 
+        pthrs=[0.05, 0.01, 0.001],
+        gene_type = 'Human'
 ): 
     """
     Z-normalizes scores against randomized control distributions and assigns significance labels.
@@ -294,6 +297,6 @@ def znorm_score(
         df_z = pd.concat([df_z, df_temp], axis=1)
 
     # SAVE #
-    filename = working_filedir / f"{score_type}/{input_gene}_NonAggr_{score_type}.tsv"
+    filename = working_filedir / f"{score_type}/{gene_type}_{input_gene}_NonAggr_{score_type}.tsv"
     df_z.to_csv(filename, "\t", index=False)
     return df_z

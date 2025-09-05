@@ -211,16 +211,16 @@ def parse_alignment(
 ): 
 
     align = AlignIO.read(edits_filedir / align_filename, "clustal")
-    human_align_res = align[0].seq
-    mouse_align_res = align[1].seq
+    original_align_res = align[0].seq
+    alternative_align_res = align[1].seq
     score = align.column_annotations['clustal_consensus']
 
-    index  = [i+1 for i in range(len(human_align_res))]
+    index  = [i+1 for i in range(len(original_align_res))]
     dis, v = [cons_dict[s][0] for s in score], [cons_dict[s][1] for s in score]
-    colnames = ['alignment_pos', 'human_aligned_res', 'mouse_aligned_res', 'score', 'dis_score', 'v_score']
+    colnames = ['alignment_pos', 'original_aligned_res', 'alternative_aligned_res', 'score', 'dis_score', 'v_score']
     colvals  = [index, 
-                [c for c in human_align_res], 
-                [c for c in mouse_align_res], 
+                [c for c in original_align_res], 
+                [c for c in alternative_align_res], 
                 [s for s in score], 
                 dis, v]
 
@@ -231,24 +231,24 @@ def parse_alignment(
 
     # COUNT CONSERVATION POSITIONS, ADD TO DATAFRAME #
     i, j = 0, 0
-    human_res_pos, mouse_res_pos = [], []
-    for s in human_align_res: 
+    original_res_pos, alternative_res_pos = [], []
+    for s in original_align_res: 
         if s != '-': 
             i += 1
-        human_res_pos.append(i)
-    for s in mouse_align_res: 
+        original_res_pos.append(i)
+    for s in alternative_align_res: 
         if s != '-': 
             j += 1
-        mouse_res_pos.append(j)
+        alternative_res_pos.append(j)
 
-    colnames = ['alignment_pos', 'human_res_pos', 'human_res', 'mouse_res_pos', 'mouse_res', 'conservation', 'v_score']
-    colvals  = [index, human_res_pos, human_align_res, mouse_res_pos, mouse_align_res, dis, v]
+    colnames = ['alignment_pos', 'original_res_pos', 'original_res', 'alternative_res_pos', 'alternative_res', 'conservation', 'v_score']
+    colvals  = [index, original_res_pos, original_align_res, alternative_res_pos, alternative_align_res, dis, v]
     df_residuemap = pd.DataFrame()
     for name, col in zip(colnames, colvals): 
         df_residuemap[name] = col
-    df_residuemap = df_residuemap[df_residuemap['human_res'] != '-']
+    df_residuemap = df_residuemap[df_residuemap['original_res'] != '-']
     df_residuemap.to_csv(edits_filedir / residuemap_filename, sep='\t', index=False)
 
-    del index, human_align_res, mouse_align_res, score, dis, v, human_res_pos, mouse_res_pos, colnames, colvals
+    del index, original_align_res, alternative_align_res, score, dis, v, original_res_pos, alternative_res_pos, colnames, colvals
 
     return df_alignconserv, df_residuemap

@@ -27,7 +27,8 @@ def calculate_lfc3d(
     function_type_lfc='mean', 
     function_type_lfc3d='mean',
     LFC_only=False, 
-    conserved_only=False, 
+    conserved_only=False,
+    gene_type='Human'
     # THERE ARE 2 MEAN FUNCTIONS, MEAN FOR CALCULATING LFC3D WHICH IS TUNABLE, AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE #
 ): 
     """
@@ -204,7 +205,7 @@ def calculate_lfc3d(
         print('Calculated LFC3D for', screen_name)
 
     df_struct_3d[core_columns + structure_columns] = df_struc[core_columns + structure_columns]
-    out_filename = working_filedir / f"LFC3D/{input_gene}_LFC_LFC3D_LFC3Dr.tsv"
+    out_filename = working_filedir / f"LFC3D/{gene_type}_{input_gene}_LFC_LFC3D_LFC3Dr.tsv"
     df_struct_3d.to_csv(out_filename, sep = '\t', index=False)
 
     return df_struct_3d
