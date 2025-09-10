@@ -34,6 +34,7 @@ def conservation(
     title=None, 
     email=None, 
     wait_time=30, 
+    muscle_path='muscle', 
 ): 
     """
     Generate dataframes of sequence conservation for each residue. 
@@ -108,7 +109,7 @@ def conservation(
         muscle_output_filename = f"conservation/{input_gene}_{alt_input_gene}.afa"
         align_filename = f"conservation/{input_gene}_{alt_input_gene}.align"
         # RUN ALIGNMENT LOCALLY #
-        if mode=='run': run_muscle(working_filedir, seqs_filename, muscle_output_filename, align_filename)
+        if mode=='run': run_muscle(working_filedir, seqs_filename, muscle_output_filename, align_filename, muscle_path)
         # IF MUSCLE CANT BE RUN LOCALLY, QUERY API #
         if mode=='query': query_muscle(working_filedir, seqs_filename, align_filename, email, title, wait_time)
     else: 
@@ -182,6 +183,7 @@ def run_muscle(
     seqs_filename, 
     afa_filename, 
     align_filename, 
+    muscle_path, 
 ): 
     """
     Description
@@ -189,7 +191,7 @@ def run_muscle(
     """
     # Run MUSCLE alignment
     subprocess.run([
-        "muscle", 
+        muscle_path, 
         "-align", str(edits_filedir / seqs_filename), 
         "-output", str(edits_filedir / afa_filename), 
         "-threads", "1", 
