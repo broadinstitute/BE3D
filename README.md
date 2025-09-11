@@ -154,13 +154,13 @@ Another option to skip MUSCLE and CLUSTAL is for users to run alignment on their
 ## Sample Google Colab Notebooks
 
 Single Screen Notebook Example (DNMT3A): 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5-SingleScreen-Notebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5_SingleScreen_Notebook.ipynb)
 
 Multi Screen Notebook with Meta-Aggregation Example (MEN1): 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5-MultipleScreens-Notebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5_MultiScreen_Notebook.ipynb)
 
 Multi Screen Notebook with Meta-Aggregation and Conservation Example: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)]()
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5_MultipleScreensConservation_Notebook.ipynb)
 
 ## License
 
