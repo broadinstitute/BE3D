@@ -20,6 +20,7 @@ from biopandas.pdb import PandasPdb
 
 from Bio.PDB.DSSP import DSSP
 from DSSPparser import parseDSSP
+from Bio.SeqUtils import seq1
 
 aamap = {
     'A': {'max_asa': 129.0, 'aa3cap': 'ALA'}, 
@@ -144,66 +145,129 @@ def parse_coord(
     af_processed_filename, 
     fastalist_filename, 
     coord_filename, 
-    chains, 
-): 
+    target_chainid, 
+):
     """
-    Description
-        Take in processed AlphaFold and processed fasta and parse
-        coordinates and values
+    Take in processed AlphaFold PDB and processed FASTA list, and parse
+    X/Y/Z coordinates (CA), chain, and pLDDT (stored in B-factor for AF).
+    Writes a tab-separated file with columns:
+    unipos  unires  x_coord y_coord z_coord chain  bfactor_pLDDT
     """
 
-    # GET COORDS AND CONFID VALS FROM PROCESSED AF #
-    ### chain?
-    alphafold_pdb = PandasPdb()
-    alphafold_pdb.read_pdb(str(working_filedir / af_processed_filename))
-    atom_df = alphafold_pdb.df['ATOM']
-    fasta_df = pd.read_csv(fastalist_filename, sep = '\t')
-    coord_file = open(working_filedir / coord_filename, 'w')
-    coord_file.write('\t'.join(['unipos', 'unires', 
-                                'x_coord', 'y_coord', 'z_coord', 
-                                'chain', 'bfactor_pLDDT']) + '\n')
+    # --- Load inputs ---
+    ppdb = PandasPdb().read_pdb(str(working_filedir / af_processed_filename))
+    atom_df = ppdb.df["ATOM"]                        # only ATOM; HETATM is in ppdb.df["HETATM"]
+    fasta_df = pd.read_csv(fastalist_filename, sep="\t")
 
-    # PARSE OUT X Y Z B DATA FROM PROCESSED FASTA, PROCESSED AF #
-    output_data = []
-    unipos_dict = fasta_df['unipos'].to_dict()
-    uniaa_dict = fasta_df['unires'].to_dict()
-    
+    # expected fasta columns
+    if not {"unipos", "unires"}.issubset(fasta_df.columns):
+        raise ValueError("fasta_df must contain columns: 'unipos' and 'unires'")
+
+    # ensure integer residue numbers for matching
+    atom_df = atom_df.copy()
+    atom_df["residue_number"] = atom_df["residue_number"].astype(int)
+    fasta_df = fasta_df.copy()
+    fasta_df["unipos"] = fasta_df["unipos"].astype(int)
+
+    # Subset ATOM to the requested chains and CA atoms
+    atom_ca = atom_df[(atom_df["atom_name"] == "CA") & (atom_df["chain_id"].isin([target_chainid]))]
+
+    # Build quick lookup by residue_number → rows (permitted to be >1; we handle below)
+    # (A merge would also work; we’ll keep the loop structure you used.)
+    rows = []
     for i in range(len(fasta_df)):
-        unipos = unipos_dict[i]
-        uniaa = uniaa_dict[i]
-        entry = atom_df.loc[atom_df['residue_number'] == int(unipos), ] ###
-        ca_entry = entry.loc[(entry['atom_name'] == "CA") & (entry['chain_id'].isin(chains)), ] ###
+        unipos = fasta_df.at[i, "unipos"]
+        uniaa  = fasta_df.at[i, "unires"]
 
-        x_coord, y_coord, z_coord, chain_id, b_factor = "-", "-", "-", "-", "-"
-        
-        if len(ca_entry) == 1: 
-            row = ca_entry.iloc[0]
-            aa_at_ca = row['residue_name']
-            uni_res = aamap[str(uniaa)]['aa3cap']
+        # entries for that residue number across selected chains
+        ca_entry = atom_ca.loc[atom_ca["residue_number"] == int(unipos)]
 
-            if aa_at_ca == uni_res: 
-                x_coord = round(float(row['x_coord']), 3)
-                y_coord = round(float(row['y_coord']), 3)
-                z_coord = round(float(row['z_coord']), 3)
+        # defaults if not found / mismatch
+        x_coord = y_coord = z_coord = b_factor = "-"
+        chain_id = target_chainid
+        if len(ca_entry) == 1:
+            row0 = ca_entry.iloc[0]
+            aa_at_ca = row0["residue_name"]
 
-                try: chain_id = row['chain_id']
-                except Exception: pass
-                try: b_factor = round(float(row['b_factor']), 3)
-                except Exception: pass
-            else: 
-                warnings.warn(f"PDB and UNIPROT residue mismatch {aa_at_ca}: {uni_res}")
-        elif len(ca_entry) > 1: 
-            warnings.warn("PROBLEM - CHECK PDB")
+            # You used aamap[str(uniaa)]['aa3cap'] — keep it if available; else trust AA
+            try:
+                expected_aa3 = aamap[str(uniaa)]["aa3cap"]
+            except Exception:
+                expected_aa3 = aa_at_ca  # fall back (or set to None and skip check)
 
-        output_data_entry = '\t'.join([str(unipos), str(uniaa), 
-                                       str(x_coord), str(y_coord), str(z_coord), 
-                                       str(chain_id), str(b_factor)])+'\n'
-        output_data.append(output_data_entry)
+            if aa_at_ca == expected_aa3:
+                x_coord  = round(float(row0["x_coord"]), 3)
+                y_coord  = round(float(row0["y_coord"]), 3)
+                z_coord  = round(float(row0["z_coord"]), 3)
+                chain_id = str(row0.get("chain_id", "-"))
+                try:
+                    b_factor = round(float(row0["b_factor"]), 3)
+                except Exception:
+                    b_factor = "-"
+            else:
+                warnings.warn(f"PDB and UNIPROT residue mismatch at pos {unipos}: {aa_at_ca} vs {expected_aa3}")
 
-    del alphafold_pdb, atom_df, fasta_df
-    coord_file.writelines(output_data)
-    coord_file.close()
+        elif len(ca_entry) > 1:
+            warnings.warn(f"Multiple CA rows for residue {unipos} in chains {[target_chainid]}; skipping this residue.")
+
+        # Collect one row per FASTA position
+        rows.append({
+            "unipos": unipos,
+            "unires": uniaa,
+            "x_coord": x_coord,
+            "y_coord": y_coord,
+            "z_coord": z_coord,
+            "chain": target_chainid,
+            "bfactor_pLDDT": b_factor,
+        })
+
+    df_loop = pd.DataFrame(
+        rows,
+        columns=["unipos","unires","x_coord","y_coord","z_coord","chain","bfactor_pLDDT"]
+        )
+
+    # --- Handle "others" (chains NOT in `chains`) at residue-level (CA only) ---
+    other_ca = atom_df.loc[
+        (atom_df["atom_name"] == "CA") & (~atom_df["chain_id"].isin([target_chainid])),
+        ["residue_number","residue_name","x_coord","y_coord","z_coord","chain_id","b_factor"]
+    ].copy()
+
+    # Align to df_loop schema
+    other_ca.rename(columns={
+        "residue_number": "unipos",
+        "residue_name":  "unires",
+        "chain_id":      "chain",
+        "b_factor":      "bfactor_pLDDT",
+    }, inplace=True)
+
+    # 3-letter -> 1-letter AA (unknowns -> 'X')
+    def _to_aa1(x):
+        try:
+            return seq1(str(x)) if pd.notnull(x) else "X"
+        except Exception:
+            return "X"
+    other_ca["unires"] = other_ca["unires"].apply(_to_aa1)
+
+    # If multiple CA for same (chain,unipos) (e.g., altLoc), keep first
+    other_ca.sort_values(["chain","unipos"], inplace=True)
+    other_ca.drop_duplicates(subset=["chain","unipos"], keep="first", inplace=True)
+
+    # Round numeric cols safely
+    for c in ["x_coord","y_coord","z_coord","bfactor_pLDDT"]:
+        other_ca[c] = pd.to_numeric(other_ca[c], errors="coerce").round(3)
+
+    # Combine (both are residue-level now)
+    final_df = pd.concat([df_loop, other_ca], ignore_index=True)
+
+    # Ensure string-safe for TSV (optional)
+    for c in ["unipos","unires","x_coord","y_coord","z_coord","chain","bfactor_pLDDT"]:
+        final_df[c] = final_df[c].astype(str)
+
+    # Write
+    out_path = working_filedir / coord_filename
+    final_df.to_csv(out_path, sep="\t", index=False)
     return None
+
 
 # RUN DSSP AND PARSE IT INTO A TSV FILE #
 
@@ -234,7 +298,7 @@ def parse_dssp(
     alphafold_dssp_filename, 
     fastalist_filename, 
     dssp_parsed_filename, 
-    chains, 
+    target_chainid, 
 ): 
     """
     Description
@@ -245,10 +309,10 @@ def parse_dssp(
     parser = parseDSSP(working_filedir / alphafold_dssp_filename)
     parser.parse()
     pddict = parser.dictTodataframe()
-    pddict_ch = pddict.loc[pddict['chain'].isin(chains)]
+    pddict_ch = pddict.loc[pddict['chain'].isin([target_chainid])]
     pddict_ch = pddict_ch.fillna('-')
     pddict_ch = pddict_ch.replace(r'^\s*$', '-', regex=True)
-    
+
     # READ FASTA AND DSSP, WRITE PROCESSED DSSP #
     fasta_df = pd.read_csv(fastalist_filename, sep = '\t')
     dssp_output_file = open(working_filedir / dssp_parsed_filename, 'w')
@@ -372,6 +436,7 @@ def count_aa_within_radius(
     working_filedir, 
     coord_filename, 
     coord_radius_filename, 
+    target_chain,
     radius=6.0, 
 ): 
     """
@@ -380,7 +445,7 @@ def count_aa_within_radius(
     """
 
     # COUNT AMINO ACIDS IN 6A DISTANCE AND TEIR IDENTITY #
-    df_coord = pd.read_csv(working_filedir / coord_filename, sep = "\t")
+    df_coord = pd.read_csv(working_filedir / coord_filename, sep = "\t")    
     # PRE EXTRACT VALUES TO AVOID DF CALLS #
     x_coords = df_coord["x_coord"].values
     y_coords = df_coord["y_coord"].values
@@ -392,53 +457,55 @@ def count_aa_within_radius(
     incomplete_structure = False
     taa_count, taa_naa, taa_naa_positions, taa_naa_chains = [], [], [], []
 
-    for taa in range(len(df_coord)): 
+    for taa in range(len(df_coord)):
+        t_chain = chains_all[taa]
         t_xcoord = x_coords[taa]
         t_ycoord = y_coords[taa]
         t_zcoord = z_coords[taa]
+        if t_chain == target_chain:
+            # print(t_chain,taa)
+            dis_count, naas, naas_positions, chains = 0, [], [], []
+            # IF STRUCTURE IS INCOMPLETE #
+            if t_xcoord == '-' or t_ycoord == '-' or t_zcoord == '-': 
+                taa_count.append(dis_count)
+                taa_naa.append(';'.join(naas))
+                taa_naa_positions.append(';'.join(naas_positions))
+                taa_naa_chains.append(';'.join(chains))
+                incomplete_structure = True
+                continue
 
-        dis_count, naas, naas_positions, chains = 0, [], [], []
-        # IF STRUCTURE IS INCOMPLETE #
-        if t_xcoord == '-' or t_ycoord == '-' or t_zcoord == '-': 
+            t_xcoord = float(t_xcoord)
+            t_ycoord = float(t_ycoord)
+            t_zcoord = float(t_zcoord)
+
+            for naa in range(len(df_coord)):
+                if taa == naa:
+                    continue
+                xcoord = x_coords[naa]
+                ycoord = y_coords[naa]
+                zcoord = z_coords[naa]
+
+                if xcoord == '-' or ycoord == '-' or zcoord == '-':
+                    continue
+                dx = float(xcoord) - t_xcoord
+                dy = float(ycoord) - t_ycoord
+                dz = float(zcoord) - t_zcoord
+                pairwise_dist = math.sqrt(dx**2 + dy**2 + dz**2)
+
+                # ADD TO LIST IF WITHIN RADIUS CUTOFF #
+                if pairwise_dist <= radius:
+                    dis_count += 1
+                    naas.append(unires_all[naa])
+                    naas_positions.append(str(unipos_all[naa]))
+                    chains.append(chains_all[naa])
+            
             taa_count.append(dis_count)
             taa_naa.append(';'.join(naas))
             taa_naa_positions.append(';'.join(naas_positions))
             taa_naa_chains.append(';'.join(chains))
-            incomplete_structure = True
-            continue
-
-        t_xcoord = float(t_xcoord)
-        t_ycoord = float(t_ycoord)
-        t_zcoord = float(t_zcoord)
-
-        for naa in range(len(df_coord)):
-            if taa == naa:
-                continue
-            xcoord = x_coords[naa]
-            ycoord = y_coords[naa]
-            zcoord = z_coords[naa]
-
-            if xcoord == '-' or ycoord == '-' or zcoord == '-':
-                continue
-            dx = float(xcoord) - t_xcoord
-            dy = float(ycoord) - t_ycoord
-            dz = float(zcoord) - t_zcoord
-            pairwise_dist = math.sqrt(dx**2 + dy**2 + dz**2)
-
-            # ADD TO LIST IF WITHIN RADIUS CUTOFF #
-            if pairwise_dist <= radius:
-                dis_count += 1
-                naas.append(unires_all[naa])
-                naas_positions.append(str(unipos_all[naa]))
-                chains.append(chains_all[naa])
         
-        taa_count.append(dis_count)
-        taa_naa.append(';'.join(naas))
-        taa_naa_positions.append(';'.join(naas_positions))
-        taa_naa_chains.append(';'.join(chains))
-    
     if incomplete_structure: warnings.warn(f"Incomplete Structure Detected")
-
+    df_coord = df_coord[df_coord['chain']==target_chain]
     df_coord['Naa_count'] = taa_count
     df_coord['Naa'] = taa_naa
     df_coord['Naa_pos'] = taa_naa_positions
@@ -451,15 +518,13 @@ def degree_of_burial(
     df_dssp, 
     df_coord, 
     working_filedir, 
-    coord_dssp_filename, 
+    coord_dssp_filename,
+    target_chainid
 ): 
     """
     Description
         Calculate the degree of burial per residue with maxRSA metric
     """
-    # df_coord_dssp = df_coord.copy()
-    # dssp_columns = ['SS9', 'SS3', 'ACC', 'RSA', 'exposure', 'PHI', 'normPHI', 'PSI', 'normPSI']
-    # df_coord_dssp[dssp_columns] = df_dssp[dssp_columns]
     df_coord_dssp = pd.merge(df_coord, df_dssp, on=["unipos", "unires"])
     for colname in ['unipos', 'unires', 'SS9', 'SS3', 'ACC', 'RSA', 'exposure', 'PHI', 'normPHI', 'PSI', 'normPSI']: 
         assert colname in df_coord_dssp
@@ -475,6 +540,7 @@ def degree_of_burial(
     arr_pLDDT_discrete = []
     naa_list_dict = df_coord_dssp['Naa'].to_dict()
     naa_pos_list_dict = df_coord_dssp['Naa_pos'].to_dict()
+    naa_chain_list_dict = df_coord_dssp['Naa_chain'].to_dict()
     taa_dBurial_dict = df_coord_dssp['dBurial'].to_dict()
     pLDDT_dict = df_coord_dssp['bfactor_pLDDT'].to_dict()
 
@@ -483,11 +549,12 @@ def degree_of_burial(
         if taa_dBurial == '-': taa_dBurial = 0.0
         naa_list     = naa_list_dict[i].split(';') # NEIGHBORING AAs
         naa_pos_list = naa_pos_list_dict[i].split(';')
+        naa_chain_list = naa_chain_list_dict[i].split(';')
 
         # CALCULATE #
         sum_dBurial = 0
-        for naa_pos in naa_pos_list: 
-            if naa_pos != '': 
+        for naa_chain, naa_pos in zip(naa_chain_list, naa_pos_list): 
+            if naa_pos != '' and naa_chain in [target_chainid]: 
                 dburial = taa_dBurial_dict[int(naa_pos)-1]
                 if dburial != '-': 
                     sum_dBurial += round(dburial, 2)

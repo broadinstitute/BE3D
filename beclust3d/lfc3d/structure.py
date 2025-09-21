@@ -16,7 +16,7 @@ def sequence_structural_features(
     input_gene, 
     input_uniprot, 
     structureid, 
-    chains=['A'], 
+    target_chainid,
     radius=6.0, 
     user_fasta=None, 
     user_pdb=None, 
@@ -42,8 +42,8 @@ def sequence_structural_features(
     structureid : str
         Identifier for the protein structure (used for naming processed files).
 
-    chains : list of str, optional (default=['A'])
-        Only residues from these chains are included in downstream structural analyses.
+    target_chainid : str 
+        Only residues from a target chain are included in downstream structural analyses.
 
     radius : float, optional (default=6.0)
         Radius in Angstroms used when counting neighboring amino acids.
@@ -102,7 +102,7 @@ def sequence_structural_features(
     update_pdb_element_symbols(os.path.join(working_filedir, pdb_processed_filename),os.path.join(working_filedir, pdb_processed_filename))
     
     coord_filename = f"sequence_structure/{structureid}_coord.tsv"
-    parse_coord(working_filedir, pdb_processed_filename, out_fasta, coord_filename, chains)
+    parse_coord(working_filedir, pdb_processed_filename, out_fasta, coord_filename, target_chainid)
 
     # SECONDAY STRUCTURE DSSP #
     dssp_filename = f"sequence_structure/{structureid}_processed.dssp"
@@ -114,15 +114,15 @@ def sequence_structural_features(
         run_dssp(working_filedir, pdb_processed_filename, dssp_filename)
 
     dssp_parsed_filename = f"sequence_structure/{structureid}_dssp_parsed.tsv"
-    parse_dssp(working_filedir, dssp_filename, out_fasta, dssp_parsed_filename, chains)
+    parse_dssp(working_filedir, dssp_filename, out_fasta, dssp_parsed_filename, target_chainid)
 
     # UNIPROT AND PDB SHOULD MATCH AND THERE ARE CHECKS #
     # DSSP IS BASED ON PDB SO UNIPROT AND DSSP SHOULD ALSO MATCH #
 
     df_dssp = pd.read_csv(working_filedir / dssp_parsed_filename, sep = '\t')
     coord_radius_filename = f"sequence_structure/{structureid}_coord_radius.tsv"
-    df_coord = count_aa_within_radius(working_filedir, coord_filename, coord_radius_filename, radius=radius)
+    df_coord = count_aa_within_radius(working_filedir, coord_filename, coord_radius_filename, target_chain=target_chainid, radius=radius)
 
     coord_dssp_filename = f"sequence_structure/{structureid}_coord_struc_features.tsv"
-    df_coord_dssp = degree_of_burial(df_dssp, df_coord, working_filedir, coord_dssp_filename)
+    df_coord_dssp = degree_of_burial(df_dssp, df_coord, working_filedir, coord_dssp_filename, target_chainid)
     return df_coord_dssp
