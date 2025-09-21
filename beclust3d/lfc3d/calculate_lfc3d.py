@@ -28,7 +28,10 @@ def calculate_lfc3d(
     function_type_lfc3d='mean',
     LFC_only=False, 
     conserved_only=False,
-    gene_type='Human'
+    gene_type='Human',
+    target_gene_chain = 'A',
+    ppi_chain_gene_dict = {}, # {'GENE1':'B','GENE2':'C'}
+    ppi_gene_edits_dict = {} # {'GENE1': edits_dict, 'GENE2': edits_dict}
     # THERE ARE 2 MEAN FUNCTIONS, MEAN FOR CALCULATING LFC3D WHICH IS TUNABLE, AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE #
 ): 
     """
@@ -100,12 +103,21 @@ def calculate_lfc3d(
     assert len(df_edits_list) == len(df_rand_list) == len(screen_names)
 
     df_struct_3d = df_struc[core_columns + structure_columns].copy()
-    naa_pos_dict = df_struc['Naa_pos'].to_dict()
-    naa_pos_chain_dict = {
-        (row['unipos'], row['chain']) : (row['Naa_pos'], row['Naa_chain'])
-        for _, row in df_struc.iterrows()
-    }
+    df_struc = df_struc.fillna('-')
     
+    naa_pos_chain_dict = dict()
+    for idx, row in df_struc.iterrows():
+        if row['Naa_pos'] == '-':
+            naa_pos_chain_dict[f"{row['chain']}_{idx}"] = np.nan
+        else:
+            naa_chain_list = row['Naa_chain'].split(';')
+            naa_pos_list = row['Naa_pos'].split(';')
+            naa_chain_pos_list = list()
+            for naa_chain, naa_pos in zip(naa_chain_list,naa_pos_list):
+                naa_chain_pos_list.append(f'{naa_chain}_{naa_pos}')
+
+            naa_pos_chain_dict[f"{row['chain']}_{idx}"] = ';'.join(naa_chain_pos_list)
+
     # MAP AGGREGATION FUNCTION #
     func_map = {'mean':np.mean,
                 'min':np.min,
@@ -118,14 +130,16 @@ def calculate_lfc3d(
     assert function_type_lfc3d in func_map.keys()
     # FOR EVERY SCREEN #
     for screen_name, df_edits, df_rand in zip(screen_names, df_edits_list, df_rand_list):
-
+        ppi_edits_dict2 = dict()
         taa_conserv_dict = df_edits['conservation'].to_dict() ###
         # ADD LFC COLUMNS FROM DF #
         lfc_colname = f'{function_type_lfc}_{muttype}_LFC'
         df_struct_3d = pd.concat([df_struct_3d, 
                                   df_edits[[lfc_colname]].rename(columns={lfc_colname: f"{screen_name}_LFC"}), 
                                   df_edits[[f'{lfc_colname}_Z']].rename(columns={f'{lfc_colname}_Z': f"{screen_name}_LFC_Z"})], axis=1)
-        
+        if ppi_gene_edits_dict:
+            for gene, be3d_dir in ppi_gene_edits_dict.items():
+                ppi_edits_dict2[gene] = pd.read_csv(os.path.join(be3d_dir,'screendata_sequence',f'{gene}_{screen_name}_protein_edits.tsv'),sep='\t')[lfc_colname].to_dict()
         # CALCULATE LFC3D, IF LFC_only SKIP OVER #
         if not LFC_only: 
             aggr_vals = []
@@ -137,7 +151,7 @@ def calculate_lfc3d(
                     aggr_vals.append('-')
                     continue
                 # CALCULATE LFC3D #
-                taa_naa_LFC_vals = helper(aa, taa_LFC_dict, taa_conserv_dict, naa_pos_dict[aa], conserved_only) ###
+                taa_naa_LFC_vals = helper(target_gene_chain, aa, taa_LFC_dict, taa_conserv_dict, naa_pos_chain_dict[f'{target_gene_chain}_{aa}'], conserved_only, ppi_chain_gene_dict, ppi_edits_dict2)
                 if len(taa_naa_LFC_vals) == 0:
                     aggr_vals.append('-')
                 else: 
@@ -164,7 +178,7 @@ def calculate_lfc3d(
                         aggr_vals.append('-')
                         continue
                     # CALCULATE LFC3D RANDOMIZATION #
-                    taa_naa_LFC_vals = helper(aa, taa_LFC_rand_dict, taa_conserv_dict, naa_pos_dict[aa], conserved_only) ###
+                    taa_naa_LFC_vals = helper(target_gene_chain, aa, taa_LFC_rand_dict, taa_conserv_dict, naa_pos_chain_dict[f'{target_gene_chain}_{aa}'], conserved_only, ppi_chain_gene_dict, ppi_edits_dict2)
                     if len(taa_naa_LFC_vals) == 0:
                         aggr_vals.append('-')
                     else:
@@ -211,11 +225,15 @@ def calculate_lfc3d(
     return df_struct_3d
 
 def helper(
-    aa, 
-    taa_LFC_dict, 
-    df_struc_edits_dict, 
-    naa_pos_str, 
-    conserved_only, 
+    target_gene_chain, # should be main targe gene
+    aa, # should be main target gene
+    taa_LFC_dict,  # should be all chain
+    df_struc_edits_dict, # only for main chain or target gene
+    naa_chain_pos_str,  # only for main target gene
+    conserved_only, # only for main target gene
+    ppi_chain_gene_dict,
+    ppi_edits_dict
+
 ): 
     # naa IS NEIGHBORING AMINO ACIDS #
     # taa IS THIS AMINO ACID #
@@ -228,13 +246,27 @@ def helper(
             taa_naa_LFC_vals.append(float(taa_LFC))
 
     # CHECK NEIGHBORING RESIDUES #
-    if isinstance(naa_pos_str, str):  ###
-        naa_pos_list = naa_pos_str.split(';') ###
-        for naa_pos in naa_pos_list:  ###
+    if isinstance(naa_chain_pos_str, str):  ###
+        naa_chain_pos_list = naa_chain_pos_str.split(';') ###
+        for naa_chain_pos in naa_chain_pos_list:  ###
             # VALUE FOR NEIGHBORING RESIDUE #
-            if not conserved_only or df_struc_edits_dict[int(naa_pos)-1] == 'conserved': ###
-                naa_LFC = taa_LFC_dict[int(naa_pos)-1] ###
-                if naa_LFC != '-': 
-                    taa_naa_LFC_vals.append(float(naa_LFC))
+            naa_chain, naa_pos = naa_chain_pos.split('_')
+
+            if isinstance(ppi_chain_gene_dict,dict): # For PPIs
+                if naa_chain == target_gene_chain:
+                    if not conserved_only or df_struc_edits_dict[int(naa_pos)-1] == 'conserved': ###
+                        naa_LFC = taa_LFC_dict[int(naa_pos)-1] ###
+                        if naa_LFC != '-': 
+                            taa_naa_LFC_vals.append(float(naa_LFC))
+                else:
+                    naa_LFC = ppi_edits_dict[ppi_chain_gene_dict[naa_chain]][int(naa_pos)-1] ###
+                    if naa_LFC != '-': 
+                        taa_naa_LFC_vals.append(float(naa_LFC))          
+            else: # For Monomer
+                if not conserved_only or df_struc_edits_dict[int(naa_pos)-1] == 'conserved': ###
+                    if naa_chain == target_gene_chain:
+                        naa_LFC = taa_LFC_dict[int(naa_pos)-1] ###
+                        if naa_LFC != '-': 
+                            taa_naa_LFC_vals.append(float(naa_LFC))
 
     return taa_naa_LFC_vals
