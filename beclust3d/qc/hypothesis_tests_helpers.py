@@ -35,7 +35,7 @@ def hypothesis_one(
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('U_', 'p_')])
     if testtype == 'KolmogorovSmirnov': 
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('D_', 'p_')])
-    col_names.extend(['num_of_cases','num_of_controls'])
+    col_names.extend(['num_of_cases', 'num_of_controls'])
 
     df_output = pd.DataFrame(columns=col_names)
     # PER SCREEN PER GENE #
@@ -85,7 +85,7 @@ def hypothesis_two(
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('U_', 'p_')])
     if testtype == 'KolmogorovSmirnov': 
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('D_', 'p_')])
-    col_names.extend(['num_of_cases','num_of_controls'])
+    col_names.extend(['num_of_cases', 'num_of_controls'])
     
     df_output = pd.DataFrame(columns=col_names)
     df_controls = list()
@@ -153,8 +153,6 @@ def hypothesis_plot(
     category_names, 
     cat_colname, 
     hue_colname, 
-    testtype1, 
-    testtype2, 
     hypothesis, 
     header, 
     save_type, 
@@ -187,10 +185,11 @@ def hypothesis_plot(
     # PLOT MW #
     handles, labels = None, None
     for ax, name in zip(axes_list, category_names):
-        plot1 = sns.scatterplot(ax=ax, 
-                                data=df_MW_input[df_MW_input[cat_colname]==name], 
-                                x=f"U_{header}", y=f"p_{header}", 
-                                hue=hue_colname, palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False)
+        plot1 = sns.scatterplot(
+            ax=ax, 
+            data=df_MW_input[df_MW_input[cat_colname]==name], 
+            x=f"U_{header}", y=f"p_{header}", 
+            hue=hue_colname, palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False)
         ax.axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p=0.05 (-log10 ≈ 1.3)')
         ax.axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p=0.1 (-log10 ≈ 1.0)')
 
@@ -218,10 +217,11 @@ def hypothesis_plot(
     else: axes_list = [axes[i,1] for i in range(len(category_names))] # FOR MULTIPLE SCREEN/GENE #
 
     for ax, name in zip(axes_list, category_names):
-        plot1 = sns.scatterplot(ax=ax, 
-                                data=df_KS_input[df_KS_input[cat_colname]==name], 
-                                x=f"D_{header}", y=f"p_{header}", 
-                                hue=hue_colname, palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False)
+        plot1 = sns.scatterplot(
+            ax=ax, 
+            data=df_KS_input[df_KS_input[cat_colname]==name], 
+            x=f"D_{header}", y=f"p_{header}", 
+            hue=hue_colname, palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False)
         ax.axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p=0.05 (-log10 ≈ 1.3)')
         ax.axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p=0.1 (-log10 ≈ 1.0)')
         
