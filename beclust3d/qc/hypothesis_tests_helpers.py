@@ -29,8 +29,8 @@ def hypothesis_one(
     mut_col, 
     val_col, 
     testtype, 
+    col_names, 
 ): 
-    col_names = ['screenid', 'gene_name']
     if testtype == 'MannWhitney': 
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('U_', 'p_')])
     if testtype == 'KolmogorovSmirnov': 
@@ -79,8 +79,8 @@ def hypothesis_two(
     mut_col, 
     val_col, 
     testtype, 
+    col_names, 
 ): 
-    col_names = ['screenid', 'gene_name']
     if testtype == 'MannWhitney': 
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('U_', 'p_')])
     if testtype == 'KolmogorovSmirnov': 
