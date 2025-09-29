@@ -15,6 +15,9 @@ import numpy as np
 import warnings
 warnings.filterwarnings('ignore')
 
+# THERE ARE 2 MEAN FUNCTIONS, #
+# MEAN FOR CALCULATING LFC3D WHICH IS TUNABLE, #
+# AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE #
 def calculate_lfc3d(
     df_struc, 
     df_edits_list, 
@@ -28,7 +31,7 @@ def calculate_lfc3d(
     function_type_lfc3d='mean',
     LFC_only=False, 
     conserved_only=False, 
-    # THERE ARE 2 MEAN FUNCTIONS, MEAN FOR CALCULATING LFC3D WHICH IS TUNABLE, AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE #
+    func_map={'mean':np.mean, 'median':np.median, 'sum':np.sum, 'min':np.min, 'max':np.max}, 
 ): 
     """
     Calculates LFC3D scores using structural data. 
@@ -100,18 +103,8 @@ def calculate_lfc3d(
 
     df_struct_3d = df_struc[core_columns + structure_columns].copy()
     naa_pos_dict = df_struc['Naa_pos'].to_dict()
-    naa_pos_chain_dict = {
-        (row['unipos'], row['chain']) : (row['Naa_pos'], row['Naa_chain'])
-        for _, row in df_struc.iterrows()
-    }
     
     # MAP AGGREGATION FUNCTION #
-    func_map = {'mean':np.mean,
-                'min':np.min,
-                'max':np.max,
-                'median':np.median,
-                'sum':np.sum
-                }
     function_aggr_lfc3d = func_map[function_type_lfc3d]
     
     assert function_type_lfc3d in func_map.keys()
