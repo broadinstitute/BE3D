@@ -260,6 +260,7 @@ def metaaggregation_scatterplot(
 
         df_combined_clean = df_meta.loc[df_meta[dis] != '-', ]
         df_combined_clean[y] = df_combined_clean[y].astype(float)
+        df_combined_clean = df_combined_clean.sort_values(by=pval, ascending=False) ### consistent coloring hits nonhits
         # MULTIPLE COLORS #
         if colors: 
             if 'pos' in dis: factor=1
