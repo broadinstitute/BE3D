@@ -15,6 +15,8 @@ import shutil
 import subprocess
 import csv
 import tempfile
+import numpy as np
+from pathlib import Path
 
 from biopandas.pdb import PandasPdb
 
@@ -533,7 +535,16 @@ def degree_of_burial(
 
     df_dssp_rsa = df_dssp["RSA"].tolist()
     maxRSA = float(max([x for x in df_dssp_rsa if x != '-']))
-    df_coord_dssp['dBurial'] = [round(maxRSA-float(x), 3) if x != '-' else x for x in df_dssp_rsa] 
+
+    # Create a numeric version of RSA for calculation
+    rsa_num = pd.to_numeric(df_coord_dssp['RSA'], errors='coerce')
+
+    # Compute dBurial only for numeric RSA values
+    df_coord_dssp['dBurial'] = np.where(
+        rsa_num.notna(),
+        (maxRSA - rsa_num).round(3),
+       0.0   # keep '0.0' where RSA was '-'
+    )
 
     # CALCULATE DEGREE OF BURIAL PER RESIDUE normSumdBurial AND CATEGORY pLDDT_dis #
     aa_wise_cdBurial = []
@@ -575,6 +586,7 @@ def degree_of_burial(
 
     df_coord_dssp['normSumdBurial'] = aa_wise_cdBurial
     df_coord_dssp['pLDDT_dis'] = arr_pLDDT_discrete
+    df_coord_dssp['dBurial'] = df_coord_dssp['Naa_count'].map(lambda x: '-' if x == 0 else x)    
 
     df_coord_dssp.to_csv(working_filedir / coord_dssp_filename, sep="\t", index=False)
     return df_coord_dssp
@@ -633,3 +645,257 @@ def update_pdb_element_symbols(
                 else:
                     outfile.write(line)
                     
+def count_residue_contacts_all_atoms_single(
+    pdb_path,
+    coord_filename,
+    coord_radius_filename,
+    target_chain=None,
+    radius=6.0,
+    include_hetero=False,
+):
+    """
+    Read a PDB and, for each residue, count neighboring residues whose **minimum atom–atom
+    distance** to the focal residue is <= radius (Å). Outputs a TSV and returns a pandas
+    DataFrame with:
+        ['unires','unipos','chain','x_coord','y_coord','z_coord',
+         'Naa_count','Naa','Naa_pos','Naa_chain']
+
+    Notes:
+    - `unipos` is an **integer** (resseq). Insertion codes are ignored for `unipos`.
+    - Cα coordinates are reported in x/y/z columns; if a residue lacks a Cα, values are NaN.
+    - Neighbors can be from any chain; output rows can be restricted via `target_chain`.
+    """
+
+    # ---------- helpers (scoped locally) ----------
+    def _aa3_to_aa1():
+        return {
+            'ALA':'A','ARG':'R','ASN':'N','ASP':'D','CYS':'C','GLN':'Q','GLU':'E','GLY':'G',
+            'HIS':'H','ILE':'I','LEU':'L','LYS':'K','MET':'M','PHE':'F','PRO':'P','SER':'S',
+            'THR':'T','TRP':'W','TYR':'Y','VAL':'V','SEC':'U','PYL':'O'
+        }
+
+    def _one_letter(resname):
+        return _aa3_to_aa1().get(resname.upper(), 'X')
+
+    def _parse_pdb_minimal(pdb_path_, include_hetero_):
+        """
+        Minimal PDB parser (ATOM/HETATM) producing a list of residue dicts:
+        {chain,resname,resseq(int),icode,atoms=[(x,y,z),...], ca=(x,y,z)|None}
+        Skips altlocs other than '' or 'A'.
+        """
+        residues = []
+        key_to_idx = {}
+        with open(pdb_path_, 'r') as fh:
+            for line in fh:
+                rec = line[:6]
+                if rec not in ('ATOM  ', 'HETATM'):
+                    continue
+                if rec == 'HETATM' and not include_hetero_:
+                    continue
+                try:
+                    x = float(line[30:38]); y = float(line[38:46]); z = float(line[46:54])
+                except ValueError:
+                    continue
+                altloc = line[16].strip()
+                if altloc not in ('', 'A'):
+                    continue
+                atom_name = line[12:16].strip()
+                resname = line[17:20].strip()
+                chain = line[21].strip() or '_'
+                try:
+                    resseq = int(line[22:26])
+                except ValueError:
+                    continue
+                icode = line[26].strip()
+                key = (chain, resname, resseq, icode)
+                if key not in key_to_idx:
+                    key_to_idx[key] = len(residues)
+                    residues.append({
+                        'chain': chain, 'resname': resname,
+                        'resseq': resseq, 'icode': icode,
+                        'atoms': [], 'ca': None
+                    })
+                idx = key_to_idx[key]
+                residues[idx]['atoms'].append((x, y, z))
+                if atom_name == 'CA' and residues[idx]['ca'] is None:
+                    residues[idx]['ca'] = (x, y, z)
+        return residues
+
+    def _safe_altloc(atom):
+        try:
+            altloc = atom.get_altloc()
+        except Exception:
+            altloc = getattr(atom, 'altloc', ' ')
+        return altloc in (' ', '', 'A')
+
+    # ---------- main logic ----------
+    pdb_path = Path(pdb_path)
+    coord_radius_filename = Path(coord_radius_filename)
+    coord_radius_filename.parent.mkdir(parents=True, exist_ok=True)
+
+    # Try Biopython fast path
+    use_biopy = True
+    try:
+        from Bio.PDB import PDBParser, NeighborSearch
+        from Bio.PDB.Polypeptide import is_aa
+    except Exception:
+        use_biopy = False
+
+    incomplete_structure = False
+
+    if use_biopy:
+        # ------ Biopython branch ------
+        parser = PDBParser(QUIET=True)
+        structure = parser.get_structure("x", str(pdb_path))
+
+        # collect residues and atoms (+ Cα)
+        res_records = []  # (cid, res, resname, resseq_int, atoms_list, ca_xyz|None)
+        for model in structure:
+            for chain in model:
+                cid = chain.id
+                for res in chain:
+                    hetflag, resseq, icode = res.id  # resseq int
+                    if not include_hetero and hetflag != ' ':
+                        continue
+                    if not is_aa(res, standard=False) and not include_hetero:
+                        continue
+                    atoms = [a for a in res.get_atoms() if _safe_altloc(a)]
+                    if not atoms:
+                        incomplete_structure = True
+                        # continue
+                    ca_atom = next((a for a in atoms if a.get_id() == 'CA'), None)
+                    ca_xyz = tuple(map(float, ca_atom.coord)) if ca_atom is not None else None
+                    if ca_xyz is None:
+                        incomplete_structure = True
+                    res_records.append((
+                        cid, res, res.get_resname().strip(), int(resseq), atoms, ca_xyz
+                    ))
+
+        if not res_records:
+            raise ValueError("No residues with atoms found in the PDB after filters.")
+
+        # build neighbor search over all atoms
+        all_atoms = []
+        for _, _, _, _, atoms, _ in res_records:
+            all_atoms.extend(atoms)
+        ns = NeighborSearch(all_atoms)
+
+        rows = []
+        for cid, res, resname, pos_i, atoms, ca_xyz in res_records:
+            neighbor_residues = set()
+            if atoms:
+                for a in atoms:
+                    for na in ns.search(a.coord, radius, level='A'):
+                        r = na.get_parent()
+                        if r is None or r is atoms[0].get_parent():
+                            continue
+                        neighbor_residues.add(r)
+
+            neighbors = []
+            for nr in neighbor_residues:
+                n_cid = nr.get_parent().id
+                n_resname = nr.get_resname().strip()
+                n_resseq = int(nr.id[1])
+                neighbors.append((n_cid, _one_letter(n_resname), n_resseq))
+            neighbors.sort(key=lambda t: (t[0], t[2]))
+
+            x, y, z = (np.nan, np.nan, np.nan) if ca_xyz is None else ca_xyz
+            rows.append({
+                'unires': _one_letter(resname),
+                'unipos': int(pos_i),
+                'chain': cid,
+                'x_coord': float(x),
+                'y_coord': float(y),
+                'z_coord': float(z),
+                'Naa_count': len(neighbors),
+                'Naa': ';'.join([n[1] for n in neighbors]) if neighbors else '-',
+                'Naa_pos': ';'.join(str(n[2]) for n in neighbors) if neighbors else '-',
+                'Naa_chain': ';'.join([n[0] for n in neighbors]) if neighbors else '-',
+            })
+
+        df = pd.DataFrame(rows)
+
+    else:
+        # ------ Minimal parser branch ------
+        residues = _parse_pdb_minimal(str(pdb_path), include_hetero_=include_hetero)
+        if not residues:
+            raise ValueError("No residues with atoms found in the PDB after filters.")
+
+        # gather all atoms for brute-force neighbor test
+        atom_coords = []
+        atom_res_idx = []
+        for i, r in enumerate(residues):
+            if not r['atoms']:
+                incomplete_structure = True
+                # continue
+            for (x, y, z) in r['atoms']:
+                atom_coords.append((x, y, z))
+                atom_res_idx.append(i)
+
+        rows = []
+        r2aa = [_one_letter(r['resname']) for r in residues]
+        r2pos = [int(r['resseq']) for r in residues]  # integer positions
+        r2chain = [r['chain'] for r in residues]
+
+        r2 = radius * radius
+
+        for i, r in enumerate(residues):
+            if not r['atoms']:
+                ca_xyz = None
+                neigh = []
+            else:
+                ca_xyz = r['ca']  # (x,y,z) or None
+                neighbor_idx = set()
+                for ax, ay, az in r['atoms']:
+                    for j, (bx, by, bz) in enumerate(atom_coords):
+                        if atom_res_idx[j] == i:
+                            continue
+                        dx = bx - ax; dy = by - ay; dz = bz - az
+                        if (dx*dx + dy*dy + dz*dz) <= r2:
+                            neighbor_idx.add(atom_res_idx[j])
+                neigh = [(r2chain[k], r2aa[k], r2pos[k]) for k in neighbor_idx]
+                neigh.sort(key=lambda t: (t[0], t[2]))
+
+            x, y, z = (np.nan, np.nan, np.nan) if ca_xyz is None else ca_xyz
+            rows.append({
+                'unires': r2aa[i],
+                'unipos': r2pos[i],
+                'chain': r2chain[i],
+                'x_coord': float(x),
+                'y_coord': float(y),
+                'z_coord': float(z),
+                'Naa_count': len(neigh),
+                'Naa': ';'.join([n[1] for n in neigh]),
+                'Naa_pos': ';'.join(str(n[2]) for n in neigh),
+                'Naa_chain': ';'.join([n[0] for n in neigh]),
+            })
+
+        df = pd.DataFrame(rows)
+
+    if incomplete_structure:
+        warnings.warn("Incomplete Structure Detected (some residues missing atoms and/or Cα)")
+
+    if target_chain is not None:
+        df = df[df['chain'] == target_chain].copy()
+
+    df['unique_id'] = df['chain'] + '_' + df['unipos'].astype(str)
+    coord_pd = pd.read_csv(coord_filename,sep='\t')
+    coord_pd['unique_id'] = coord_pd['chain'] + "_" + coord_pd['unipos'].astype(str)
+    id_list = coord_pd['unique_id'].to_list()
+
+    result_pd = pd.merge(coord_pd, df[['unique_id','Naa_count','Naa','Naa_pos','Naa_chain']], how='outer', on='unique_id', suffixes=('_A','_B'))
+    result_pd['unipos'] = result_pd['unipos'].astype(int)
+    result_pd['unique_id'] = pd.Categorical(result_pd['unique_id'], categories=id_list, ordered=True)
+    result_pd = result_pd.sort_values('unique_id')
+    result_pd = result_pd.drop('unique_id',axis=1)
+    result_pd = result_pd[result_pd['chain']==target_chain]
+    result_pd = result_pd.reset_index(drop=True)
+    result_pd['Naa_count'] = result_pd['Naa'].map(
+        lambda x: 0 if (pd.isna(x) or x in ['-', '']) else len(str(x).split(';'))
+    )
+
+    # Write TSV
+    result_pd = result_pd.fillna('-')
+    result_pd.to_csv(coord_radius_filename, sep='\t', index=False)
+
+    return result_pd

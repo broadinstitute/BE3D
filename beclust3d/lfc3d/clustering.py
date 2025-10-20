@@ -12,7 +12,9 @@ import numpy as np
 import pandas as pd
 
 from sklearn.cluster import AgglomerativeClustering
-
+from Bio.PDB import PDBParser
+from Bio.PDB.Polypeptide import is_aa
+from scipy.spatial import cKDTree
 
 def clustering(
     df_struc, 
@@ -25,7 +27,8 @@ def clustering(
     screen_name='Meta', 
     score_type='LFC3D', 
     merge_cols=['unipos', 'chain'], 
-    clustering_kwargs={"n_clusters": None, "metric": "euclidean", "linkage": "single"}, 
+    clustering_kwargs={"n_clusters": None, "metric": "euclidean", "linkage": "single"},
+    atom_level=False
 ): 
     """
     Performs spatial-based agglomerative clustering of residues based on significance, 
@@ -123,6 +126,7 @@ def clustering(
         for col in merge_cols: 
             dict_hits[col] = list(df_pvals_temp[col])
 
+        chain_unipos_list = list(zip(dict_hits['chain'], dict_hits['unipos'])) # this is only for the atom-level agglomerative clustering
         # EXTRACT X Y Z OF HITS ABOVE CUTOFF #
         np_hits_coord = np.array(df_pvals_temp[coord_columns].copy())
         if np_hits_coord.shape[0] < 2: # NO DATA TO CLUSTER ON #
@@ -133,8 +137,12 @@ def clustering(
             if np_hits_coord.shape[0] < 2: # NO DATA TO CLUSTER ON #
                 dict_hits[f"{column}_Clust_{str(dist)}A"] = None
             else:
-                func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=dist)
-                clus_lbl = func_clustering.fit(np_hits_coord).labels_
+                clus_lbl = list()
+                if atom_level:
+                    clus_lbl = cluster_residues_from_pdb(pdb_file=atom_level, residue_list=chain_unipos_list, linkage='average')
+                else:
+                    func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=dist)
+                    clus_lbl = func_clustering.fit(np_hits_coord).labels_
 
                 num_clusters = int(max(clus_lbl)+1) 
                 y_arr.append(num_clusters)
@@ -150,3 +158,59 @@ def clustering(
     df_hits_clust.to_csv(hits_filename, sep='\t', index=False)
 
     return df_hits_clust, distances, yvalue_lists
+
+def cluster_residues_from_pdb(pdb_file, residue_list, distance_threshold=6, linkage="single"):
+    """
+    Performs agglomerative clustering on residues (based on all-atom coordinates).
+
+    Parameters
+    ----------
+    pdb_file : str
+        Path to the PDB file.
+    residue_list : list of tuples
+        Each tuple is (chain_id, residue_number). Example: [("A", 42), ("A", 45)].
+    distance_threshold : float, optional
+        Distance threshold (Å) for clustering. Default = 3.5.
+    linkage : str, optional
+        Linkage method for clustering ('single', 'average', 'complete', etc.). Default = 'single'.
+
+    Returns
+    -------
+    labels : np.ndarray
+        Cluster labels for each residue in the provided list.
+    """
+    # --- Load structure ---
+    parser = PDBParser(QUIET=True)
+    structure = parser.get_structure("S", pdb_file)
+    model = structure[0]
+
+    # --- Collect heavy-atom coordinates per residue ---
+    residues_coords = []
+    for chain_id, resnum in residue_list:
+        res = model[chain_id][resnum]
+        if not is_aa(res, standard=True):
+            continue
+        coords = [atom.get_coord() for atom in res.get_atoms() if atom.element != "H"]
+        residues_coords.append(np.array(coords))
+
+    # --- Compute min interatomic distance matrix ---
+    n = len(residues_coords)
+    D = np.zeros((n, n))
+    trees = [cKDTree(r) for r in residues_coords]
+    for i in range(n):
+        for j in range(i + 1, n):
+            if len(residues_coords[i]) <= len(residues_coords[j]):
+                dmin = trees[j].query(residues_coords[i], k=1)[0].min()
+            else:
+                dmin = trees[i].query(residues_coords[j], k=1)[0].min()
+            D[i, j] = D[j, i] = dmin
+
+    # --- Run clustering ---
+    model = AgglomerativeClustering(
+        metric="precomputed",
+        linkage=linkage,
+        distance_threshold=distance_threshold,
+        n_clusters=None
+    ).fit(D)
+
+    return model.labels_

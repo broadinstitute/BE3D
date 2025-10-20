@@ -21,7 +21,8 @@ def sequence_structural_features(
     user_fasta=None, 
     user_pdb=None, 
     user_dssp=None, 
-    domains_dict=None, 
+    domains_dict=None,
+    atom_level_naa=False
     # CHAINS REFERS TO CHAIN OF THE TARGET PROTEIN #
 ): 
     """
@@ -121,7 +122,11 @@ def sequence_structural_features(
 
     df_dssp = pd.read_csv(working_filedir / dssp_parsed_filename, sep = '\t')
     coord_radius_filename = f"sequence_structure/{structureid}_coord_radius.tsv"
-    df_coord = count_aa_within_radius(working_filedir, coord_filename, coord_radius_filename, target_chain=target_chainid, radius=radius)
+
+    if atom_level_naa:
+        df_coord = count_residue_contacts_all_atoms_single(pdb_path=os.path.join(working_filedir,pdb_processed_filename), coord_filename=os.path.join(working_filedir,coord_filename), coord_radius_filename=os.path.join(working_filedir,coord_radius_filename), target_chain=target_chainid,radius=radius)
+    else:
+        df_coord = count_aa_within_radius(working_filedir, coord_filename, coord_radius_filename, target_chain=target_chainid, radius=radius)
 
     coord_dssp_filename = f"sequence_structure/{structureid}_coord_struc_features.tsv"
     df_coord_dssp = degree_of_burial(df_dssp, df_coord, working_filedir, coord_dssp_filename, target_chainid)
