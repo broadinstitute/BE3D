@@ -25,6 +25,7 @@ def average_split_meta(
     score_type='LFC3D', 
     nRandom=500,
     aggr_func_name='SUM', 
+    func_map={'MEAN':np.mean, 'MIN':np.min, 'MAX':np.max, 'MEDIAN':np.median, 'SUM':np.sum}, 
 ): 
     """
     Aggregates screens into a meta score using the provided function. Then,
@@ -73,12 +74,6 @@ def average_split_meta(
     df_bidir_meta = df_LFC_LFC3D[['unipos', 'unires', 'chain']].copy()
 
    # MAP AGGREGATION FUNCTION #
-    func_map = {'MEAN':np.mean,
-                'MIN':np.min,
-                'MAX':np.max,
-                'MEDIAN':np.median,
-                'SUM':np.sum
-                }
     aggr_func = func_map[aggr_func_name.upper()]
     
     # AGGR LFC3D VALUES ACROSS SCREENS FOR EACH RESIDUE #
@@ -158,6 +153,7 @@ def bin_meta(
     input_gene, 
     score_type='LFC3D', 
     aggr_func_name='SUM', 
+    quantiles={'NEG_10p_v':0.1, 'POS_90p_v':0.9, 'NEG_05p_v':0.05, 'POS_95p_v':0.95}, 
 ): 
     """
     Bins positive and negative LFC or LFC3D scores into percentile thresholds.
@@ -202,7 +198,6 @@ def bin_meta(
     header_main = f'{aggr_func_name}_{score_type}'
     random_neg, random_pos = f'{aggr_func_name}_{score_type}r_neg', f'{aggr_func_name}_{score_type}r_pos'
     headers = [header_main, f'{header_main}_neg', f'{header_main}_pos', random_neg, random_pos]
-    quantiles = {'NEG_10p_v':0.1, 'POS_90p_v':0.9, 'NEG_05p_v':0.05, 'POS_95p_v':0.95}
 
     # CHECK INPUTS ARE SELF CONSISTENT #
     for header in headers: 

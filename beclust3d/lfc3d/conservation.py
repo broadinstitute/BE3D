@@ -16,12 +16,6 @@ import subprocess
 
 from Bio import AlignIO
 
-cons_dict = {
-    '*': ('conserved', 3),
-    ':': ('similar', 2),
-    '.': ('weakly_similar', 1),
-    ' ': ('not_conserved', -1),
-}
 
 def conservation(
     workdir, 
@@ -34,6 +28,11 @@ def conservation(
     title=None, 
     email=None, 
     wait_time=30, 
+    muscle_path='muscle', 
+    cons_dict = {
+        '*': ('conserved', 3), ':': ('similar', 2),
+        '.': ('weakly_similar', 1), ' ': ('not_conserved', -1),
+    }, 
 ): 
     """
     Generate dataframes of sequence conservation for each residue. 
@@ -108,7 +107,7 @@ def conservation(
         muscle_output_filename = f"conservation/{input_gene}_{alt_input_gene}.afa"
         align_filename = f"conservation/{input_gene}_{alt_input_gene}.align"
         # RUN ALIGNMENT LOCALLY #
-        if mode=='run': run_muscle(working_filedir, seqs_filename, muscle_output_filename, align_filename)
+        if mode=='run': run_muscle(working_filedir, seqs_filename, muscle_output_filename, align_filename, muscle_path)
         # IF MUSCLE CANT BE RUN LOCALLY, QUERY API #
         if mode=='query': query_muscle(working_filedir, seqs_filename, align_filename, email, title, wait_time)
     else: 
@@ -117,7 +116,7 @@ def conservation(
     # PARSE ALIGNMENT #
     alignconserv_filename = f"conservation/{input_gene}{input_uniprot}_{alt_input_gene}{alt_input_uniprot}_align_conservation.tsv"
     residuemap_filename =  f"conservation/{input_gene}{input_uniprot}_{alt_input_gene}{alt_input_uniprot}_residuemap_conservation.tsv"
-    df_alignconserv, df_residuemap = parse_alignment(working_filedir, align_filename, alignconserv_filename, residuemap_filename)
+    df_alignconserv, df_residuemap = parse_alignment(working_filedir, align_filename, alignconserv_filename, residuemap_filename, cons_dict)
 
     return df_alignconserv, df_residuemap
 
@@ -182,6 +181,7 @@ def run_muscle(
     seqs_filename, 
     afa_filename, 
     align_filename, 
+    muscle_path, 
 ): 
     """
     Description
@@ -189,7 +189,7 @@ def run_muscle(
     """
     # Run MUSCLE alignment
     subprocess.run([
-        "muscle", 
+        muscle_path, 
         "-align", str(edits_filedir / seqs_filename), 
         "-output", str(edits_filedir / afa_filename), 
         "-threads", "1", 
@@ -208,6 +208,7 @@ def run_muscle(
 def parse_alignment(
     edits_filedir, 
     align_filename, alignconserv_filename, residuemap_filename, 
+    cons_dict, 
 ): 
 
     align = AlignIO.read(edits_filedir / align_filename, "clustal")
