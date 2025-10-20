@@ -24,7 +24,7 @@ def parse_be_data(
     mut_delimiter=',', 
     conserv_dfs=[], 
     conserv_col='mouse_res_pos',
-    conserv_score_col='v_score', ### conserv_col
+    v_score_threshold=3, ### conserv_col
     gene_list=False, 
 ): 
     """
@@ -69,7 +69,8 @@ def parse_be_data(
     conserv_col : str, optional (default='mouse_res_pos')
         Column name in the conservation DataFrames containing residue positions considered conserved.
 
-    conserv_score_col : 
+    v_score_threshold : int (default=3)
+        Threshold value for v_score. -1: not conserved, 1: weakly similar, 2: similar, 3: conserved.
 
     gene_list : 
 
@@ -109,8 +110,9 @@ def parse_be_data(
     for input_gene, screen_df, screen_name, conserv_df in zip(gene_list, input_dfs, screen_names, conserv_dfs): 
         print('Processing', screen_name)
         # IF WE LOOK AT CONSERVATION #
-        if conserv_df is not None: 
-            conserv_list = [str(x) for x in conserv_df[conserv_df[conserv_score_col]==3][conserv_col].tolist()]
+        if conserv_df is not None:
+            conserv_df['v_score'] = conserv_df['v_score'].astype(int)
+            conserv_list = [str(x) for x in conserv_df[conserv_df['v_score']>=v_score_threshold][conserv_col].tolist()]
         # NARROW DOWN TO INPUT_GENE #
         df_gene = screen_df.loc[screen_df[gene_col] == input_gene, ]
         mut_dfs[screen_name] = {}
