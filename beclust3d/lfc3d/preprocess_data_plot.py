@@ -221,6 +221,7 @@ def violin_by_gene(
         
         legend_path = f"screendata/plots/{title}_legend.{save_type}"
         legend_fig.savefig(working_filedir / legend_path, dpi=100, transparent=False, format=save_type)
+        plt.close(legend_fig)
 
     plt.close()
     

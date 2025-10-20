@@ -15,6 +15,9 @@ import numpy as np
 import warnings
 warnings.filterwarnings('ignore')
 
+# THERE ARE 2 MEAN FUNCTIONS, #
+# MEAN FOR CALCULATING LFC3D WHICH IS TUNABLE, #
+# AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE #
 def calculate_lfc3d(
     df_struc, 
     df_edits_list, 
@@ -31,8 +34,8 @@ def calculate_lfc3d(
     gene_type='Human',
     target_gene_chain = 'A',
     ppi_chain_gene_dict = {}, # {'GENE1':'B','GENE2':'C'}
-    ppi_gene_edits_dict = {} # {'GENE1': edits_dict, 'GENE2': edits_dict}
-    # THERE ARE 2 MEAN FUNCTIONS, MEAN FOR CALCULATING LFC3D WHICH IS TUNABLE, AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE #
+    ppi_gene_edits_dict = {}, # {'GENE1': edits_dict, 'GENE2': edits_dict}
+    func_map={'mean':np.mean, 'median':np.median, 'sum':np.sum, 'min':np.min, 'max':np.max}, 
 ): 
     """
     Calculates LFC3D scores using structural data. 
@@ -119,12 +122,6 @@ def calculate_lfc3d(
             naa_pos_chain_dict[f"{row['chain']}_{idx}"] = ';'.join(naa_chain_pos_list)
 
     # MAP AGGREGATION FUNCTION #
-    func_map = {'mean':np.mean,
-                'min':np.min,
-                'max':np.max,
-                'median':np.median,
-                'sum':np.sum
-                }
     function_aggr_lfc3d = func_map[function_type_lfc3d]
     
     assert function_type_lfc3d in func_map.keys()

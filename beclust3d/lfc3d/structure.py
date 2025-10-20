@@ -16,14 +16,22 @@ def sequence_structural_features(
     input_gene, 
     input_uniprot, 
     structureid, 
+<<<<<<< HEAD
     target_chainid,
+=======
+    chains=['A'], # CHAINS REFERS TO CHAIN OF THE TARGET PROTEIN #
+>>>>>>> main
     radius=6.0, 
     user_fasta=None, 
     user_pdb=None, 
     user_dssp=None, 
+<<<<<<< HEAD
     domains_dict=None,
     atom_level_naa=False
     # CHAINS REFERS TO CHAIN OF THE TARGET PROTEIN #
+=======
+    domains_dict=None, 
+>>>>>>> main
 ): 
     """
     Queries Uniprot, AlphaFold, DSSP, and domain features 

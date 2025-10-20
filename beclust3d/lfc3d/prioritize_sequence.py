@@ -228,13 +228,6 @@ def get_plabel(
     z_LFC, 
     direction
 ):
-    # # TWO TAIl #
-    # if direction == 'negative': 
-    #     thresholds = [(-3.29, '-p=0.001'), (-2.58, '-p=0.01'), 
-    #                   (-1.96, '-p=0.05'), (-1.65, '-p=0.1'), (-1.0, '-p=0.3')] 
-    # if direction == 'positive': 
-    #     thresholds = [(3.29, '+p=0.001'), (2.58, '+p=0.01'), 
-    #                   (1.96, '+p=0.05'), (1.65, '+p=0.1'), (1.0, '+p=0.3')]
     # ONE TAIL #
     if direction == 'negative': 
         thresholds = [(-3.09, '-p=0.001'), (-2.32, '-p=0.01'), 
@@ -242,6 +235,13 @@ def get_plabel(
     if direction == 'positive': 
         thresholds = [(3.09, '+p=0.001'), (2.32, '+p=0.01'), 
                       (1.64, '+p=0.05'), (1.28, '+p=0.1'), (0.52, '+p=0.3')]
+    # # TWO TAIl #
+    # if direction == 'negative': 
+    #     thresholds = [(-3.29, '-p=0.001'), (-2.58, '-p=0.01'), 
+    #                   (-1.96, '-p=0.05'), (-1.65, '-p=0.1'), (-1.0, '-p=0.3')] 
+    # if direction == 'positive': 
+    #     thresholds = [(3.29, '+p=0.001'), (2.58, '+p=0.01'), 
+    #                   (1.96, '+p=0.05'), (1.65, '+p=0.1'), (1.0, '+p=0.3')]
 
     for threshold, label in thresholds:
         if (direction == 'negative' and z_LFC < threshold) or (direction == 'positive' and z_LFC > threshold):

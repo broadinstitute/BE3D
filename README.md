@@ -137,7 +137,7 @@ if __name__ == '__main__':
 
 The pipeline automatically queries the UNIPROT protein sequence and AlphaFold structure of the protein of interest. If users want to use a PDB or other custom structure, they would need to upload the ```structure.pdb``` file and provide the filepath to the structure. 
 
-The pipeline also automatically uses DSSP to annotate a pdb file for secondary structures. However, this tool is known to sometimes fail on larger structures. Furthermore, for a custom PDB upload, it is recommended that the user uploads their own DSSP file, as DSSP may fail on these structures. The annotations for DSSP are not necessary for the pipeline until the final characterization step, and would not affect preprocessing, prioritizing hits, meta-aggregation, or clustering. 
+The pipeline also automatically uses DSSP to annotate a pdb file for secondary structures. However, this tool is known to sometimes fail on larger structures. Furthermore, for a custom PDB upload, it is recommended that the user uploads their own DSSP file, as DSSP may fail on these structures. The annotations for DSSP are not necessary for the pipeline until the final characterization step, and would not affect preprocessing, prioritizing hits, meta-aggregation, or clustering. Even for the final characterization step, DSSP annotations are an optional part. 
 
 The DSSP Web Portal is here: https://pdb-redo.eu/dssp
 
@@ -154,13 +154,13 @@ Another option to skip MUSCLE and CLUSTAL is for users to run alignment on their
 ## Sample Google Colab Notebooks
 
 Single Screen Notebook Example (DNMT3A): 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5-SingleScreen-Notebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5_SingleScreen_Notebook.ipynb)
 
 Multi Screen Notebook with Meta-Aggregation Example (MEN1): 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5-MultipleScreens-Notebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5_MultiScreen_Notebook.ipynb)
 
 Multi Screen Notebook with Meta-Aggregation and Conservation Example: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)]()
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5_MultipleScreensConservation_Notebook.ipynb)
 
 ## License
 
