@@ -79,7 +79,7 @@ def randomize_data(
 
     # SAVE RESULTS #
     screen_name_nospace = screen_name.replace(' ','_')
-    out_filename = working_filedir / f"screendata_rand/{input_gene}_{screen_name_nospace}_{muttype}_rand.tsv"
-    df_missense.to_csv(out_filename, sep='\t', index=False)
+    out_filename = working_filedir / f"screendata_rand/{input_gene}_{screen_name_nospace}_{muttype}_rand.tsv.gz"
+    df_missense.to_csv(out_filename, sep='\t', index=False, compression="gzip")
     
     return df_missense

@@ -224,7 +224,7 @@ def main(**kwargs):
                 gene, screen_name,
             )
 
-        df_rand = pd.read_csv(f'{output_dir}/screendata_rand/{gene}_{screen_name}_Missense_rand.tsv', sep='\t')
+        df_rand = pd.read_csv(f'{output_dir}/screendata_rand/{gene}_{screen_name}_Missense_rand.tsv.gz', sep='\t')
 
         # For ALL
         randomize_sequence(
@@ -266,7 +266,7 @@ def main(**kwargs):
 
             df_protein_edits = pd.read_csv(f'{output_dir}/screendata_sequence/{gene}_{screen_name}_protein_edits.tsv', sep='\t')
             df_edits_list.append(df_protein_edits)
-            df_protein_edits_rand = pd.read_csv(f'{output_dir}/screendata_sequence_rand/{gene}_{screen_name}_Missense_protein_edits_rand.tsv', sep='\t')
+            df_protein_edits_rand = pd.read_csv(f'{output_dir}/screendata_sequence_rand/{gene}_{screen_name}_Missense_protein_edits_rand.tsv.gz', sep='\t')
             df_rand_list.append(df_protein_edits_rand)
 
         df_LFC_LFC3D = calculate_lfc3d(

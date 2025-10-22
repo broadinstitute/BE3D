@@ -115,7 +115,7 @@ def randomize_sequence(
     df_missense = pd.concat([df_missense[missense_columns], df_mis_positions], axis=1)
     del df_mis_positions, df_rand
 
-    out_filename = f"screendata_sequence_rand/{input_gene}_{screen_name}_Missense_protein_edits_rand.tsv"
-    df_missense.to_csv(working_filedir / out_filename, sep = '\t', index=False)
+    out_filename = f"screendata_sequence_rand/{input_gene}_{screen_name}_Missense_protein_edits_rand.tsv.gz"
+    df_missense.to_csv(working_filedir / out_filename, sep = '\t', index=False, compression='gzip')
 
     return df_missense

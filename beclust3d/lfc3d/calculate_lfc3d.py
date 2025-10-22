@@ -216,8 +216,8 @@ def calculate_lfc3d(
         print('Calculated LFC3D for', screen_name)
 
     df_struct_3d[core_columns + structure_columns] = df_struc[core_columns + structure_columns]
-    out_filename = working_filedir / f"LFC3D/{gene_type}_{input_gene}_LFC_LFC3D_LFC3Dr.tsv"
-    df_struct_3d.to_csv(out_filename, sep = '\t', index=False)
+    out_filename = working_filedir / f"LFC3D/{gene_type}_{input_gene}_LFC_LFC3D_LFC3Dr.tsv.gz"
+    df_struct_3d.to_csv(out_filename, sep = '\t', index=False, compression="gzip")
 
     return df_struct_3d
 
