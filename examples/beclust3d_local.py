@@ -483,10 +483,14 @@ def main(**kwargs):
         merged_df_LFC_LFC3D =  run_Clust3D_per_species(input_gene, [x[1] for x in zip(conserv_dfs, screen_names) if x[0] is None], gene_type='Original', pdb_file=pdb_file) # For human
     
     
-    def merge_two_tsvs(gene_name, results_dir, file_pattern, original_gene, alternative_gene,priority_on_alternative=False):
-        # tsv_list = glob.glob(os.path.join(results_dir,f'*_{file_pattern}.tsv'))
-        original_tsv = os.path.join(results_dir,f'Original_{original_gene}_{file_pattern}.tsv')
-        alternative_tsv = os.path.join(results_dir,f'Alternative_{alternative_gene}_{file_pattern}.tsv')
+    def merge_two_tsvs(gene_name, results_dir, file_pattern, original_gene, alternative_gene, priority_on_alternative=False, compression=False):
+        if compression:
+            original_tsv = os.path.join(results_dir,f'Original_{original_gene}_{file_pattern}.tsv.gz')
+            alternative_tsv = os.path.join(results_dir,f'Alternative_{alternative_gene}_{file_pattern}.tsv.gz')
+        else:
+            original_tsv = os.path.join(results_dir,f'Original_{original_gene}_{file_pattern}.tsv')
+            alternative_tsv = os.path.join(results_dir,f'Alternative_{alternative_gene}_{file_pattern}.tsv')
+
         if os.path.exists(original_tsv) and os.path.exists(alternative_tsv):
             df1 = pd.read_csv(original_tsv,sep='\t')
             df2 = pd.read_csv(alternative_tsv,sep='\t')
@@ -497,14 +501,23 @@ def main(**kwargs):
             else:
                 merged = pd.merge(df2, df1, how="outer")
             # Merge on all shared columns
-            merged.to_csv(os.path.join(results_dir,f'{gene_name}_{file_pattern}.tsv'), sep="\t", index=False)
+            if compression:
+                merged.to_csv(os.path.join(results_dir,f'{gene_name}_{file_pattern}.tsv.gz'), sep="\t", index=False, compression='gzip')
+            else:
+                merged.to_csv(os.path.join(results_dir,f'{gene_name}_{file_pattern}.tsv'), sep="\t", index=False)
         elif os.path.exists(original_tsv):
             df1 = pd.read_csv(original_tsv,sep='\t')
-            df1.to_csv(os.path.join(results_dir,f'{gene_name}_{file_pattern}.tsv'), sep="\t", index=False)
+            if compression:
+                df1.to_csv(os.path.join(results_dir,f'{gene_name}_{file_pattern}.tsv.gz'), sep="\t", index=False, compression='gzip')
+            else:
+                df1.to_csv(os.path.join(results_dir,f'{gene_name}_{file_pattern}.tsv'), sep="\t", index=False)
         else:
             df2 = pd.read_csv(alternative_tsv,sep='\t')
-            df2.to_csv(os.path.join(results_dir,f'{gene_name}_{file_pattern}.tsv'), sep="\t", index=False)            
-            
+            if compression:
+                df2.to_csv(os.path.join(results_dir,f'{gene_name}_{file_pattern}.tsv.gz'), sep="\t", index=False, compression='gzip')
+            else:
+                df2.to_csv(os.path.join(results_dir,f'{gene_name}_{file_pattern}.tsv'), sep="\t", index=False)
+
     merge_two_tsvs(input_gene,f'{output_dir}/LFC','LFC_bidirectional', input_gene, alt_gene_name, priority_on_alternative=priority_on_alternative)
     merge_two_tsvs(input_gene,f'{output_dir}/LFC','LFC_dis_wght',input_gene, alt_gene_name,priority_on_alternative=priority_on_alternative)
     merge_two_tsvs(input_gene,f'{output_dir}/LFC','NonAggr_LFC',input_gene, alt_gene_name,priority_on_alternative=priority_on_alternative)
@@ -512,7 +525,7 @@ def main(**kwargs):
     merge_two_tsvs(input_gene,f'{output_dir}/LFC3D','LFC3D_bidirectional',input_gene, alt_gene_name,priority_on_alternative=priority_on_alternative)
     merge_two_tsvs(input_gene,f'{output_dir}/LFC3D','LFC3D_dis_wght',input_gene, alt_gene_name,priority_on_alternative=priority_on_alternative)
     merge_two_tsvs(input_gene,f'{output_dir}/LFC3D','NonAggr_LFC3D',input_gene, alt_gene_name,priority_on_alternative=priority_on_alternative)    
-    merge_two_tsvs(input_gene,f'{output_dir}/LFC3D','LFC_LFC3D_LFC3Dr',input_gene, alt_gene_name,priority_on_alternative=priority_on_alternative)    
+    merge_two_tsvs(input_gene,f'{output_dir}/LFC3D','LFC_LFC3D_LFC3Dr',input_gene, alt_gene_name,priority_on_alternative=priority_on_alternative,compression=True)    
     
     if len(screen_names) > 1: # Meta-Aggregation automatically runs if the number of screens > 1
         # META-AGGREGATION ON LFC3D
