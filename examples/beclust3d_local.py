@@ -90,8 +90,18 @@ def main(**kwargs):
                     input_gene, alt_gene_name,
                     input_uniprot, alt_uniprot_id,
         )
+    #     for screen_name in screen_names: # mCherry-high or mCherry-low
+    #             conserv_dfs.append(df_residuemap)
+    #             gene_list.append(alt_gene_name)
 
-    for screen_name in screen_names:
+    # else:
+    #     for screen_name in screen_names: # mCherry-high or mCherry-low
+    #         conserv_dfs.append(None)
+    #         gene_list.append(input_gene)
+
+    # TODO: conservation mode : Human + Mouse to Human # SETDDB1
+    # TODO: transfer mode : Mouse to Human
+    for screen_name in screen_names: # 
         if alt_gene_name and screen_name.startswith(alt_screen_start):
             conserv_dfs.append(df_residuemap)
             gene_list.append(alt_gene_name)
