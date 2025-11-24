@@ -135,8 +135,9 @@ def calculate_lfc3d(
                                   df_edits[[lfc_colname]].rename(columns={lfc_colname: f"{screen_name}_LFC"}), 
                                   df_edits[[f'{lfc_colname}_Z']].rename(columns={f'{lfc_colname}_Z': f"{screen_name}_LFC_Z"})], axis=1)
         if ppi_gene_edits_dict:
-            for gene, be3d_dir in ppi_gene_edits_dict.items():
-                ppi_edits_dict2[gene] = pd.read_csv(os.path.join(be3d_dir,'screendata_sequence',f'{gene}_{screen_name}_protein_edits.tsv'),sep='\t')[lfc_colname].to_dict()
+            for gene_identifier, be3d_dir in ppi_gene_edits_dict.items():
+                _gene = gene_identifier.split('_')[0]
+                ppi_edits_dict2[gene_identifier] = pd.read_csv(os.path.join(be3d_dir,'screendata_sequence',f'{_gene}_{screen_name}_protein_edits.tsv'),sep='\t')[lfc_colname].to_dict()
         # CALCULATE LFC3D, IF LFC_only SKIP OVER #
         if not LFC_only: 
             aggr_vals = []
