@@ -282,7 +282,7 @@ def metaaggregation_scatterplot(
             plot = sns.scatterplot(data=df_combined_clean, x="unipos", y=y, 
                                    hue=pval, palette='tab10', ax=ax[i])
             
-        plot.legend_.set_title(None)
+        # plot.legend_.set_title(None)
         ax[i].set_xticks(np.arange(0, len(df_meta), 100))
         ax[i].set_title(f"{input_gene} {out}")
 
