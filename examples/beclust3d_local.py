@@ -567,7 +567,7 @@ def main(**kwargs):
         df_bidir_meta = average_split_meta(
             merged_df_LFC_LFC3D,
             output_dir, gene, screen_names,
-            nRandom=500,
+            nRandom=nRandom,
             score_type='LFC',
             aggr_func_name=function_for_meta,
         )
