@@ -14,7 +14,7 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 import matplotlib as mpl
 
-from scipy.cluster.hierarchy import dendrogram
+from scipy.cluster.hierarchy import dendrogram, set_link_color_palette
 from sklearn.cluster import AgglomerativeClustering
 mpl.rcParams['svg.fonttype'] = 'none'
 mpl.rcParams['font.family'] = 'Arial'
@@ -125,6 +125,15 @@ def plot_clustering(
     assert len(df_struc) == len(df_pvals)
     assert len(psig_columns) == len(names) == len(pthr_cutoffs)
     
+    # GENERATE CONSISTENT COLORS (NEW)
+    cluster_colors = generate_cluster_colors(50)
+    
+    # Save color mapping to file for JavaScript reference
+    color_map_file = working_filedir / f"cluster_{score_type}/cluster_color_mapping.json"
+    import json
+    with open(color_map_file, 'w') as f:
+        json.dump({f"cluster_{i}": color for i, color in enumerate(cluster_colors)}, f, indent=2)
+
     # SETUP DF #
     df_hits_clust = pd.concat([df_struc[structure_columns], df_pvals[psig_columns]], axis=1)
     prefix = f'{input_gene}_{screen_name}_{score_type}'
@@ -170,7 +179,8 @@ def plot_clustering(
             clustering, df_pvals_temp, 
             dist, horizontal, pos_col, chain_col, 
             title, dend_filename, 
-            dendrogram_subplots_kwargs, save_type)
+            dendrogram_subplots_kwargs, save_type,
+            cluster_colors=cluster_colors)
 
         # CLUSTERS RESIDUES AND LENGTH OF EACH CLUSTER #
         df_pvals_clust_i = df_pvals_clust.loc[(df_pvals_clust[colname] == pthr), ].reset_index(drop=True)
@@ -193,6 +203,42 @@ def plot_clustering(
 
     return None
 
+def generate_cluster_colors(n_clusters=50):
+    """
+    Generate cluster colors matching the JavaScript HSL algorithm.
+    Returns a list of hex colors for clusters 0 to n_clusters-1.
+    """
+    def hsl_to_hex(h, s, l):
+        """Convert HSL to HEX (matching JavaScript logic)"""
+        s /= 100.0
+        l /= 100.0
+        
+        def hue_to_rgb(n):
+            k = (n + h / 30.0) % 12
+            a = s * min(l, 1 - l)
+            return l - a * max(-1, min(k - 3, min(9 - k, 1)))
+        
+        r = round(255 * hue_to_rgb(0))
+        g = round(255 * hue_to_rgb(8))
+        b = round(255 * hue_to_rgb(4))
+        
+        return f"#{r:02x}{g:02x}{b:02x}"
+    
+    # Lightness tiers: base, lighter, lightest
+    lightness = [45, 65, 80]
+    saturation = [90, 90, 90]
+    
+    colors = []
+    for i in range(n_clusters):
+        tier_raw = i // 10                      # 0..4 for 50 values
+        tier = tier_raw % len(lightness)        # wrap into 0..2
+        j = i % 10                              # 0..9 within the tier
+        hue = j * 36                            # 10 distinct hues (0, 36, 72, ..., 324)
+        
+        hex_color = hsl_to_hex(hue, saturation[tier], lightness[tier])
+        colors.append(hex_color)
+    
+    return colors
 
 def plot_cluster_distance(
     distances, 
@@ -253,10 +299,30 @@ def plot_dendrogram(
     xlbl_chain = list(df_pvals_temp[chain_col])
     xlbl = [f'{pos}-{chain}' for pos, chain in zip(xlbl_pos, xlbl_chain)]
 
+    # SET CLUSTER COLOR PALETTE (NEW)
+    if cluster_colors is None:
+        cluster_colors = generate_cluster_colors(100)
+    
+    # Determine how many unique clusters we have
+    n_clusters = len(np.unique(clustering.labels_))
+    set_link_color_palette(cluster_colors[:n_clusters])
+
     # PLOT CORRESPONDING DENDROGRAM #
-    if horizontal: dendrogram(linkage_matrix, color_threshold=dist, labels=xlbl, orientation='right')
-    else: dendrogram(linkage_matrix, color_threshold=dist, labels=xlbl, leaf_rotation=90.)
+    if horizontal:
+        dendrogram(linkage_matrix, 
+                   color_threshold=dist, 
+                   above_threshold_color='#CCCCCC',  # gray for above threshold
+                   labels=xlbl, 
+                   orientation='right',
+                   ax=ax)
+    else:
+        dendrogram(linkage_matrix, 
+                   color_threshold=dist,
+                   above_threshold_color='#CCCCCC',  # gray for above threshold
+                   labels=xlbl, 
+                   leaf_rotation=90.,
+                   ax=ax)
 
     plt.title(title)
-    plt.savefig(dend_filename, dpi=100, transparent=False, format=save_type)
+    plt.savefig(dend_filename, dpi=100, transparent=True, format=save_type)
     plt.close()
