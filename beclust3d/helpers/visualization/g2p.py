@@ -128,7 +128,7 @@ def g2p_formatted_hit_cluster(results_dir,
     if function_for_meta:
         if conservation:
             gene_name = 'Merged'
-        screen_name = each_func
+        screen_name = function_for_meta
         lfc_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_LFC',f'{gene_name}_Meta_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
         lfc3d_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_LFC3D',f'{gene_name}_Meta_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
         union_pd = pd.read_csv(glob.glob(os.path.join(results_dir,'cluster_union',f'{gene_name}_Meta_Aggr_Hits.tsv'))[0],sep='\t').set_index('unipos')
