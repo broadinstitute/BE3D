@@ -298,8 +298,12 @@ def plot_dendrogram(
         [clustering.children_, clustering.distances_, counts]).astype(float)
     xlbl_pos = list(df_pvals_temp[pos_col])
     xlbl_chain = list(df_pvals_temp[chain_col])
-    xlbl = [f'{pos}-{chain}' for pos, chain in zip(xlbl_pos, xlbl_chain)]
-
+    xlbl_cluster = list(clustering.labels_)  # Get cluster assignments
+    
+    # Format: "position-chain (C#)"
+    xlbl = [f'{pos}-{chain} (C{clust})' 
+            for pos, chain, clust in zip(xlbl_pos, xlbl_chain, xlbl_cluster)]
+    
     # SET CLUSTER COLOR PALETTE (NEW)
     if cluster_colors is None:
         cluster_colors = generate_cluster_colors(100)
