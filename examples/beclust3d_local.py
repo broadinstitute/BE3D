@@ -270,7 +270,7 @@ def main(**kwargs):
                 psig_columns=[f'{function_for_lfc}_Missense_LFC_plab_input'],
                 pthr_cutoffs=[f'p<{single_screen_pthr_str}'], # TODO:
                 screen_name=screen_name, score_type='LFC',
-                max_distances=10, merge_cols=['unipos', 'chain'],
+                max_distances=20, merge_cols=['unipos', 'chain'],
                 atom_level= pdb_file if atom_level_naa == True else False
             )
 
@@ -372,7 +372,7 @@ def main(**kwargs):
                                 'p<0.001', 'p<0.001',
                                 ],
                     screen_name=screen_name, score_type=score_type,
-                    max_distances=10, merge_cols=['unipos', 'chain'],
+                    max_distances=20, merge_cols=['unipos', 'chain'],
                     atom_level= pdb_file if atom_level_naa == True else False
                 )
 
@@ -450,7 +450,7 @@ def main(**kwargs):
                             'p<0.001', 'p<0.001',
                             ],                
                 screen_name=screen_name, score_type='union',
-                max_distances=10, merge_cols=['unipos', 'chain'],
+                max_distances=20, merge_cols=['unipos', 'chain'],
                 atom_level= pdb_file if atom_level_naa == True else False
             )
 
@@ -632,7 +632,7 @@ def main(**kwargs):
                             'p<0.001', 'p<0.001',
                             ],            
                 screen_name='Meta', score_type=score_type,
-                max_distances=10, merge_cols=['unipos', 'chain'],
+                max_distances=20, merge_cols=['unipos', 'chain'],
                 atom_level= pdb_file if atom_level_naa == True else False
             )
 
@@ -688,7 +688,7 @@ def main(**kwargs):
                         'p<0.001', 'p<0.001',
                         ],        
             screen_name='Meta', score_type='union',
-            max_distances=10, merge_cols=['unipos', 'chain'],
+            max_distances=20, merge_cols=['unipos', 'chain'],
             atom_level= pdb_file if atom_level_naa == True else False
         )
 
