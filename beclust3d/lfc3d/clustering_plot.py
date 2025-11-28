@@ -175,12 +175,26 @@ def plot_clustering(
 
         dend_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{name}_Dendrogram_{pthr}_{str(int(dist))}A.{save_type}"
         title = f'{input_gene} {score_type} {name} Clusters'
-        plot_dendrogram(
+
+        cluster_to_color = plot_dendrogram(
             clustering, df_pvals_temp, 
             dist, horizontal, pos_col, chain_col, 
             title, dend_filename, 
             dendrogram_subplots_kwargs, save_type,
             cluster_colors=cluster_colors)
+        
+        import json
+        color_map_file = working_filedir / f"cluster_{score_type}/{prefix}_{name}_{pthr}_{int(dist)}A_color_mapping.json"
+        # Convert cluster labels to standard format
+        cluster_color_mapping = {
+            f"cluster_{int(cluster_id)}": color 
+            for cluster_id, color in cluster_to_color.items()
+        }
+        
+        with open(color_map_file, 'w') as f:
+            json.dump(cluster_color_mapping, f, indent=2)
+        
+        print(f"Saved color mapping: {color_map_file}")
 
         # CLUSTERS RESIDUES AND LENGTH OF EACH CLUSTER #
         df_pvals_clust_i = df_pvals_clust.loc[(df_pvals_clust[colname] == pthr), ].reset_index(drop=True)
@@ -282,7 +296,7 @@ def plot_dendrogram(
     cluster_colors=None,
 ):  
     fig, ax = plt.subplots(**subplots_kwargs)
-    counts = np.zeros(clustering.children_.shape[0]) # CREATE COUNTS OF SAMPLE #
+    counts = np.zeros(clustering.children_.shape[0])
     n_samples = len(clustering.labels_)
     
     for i, merge in enumerate(clustering.children_):
@@ -296,38 +310,56 @@ def plot_dendrogram(
 
     linkage_matrix = np.column_stack(
         [clustering.children_, clustering.distances_, counts]).astype(float)
+    
     xlbl_pos = list(df_pvals_temp[pos_col])
     xlbl_chain = list(df_pvals_temp[chain_col])
-    xlbl_cluster = list(clustering.labels_)  # Get cluster assignments
+    xlbl_cluster = list(clustering.labels_)
     
-    # Format: "position-chain (C#)"
     xlbl = [f'{pos}-{chain} (C{clust})' 
             for pos, chain, clust in zip(xlbl_pos, xlbl_chain, xlbl_cluster)]
     
-    # SET CLUSTER COLOR PALETTE (NEW)
+    # SET CLUSTER COLOR PALETTE
     if cluster_colors is None:
         cluster_colors = generate_cluster_colors(100)
     
-    # Determine how many unique clusters we have
     n_clusters = len(np.unique(clustering.labels_))
     set_link_color_palette(cluster_colors[:n_clusters])
 
-    # PLOT CORRESPONDING DENDROGRAM #
+    # PLOT DENDROGRAM
     if horizontal:
-        dendrogram(linkage_matrix, 
+        dend_result = dendrogram(linkage_matrix, 
                    color_threshold=dist, 
-                   above_threshold_color='#CCCCCC',  # gray for above threshold
+                   above_threshold_color='#CCCCCC',
                    labels=xlbl, 
                    orientation='right',
-                   ax=ax)
+                   ax=ax,
+                   no_plot=False)  # Get dendrogram data
     else:
-        dendrogram(linkage_matrix, 
+        dend_result = dendrogram(linkage_matrix, 
                    color_threshold=dist,
-                   above_threshold_color='#CCCCCC',  # gray for above threshold
+                   above_threshold_color='#CCCCCC',
                    labels=xlbl, 
                    leaf_rotation=90.,
-                   ax=ax)
+                   ax=ax,
+                   no_plot=False)
 
+    # ====== NEW: Extract actual cluster-to-color mapping ======
+    # Get leaf colors from dendrogram result
+    leaf_colors = dend_result['leaves_color_list']
+    leaf_order = dend_result['leaves']  # indices in original data order
+    
+    # Build mapping: cluster_label -> actual_color
+    cluster_to_color = {}
+    for idx, leaf_idx in enumerate(leaf_order):
+        cluster_label = clustering.labels_[leaf_idx]
+        color = leaf_colors[idx]
+        if cluster_label not in cluster_to_color:
+            cluster_to_color[cluster_label] = color
+    
+    # Return this mapping so we can save it
     plt.title(title)
-    plt.savefig(dend_filename, dpi=100, transparent=True, format=save_type)
+    plt.tight_layout()
+    plt.savefig(dend_filename, dpi=100, transparent=True, format=save_type, bbox_inches='tight')
     plt.close()
+    
+    return cluster_to_color  # ← NEW: return the mapping
