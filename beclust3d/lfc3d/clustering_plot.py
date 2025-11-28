@@ -278,7 +278,8 @@ def plot_dendrogram(
     title, 
     dend_filename, 
     subplots_kwargs, 
-    save_type, 
+    save_type,
+    cluster_colors=None,
 ):  
     fig, ax = plt.subplots(**subplots_kwargs)
     counts = np.zeros(clustering.children_.shape[0]) # CREATE COUNTS OF SAMPLE #
