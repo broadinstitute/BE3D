@@ -10,7 +10,7 @@ def g2p_formatted_hit_cluster(results_dir,
                               lfc3d_pthr='05',
                               meta_pthr='001',
                               dist=6,
-                              meta=False,
+                              function_for_meta=False,
                               conservation=False,
                               input_gene=None):
     """
@@ -40,8 +40,8 @@ def g2p_formatted_hit_cluster(results_dir,
     dist : int (default = 6)
         Type the distance cutoff for agglomerative clustering, which is only for title
         
-    meta : bool
-        True for getting Meta-aggregation analysis
+    function_for_meta : bool
+        True for getting Meta-aggregation analysis on a given function
 
     conservation : bool
         True for changing gene_list to ['Merged']
@@ -125,7 +125,7 @@ def g2p_formatted_hit_cluster(results_dir,
         lfc3d_pd.loc[pos_mask & neg_mask, f'{screen_name}_LFC3D_{lfc3d_pthr}_hits'] = 'Pos+Neg'
         result_both_directions_pd = pd.concat([result_both_directions_pd, lfc_pd[f'{screen_name}_LFC_{lfc_pthr}_hits'],lfc3d_pd[f'{screen_name}_LFC3D_{lfc3d_pthr}_hits']],axis=1)
                 
-    if meta:
+    if function_for_meta:
         if conservation:
             gene_name = 'Merged'
         screen_name = 'SUM'
