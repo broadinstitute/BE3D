@@ -126,7 +126,7 @@ def plot_clustering(
     assert len(psig_columns) == len(names) == len(pthr_cutoffs)
     
     # GENERATE CONSISTENT COLORS (NEW)
-    cluster_colors = generate_cluster_colors(50)
+    cluster_colors = generate_cluster_colors(100)
     
     # Save color mapping to file for JavaScript reference
     color_map_file = working_filedir / f"cluster_{score_type}/cluster_color_mapping.json"
