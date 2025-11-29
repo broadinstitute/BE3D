@@ -217,37 +217,57 @@ def plot_clustering(
 
 def generate_cluster_colors(n_clusters=50):
     """
-    Generate cluster colors matching the JavaScript HSL algorithm.
-    Returns a list of hex colors for clusters 0 to n_clusters-1.
+    Generate maximally distinct colors suitable for scientific visualization.
+    Combines hand-picked colors for small sets with algorithmic generation for larger sets.
     """
-    def hsl_to_hex(h, s, l):
-        """Convert HSL to HEX (matching JavaScript logic)"""
-        s /= 100.0
-        l /= 100.0
-        
-        def hue_to_rgb(n):
-            k = (n + h / 30.0) % 12
-            a = s * min(l, 1 - l)
-            return l - a * max(-1, min(k - 3, min(9 - k, 1)))
-        
-        r = round(255 * hue_to_rgb(0))
-        g = round(255 * hue_to_rgb(8))
-        b = round(255 * hue_to_rgb(4))
-        
-        return f"#{r:02x}{g:02x}{b:02x}"
+    import colorsys
     
-    # Lightness tiers: base, lighter, lightest
-    lightness = [45, 65, 80]
-    saturation = [90, 90, 90]
+    # Hand-picked distinct colors for first 12 clusters
+    base_colors = [
+        '#e6194B',  # Red
+        '#3cb44b',  # Green
+        '#ffe119',  # Yellow
+        '#4363d8',  # Blue
+        '#f58231',  # Orange
+        '#911eb4',  # Purple
+        '#42d4f4',  # Cyan
+        '#f032e6',  # Magenta
+        '#bfef45',  # Lime
+        '#fabed4',  # Pink
+        '#469990',  # Teal
+        '#dcbeff',  # Lavender
+    ]
     
-    colors = []
-    for i in range(n_clusters):
-        tier_raw = i // 10                      # 0..4 for 50 values
-        tier = tier_raw % len(lightness)        # wrap into 0..2
-        j = i % 10                              # 0..9 within the tier
-        hue = j * 36                            # 10 distinct hues (0, 36, 72, ..., 324)
+    if n_clusters <= len(base_colors):
+        return base_colors[:n_clusters]
+    
+    # For more clusters, start with base and add generated ones
+    colors = base_colors.copy()
+    
+    # Generate additional colors using golden ratio
+    golden_ratio = 0.618033988749895
+    h = 0.5  # Start at a different hue
+    
+    for i in range(n_clusters - len(base_colors)):
+        h = (h + golden_ratio) % 1.0
         
-        hex_color = hsl_to_hex(hue, saturation[tier], lightness[tier])
+        # Vary lightness and saturation more dramatically
+        pattern = i % 6
+        if pattern == 0:
+            s, l = 0.95, 0.35
+        elif pattern == 1:
+            s, l = 0.60, 0.75
+        elif pattern == 2:
+            s, l = 0.90, 0.55
+        elif pattern == 3:
+            s, l = 0.70, 0.45
+        elif pattern == 4:
+            s, l = 0.85, 0.65
+        else:
+            s, l = 0.75, 0.85
+        
+        r, g, b = colorsys.hls_to_rgb(h, l, s)
+        hex_color = f"#{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}"
         colors.append(hex_color)
     
     return colors
