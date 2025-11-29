@@ -35,7 +35,6 @@ def plot_clustering(
     score_type='LFC3D',  
     merge_col=['unipos', 'chain'], 
     clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single"}, 
-
     horizontal=False, 
     line_subplots_kwargs={'figsize':(10,7)}, 
     dendrogram_subplots_kwargs={'figsize':(15, 12)}, 
@@ -58,7 +57,7 @@ def plot_clustering(
         DataFrame containing structure and significance information plus cluster labels assigned at each distance.
 
     dist : int, optional (default=25)
-        Tadius (in Angstroms) to consider for clustering. 
+        Radius (in Angstroms) to consider for clustering. 
 
     workdir : str
         Path to the working directory where output files and results will be saved.
@@ -101,6 +100,7 @@ def plot_clustering(
     -------
     None
     """
+    import json  # NEW: for JSON export
 
     # MKDIR #
     working_filedir = Path(workdir)
@@ -125,12 +125,11 @@ def plot_clustering(
     assert len(df_struc) == len(df_pvals)
     assert len(psig_columns) == len(names) == len(pthr_cutoffs)
     
-    # GENERATE CONSISTENT COLORS (NEW)
+    # NEW: GENERATE CONSISTENT COLORS FOR ALL CLUSTERS
     cluster_colors = generate_cluster_colors(100)
     
-    # Save color mapping to file for JavaScript reference
+    # NEW: Save global color mapping to file for JavaScript reference
     color_map_file = working_filedir / f"cluster_{score_type}/cluster_color_mapping.json"
-    import json
     with open(color_map_file, 'w') as f:
         json.dump({f"cluster_{i}": color for i, color in enumerate(cluster_colors)}, f, indent=2)
 
@@ -175,26 +174,20 @@ def plot_clustering(
 
         dend_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{name}_Dendrogram_{pthr}_{str(int(dist))}A.{save_type}"
         title = f'{input_gene} {score_type} {name} Clusters'
-
+        
+        # MODIFIED: plot_dendrogram now returns cluster-to-color mapping
         cluster_to_color = plot_dendrogram(
             clustering, df_pvals_temp, 
             dist, horizontal, pos_col, chain_col, 
             title, dend_filename, 
             dendrogram_subplots_kwargs, save_type,
-            cluster_colors=cluster_colors)
+            cluster_colors=cluster_colors)  # NEW: pass consistent colors
         
-        import json
-        color_map_file = working_filedir / f"cluster_{score_type}/{prefix}_{name}_{pthr}_{int(dist)}A_color_mapping.json"
-        # Convert cluster labels to standard format
-        cluster_color_mapping = {
-            f"cluster_{int(cluster_id)}": color 
-            for cluster_id, color in cluster_to_color.items()
-        }
-        
-        with open(color_map_file, 'w') as f:
-            json.dump(cluster_color_mapping, f, indent=2)
-        
-        print(f"Saved color mapping: {color_map_file}")
+        # NEW: Save per-analysis color mapping (maps actual cluster IDs to colors used)
+        analysis_color_file = working_filedir / f"cluster_{score_type}/{prefix}_{name}_{pthr}_{int(dist)}A_color_mapping.json"
+        with open(analysis_color_file, 'w') as f:
+            json.dump(cluster_to_color, f, indent=2)
+        print(f"Saved color mapping: {analysis_color_file}")
 
         # CLUSTERS RESIDUES AND LENGTH OF EACH CLUSTER #
         df_pvals_clust_i = df_pvals_clust.loc[(df_pvals_clust[colname] == pthr), ].reset_index(drop=True)
@@ -209,7 +202,12 @@ def plot_clustering(
                 if len(c_data) > 0: 
                     all_unipos = c_data[pos_col].tolist()
                     all_chains = c_data[chain_col].tolist()
-                    f.write(f'Cluster {c} : Length {len(c_data)} :\n')
+                    
+                    # NEW: Include color information in text output
+                    cluster_key = f"cluster_{int(c)}"
+                    cluster_color = cluster_to_color.get(cluster_key, '#CCCCCC')
+                    f.write(f'Cluster {c} (Color: {cluster_color}) : Length {len(c_data)} :\n')
+                    
                     f.write('   ')
                     for unipos, chain in zip(all_unipos, all_chains): 
                         f.write(f'{chain}-{unipos} ')
