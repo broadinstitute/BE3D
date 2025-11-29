@@ -315,36 +315,7 @@ def plot_dendrogram(
 ):  
     """
     Plot hierarchical clustering dendrogram with consistent cluster coloring.
-    
-    Parameters
-    ----------
-    clustering : AgglomerativeClustering
-        Fitted clustering object from sklearn.
-    df_pvals_temp : pd.DataFrame
-        DataFrame with residue information and cluster assignments.
-    dist : float
-        Distance threshold for coloring clusters.
-    horizontal : bool
-        If True, plot horizontal dendrogram.
-    pos_col : str
-        Column name for residue position.
-    chain_col : str
-        Column name for chain identifier.
-    title : str
-        Plot title.
-    dend_filename : str or Path
-        Output file path for saving the plot.
-    subplots_kwargs : dict
-        Keyword arguments for plt.subplots (e.g., figsize).
-    save_type : str
-        File format for saving (e.g., 'png', 'svg').
-    cluster_colors : list, optional
-        List of hex colors for clusters. If None, generates default colors.
-    
-    Returns
-    -------
-    dict
-        Mapping of cluster IDs to colors in format {"cluster_0": "#hexcolor", ...}
+    Only colors links below the distance threshold.
     """
     from scipy.cluster.hierarchy import dendrogram
     import matplotlib.pyplot as plt
@@ -386,23 +357,7 @@ def plot_dendrogram(
     
     # Helper function: trace node to its cluster
     def get_cluster_for_node(node_id, linkage_mat, labels):
-        """
-        Find which cluster a node belongs to by tracing to leaves.
-        
-        Parameters
-        ----------
-        node_id : int
-            Node index in the dendrogram tree.
-        linkage_mat : np.ndarray
-            Linkage matrix from hierarchical clustering.
-        labels : np.ndarray
-            Cluster labels for each leaf node.
-        
-        Returns
-        -------
-        int
-            Cluster ID that this node belongs to.
-        """
+        """Find which cluster a node belongs to by tracing to leaves."""
         if node_id < len(labels):
             # It's a leaf node - return its cluster label
             return labels[node_id]
@@ -414,35 +369,47 @@ def plot_dendrogram(
                 return get_cluster_for_node(left_child, linkage_mat, labels)
         return 0
     
-    # Color function for dendrogram links
+    # Helper function: get distance for a node
+    def get_node_distance(node_id, linkage_mat, n_samples):
+        """Get the distance at which this node was formed."""
+        if node_id < n_samples:
+            # Leaf nodes have distance 0
+            return 0.0
+        else:
+            # Internal node - look up merge distance
+            merge_idx = int(node_id - n_samples)
+            if merge_idx < len(linkage_mat):
+                return linkage_mat[merge_idx, 2]
+        return 0.0
+    
+    # Color function for dendrogram links - KEY FIX HERE
     def link_color_func(node_id):
         """
         Determine color for each link in the dendrogram.
-        Links are colored based on which cluster they belong to.
-        
-        Parameters
-        ----------
-        node_id : int
-            Node index in the dendrogram.
-        
-        Returns
-        -------
-        str
-            Hex color code for this link.
+        - If link distance <= threshold: use cluster color
+        - If link distance > threshold: use gray
         """
+        # Get the distance at which this node was formed
+        node_distance = get_node_distance(node_id, linkage_matrix, n_samples)
+        
+        # If above threshold, return gray
+        if node_distance > dist:
+            return '#CCCCCC'
+        
+        # If below threshold, color by cluster
         cluster_id = get_cluster_for_node(node_id, linkage_matrix, clustering.labels_)
         return get_cluster_color(cluster_id)
     
     # Plot dendrogram with custom coloring
     dend_result = dendrogram(
         linkage_matrix,
-        color_threshold=dist,
+        color_threshold=dist,  # This parameter is still used for scipy's internal logic
         above_threshold_color='#CCCCCC',
         labels=xlbl,
         orientation='right' if horizontal else 'top',
         leaf_rotation=90. if not horizontal else 0.,
         ax=ax,
-        link_color_func=link_color_func
+        link_color_func=link_color_func  # This overrides default coloring
     )
     
     # Create deterministic cluster-to-color mapping with STRING keys for JSON serialization
@@ -454,11 +421,17 @@ def plot_dendrogram(
     # Styling
     ax.set_title(title, fontsize=10, pad=10)
     if horizontal:
-        ax.set_xlabel('Distance', fontsize=8)
+        ax.set_xlabel('Distance (Å)', fontsize=8)
         ax.tick_params(axis='y', labelsize=6)
+        # Add threshold line
+        ax.axvline(x=dist, color='red', linestyle='--', linewidth=1, alpha=0.5, label=f'Threshold: {dist}Å')
     else:
-        ax.set_ylabel('Distance', fontsize=8)
+        ax.set_ylabel('Distance (Å)', fontsize=8)
         ax.tick_params(axis='x', labelsize=6, rotation=90)
+        # Add threshold line
+        ax.axhline(y=dist, color='red', linestyle='--', linewidth=1, alpha=0.5, label=f'Threshold: {dist}Å')
+    
+    ax.legend(loc='best', fontsize=6)
     
     plt.tight_layout()
     plt.savefig(dend_filename, dpi=100, transparent=True, format=save_type, bbox_inches='tight')
