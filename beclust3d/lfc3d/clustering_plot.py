@@ -384,7 +384,7 @@ def plot_dendrogram(
                 return linkage_mat[merge_idx, 2]
         return 0.0
     
-    # Color function for dendrogram links - YOUR ORIGINAL WORKING VERSION
+    # Color function for dendrogram links
     def link_color_func(node_id):
         """
         Determine color for each link in the dendrogram.
@@ -405,35 +405,58 @@ def plot_dendrogram(
     # Plot dendrogram with custom coloring
     dend_result = dendrogram(
         linkage_matrix,
-        color_threshold=dist,  # This parameter is still used for scipy's internal logic
+        color_threshold=dist,
         above_threshold_color='#CCCCCC',
         labels=xlbl,
         orientation='right' if horizontal else 'top',
         leaf_rotation=90. if not horizontal else 0.,
         ax=ax,
-        link_color_func=link_color_func  # This overrides default coloring
+        link_color_func=link_color_func
     )
     
-    # EXTENDED: Create detailed cluster information (not just color mapping)
-    all_cluster_ids = np.unique(clustering.labels_)
+    # ANALYZE THE ACTUAL COLORS USED IN THE DENDROGRAM
+    # dend_result['color_list'] contains the actual colors assigned to each link
+    actual_colors_used = set(dend_result.get('color_list', []))
     
+    # Check which clusters were actually displayed in gray vs color
+    all_cluster_ids = np.unique(clustering.labels_)
+    cluster_color_status = {}
+    
+    for cluster_id in all_cluster_ids:
+        expected_color = get_cluster_color(cluster_id).upper()
+        # Check if this cluster's color appears in the dendrogram
+        # Convert to uppercase for comparison
+        cluster_is_colored = any(
+            expected_color == actual_color.upper() 
+            for actual_color in actual_colors_used
+        )
+        cluster_color_status[cluster_id] = cluster_is_colored
+    
+    # Count active vs grayed
+    active_clusters = [cid for cid, is_colored in cluster_color_status.items() if is_colored]
+    grayed_clusters = [cid for cid, is_colored in cluster_color_status.items() if not is_colored]
+    
+    # Create detailed cluster information
     cluster_info = {
         "threshold_distance": float(dist),
         "total_clusters": int(len(all_cluster_ids)),
-        "active_clusters": int(len(all_cluster_ids)),  # All clusters below threshold are active
-        "grayed_clusters": 0,  # No clusters are grayed (only inter-cluster links)
+        "active_clusters": int(len(active_clusters)),
+        "grayed_clusters": int(len(grayed_clusters)),
         "clusters": {}
     }
     
-    # All clusters are active since they were formed below the threshold
+    # Populate cluster information based on actual dendrogram display
     for cluster_id in all_cluster_ids:
         cluster_key = f"cluster_{int(cluster_id)}"
+        is_active = cluster_color_status[cluster_id]
+        assigned_color = get_cluster_color(cluster_id)
+        
         cluster_info["clusters"][cluster_key] = {
             "cluster_id": int(cluster_id),
-            "color": get_cluster_color(cluster_id),
-            "active": True,  # All clusters are active
-            "displayed_color": get_cluster_color(cluster_id),
-            "status": "active"
+            "color": assigned_color,
+            "active": is_active,
+            "displayed_color": assigned_color if is_active else "#CCCCCC",
+            "status": "active" if is_active else "grayed_out"
         }
 
     # Styling
@@ -441,12 +464,10 @@ def plot_dendrogram(
     if horizontal:
         ax.set_xlabel('Distance (Å)', fontsize=8)
         ax.tick_params(axis='y', labelsize=6)
-        # Add threshold line
         ax.axvline(x=dist, color='red', linestyle='--', linewidth=1, alpha=0.5, label=f'Threshold: {dist}Å')
     else:
         ax.set_ylabel('Distance (Å)', fontsize=8)
         ax.tick_params(axis='x', labelsize=6, rotation=90)
-        # Add threshold line
         ax.axhline(y=dist, color='red', linestyle='--', linewidth=1, alpha=0.5, label=f'Threshold: {dist}Å')
     
     ax.legend(loc='best', fontsize=6)
@@ -455,4 +476,4 @@ def plot_dendrogram(
     plt.savefig(dend_filename, dpi=100, transparent=True, format=save_type, bbox_inches='tight')
     plt.close()
     
-    return cluster_info  # Return extended info instead of simple dict
+    return cluster_info
