@@ -317,7 +317,7 @@ def plot_dendrogram(
 ):  
     """
     Plot hierarchical clustering dendrogram with consistent cluster coloring.
-    Returns detailed information about which clusters are active vs grayed out.
+    Only colors links below the distance threshold.
     """
     from scipy.cluster.hierarchy import dendrogram
     import matplotlib.pyplot as plt
@@ -352,88 +352,82 @@ def plot_dendrogram(
     if cluster_colors is None:
         cluster_colors = generate_cluster_colors(100)
     
+    # Helper function: map cluster ID to color
     def get_cluster_color(cluster_id):
         """Always return the same color for the same cluster ID"""
         return cluster_colors[int(cluster_id)]
     
+    # Helper function: trace node to its cluster
     def get_cluster_for_node(node_id, linkage_mat, labels):
         """Find which cluster a node belongs to by tracing to leaves."""
         if node_id < len(labels):
+            # It's a leaf node - return its cluster label
             return labels[node_id]
         else:
+            # It's an internal node - trace down to left child
             merge_idx = int(node_id - len(labels))
             if merge_idx < len(linkage_mat):
                 left_child = int(linkage_mat[merge_idx, 0])
                 return get_cluster_for_node(left_child, linkage_mat, labels)
         return 0
     
+    # Helper function: get distance for a node
     def get_node_distance(node_id, linkage_mat, n_samples):
         """Get the distance at which this node was formed."""
         if node_id < n_samples:
+            # Leaf nodes have distance 0
             return 0.0
         else:
+            # Internal node - look up merge distance
             merge_idx = int(node_id - n_samples)
             if merge_idx < len(linkage_mat):
-                return linkage_mat[i, 2]
+                return linkage_mat[merge_idx, 2]
         return 0.0
     
-    # CORRECTED: All clusters from AgglomerativeClustering are below threshold
-    # So ALL clusters are active by definition
-    all_cluster_ids = np.unique(clustering.labels_)
-    active_clusters = set(all_cluster_ids)
-    grayed_clusters = set()  # Empty - no clusters are grayed, only inter-cluster links
-    
+    # Color function for dendrogram links - YOUR ORIGINAL WORKING VERSION
     def link_color_func(node_id):
         """
         Determine color for each link in the dendrogram.
-        - If link distance > threshold: use gray (inter-cluster connections)
-        - If link distance <= threshold: use cluster color (intra-cluster connections)
+        - If link distance <= threshold: use cluster color
+        - If link distance > threshold: use gray
         """
-        # Get merge index
-        if node_id < n_samples:
-            # Leaf node - get its cluster color
-            cluster_id = clustering.labels_[node_id]
-            return get_cluster_color(cluster_id)
+        # Get the distance at which this node was formed
+        node_distance = get_node_distance(node_id, linkage_matrix, n_samples)
         
-        merge_idx = int(node_id - n_samples)
-        if merge_idx >= len(linkage_matrix):
-            return '#CCCCCC'
-        
-        node_distance = linkage_matrix[merge_idx, 2]
-        
-        # If above threshold, return gray (inter-cluster link)
+        # If above threshold, return gray
         if node_distance > dist:
             return '#CCCCCC'
         
-        # If below threshold, color by cluster (intra-cluster link)
+        # If below threshold, color by cluster
         cluster_id = get_cluster_for_node(node_id, linkage_matrix, clustering.labels_)
         return get_cluster_color(cluster_id)
     
     # Plot dendrogram with custom coloring
     dend_result = dendrogram(
         linkage_matrix,
-        color_threshold=dist,
+        color_threshold=dist,  # This parameter is still used for scipy's internal logic
         above_threshold_color='#CCCCCC',
         labels=xlbl,
         orientation='right' if horizontal else 'top',
         leaf_rotation=90. if not horizontal else 0.,
         ax=ax,
-        link_color_func=link_color_func
+        link_color_func=link_color_func  # This overrides default coloring
     )
     
-    # Create detailed cluster information dictionary
+    # EXTENDED: Create detailed cluster information (not just color mapping)
+    all_cluster_ids = np.unique(clustering.labels_)
+    
     cluster_info = {
         "threshold_distance": float(dist),
-        "total_clusters": len(all_cluster_ids),
-        "active_clusters": len(active_clusters),
-        "grayed_clusters": 0,  # No clusters are grayed, only inter-cluster links
+        "total_clusters": int(len(all_cluster_ids)),
+        "active_clusters": int(len(all_cluster_ids)),  # All clusters below threshold are active
+        "grayed_clusters": 0,  # No clusters are grayed (only inter-cluster links)
         "clusters": {}
     }
     
-    # ALL clusters are active (formed below threshold)
+    # All clusters are active since they were formed below the threshold
     for cluster_id in all_cluster_ids:
         cluster_key = f"cluster_{int(cluster_id)}"
-        
         cluster_info["clusters"][cluster_key] = {
             "cluster_id": int(cluster_id),
             "color": get_cluster_color(cluster_id),
@@ -447,10 +441,12 @@ def plot_dendrogram(
     if horizontal:
         ax.set_xlabel('Distance (Å)', fontsize=8)
         ax.tick_params(axis='y', labelsize=6)
+        # Add threshold line
         ax.axvline(x=dist, color='red', linestyle='--', linewidth=1, alpha=0.5, label=f'Threshold: {dist}Å')
     else:
         ax.set_ylabel('Distance (Å)', fontsize=8)
         ax.tick_params(axis='x', labelsize=6, rotation=90)
+        # Add threshold line
         ax.axhline(y=dist, color='red', linestyle='--', linewidth=1, alpha=0.5, label=f'Threshold: {dist}Å')
     
     ax.legend(loc='best', fontsize=6)
@@ -459,4 +455,4 @@ def plot_dendrogram(
     plt.savefig(dend_filename, dpi=100, transparent=True, format=save_type, bbox_inches='tight')
     plt.close()
     
-    return cluster_info
+    return cluster_info  # Return extended info instead of simple dict
