@@ -374,49 +374,38 @@ def plot_dendrogram(
         else:
             merge_idx = int(node_id - n_samples)
             if merge_idx < len(linkage_mat):
-                return linkage_mat[merge_idx, 2]
+                return linkage_mat[i, 2]
         return 0.0
     
-    # NEW: Track which clusters remain active (colored) vs grayed out
-    active_clusters = set()
-    grayed_clusters = set()
-    
-    # Analyze linkage matrix to determine cluster status
-    for cluster_id in np.unique(clustering.labels_):
-        # Find if this cluster ever merges above threshold
-        is_grayed = False
-        
-        # Check all nodes in linkage matrix
-        for i in range(len(linkage_matrix)):
-            node_id = n_samples + i
-            node_distance = linkage_matrix[i, 2]
-            
-            # If this node represents our cluster and merges above threshold
-            left_cluster = get_cluster_for_node(int(linkage_matrix[i, 0]), linkage_matrix, clustering.labels_)
-            right_cluster = get_cluster_for_node(int(linkage_matrix[i, 1]), linkage_matrix, clustering.labels_)
-            
-            if (left_cluster == cluster_id or right_cluster == cluster_id) and node_distance > dist:
-                is_grayed = True
-                break
-        
-        if is_grayed:
-            grayed_clusters.add(cluster_id)
-        else:
-            active_clusters.add(cluster_id)
+    # CORRECTED: All clusters from AgglomerativeClustering are below threshold
+    # So ALL clusters are active by definition
+    all_cluster_ids = np.unique(clustering.labels_)
+    active_clusters = set(all_cluster_ids)
+    grayed_clusters = set()  # Empty - no clusters are grayed, only inter-cluster links
     
     def link_color_func(node_id):
         """
         Determine color for each link in the dendrogram.
-        - If link distance > threshold: use gray
-        - If link distance <= threshold: use cluster color
+        - If link distance > threshold: use gray (inter-cluster connections)
+        - If link distance <= threshold: use cluster color (intra-cluster connections)
         """
-        node_distance = get_node_distance(node_id, linkage_matrix, n_samples)
+        # Get merge index
+        if node_id < n_samples:
+            # Leaf node - get its cluster color
+            cluster_id = clustering.labels_[node_id]
+            return get_cluster_color(cluster_id)
         
-        # If above threshold, return gray
+        merge_idx = int(node_id - n_samples)
+        if merge_idx >= len(linkage_matrix):
+            return '#CCCCCC'
+        
+        node_distance = linkage_matrix[merge_idx, 2]
+        
+        # If above threshold, return gray (inter-cluster link)
         if node_distance > dist:
             return '#CCCCCC'
         
-        # If below threshold, color by cluster
+        # If below threshold, color by cluster (intra-cluster link)
         cluster_id = get_cluster_for_node(node_id, linkage_matrix, clustering.labels_)
         return get_cluster_color(cluster_id)
     
@@ -435,23 +424,22 @@ def plot_dendrogram(
     # Create detailed cluster information dictionary
     cluster_info = {
         "threshold_distance": float(dist),
-        "total_clusters": len(np.unique(clustering.labels_)),
+        "total_clusters": len(all_cluster_ids),
         "active_clusters": len(active_clusters),
-        "grayed_clusters": len(grayed_clusters),
+        "grayed_clusters": 0,  # No clusters are grayed, only inter-cluster links
         "clusters": {}
     }
     
-    # Populate detailed cluster information
-    for cluster_id in np.unique(clustering.labels_):
+    # ALL clusters are active (formed below threshold)
+    for cluster_id in all_cluster_ids:
         cluster_key = f"cluster_{int(cluster_id)}"
-        is_active = cluster_id in active_clusters
         
         cluster_info["clusters"][cluster_key] = {
             "cluster_id": int(cluster_id),
             "color": get_cluster_color(cluster_id),
-            "active": is_active,
-            "displayed_color": get_cluster_color(cluster_id) if is_active else "#CCCCCC",
-            "status": "active" if is_active else "grayed_out"
+            "active": True,  # All clusters are active
+            "displayed_color": get_cluster_color(cluster_id),
+            "status": "active"
         }
 
     # Styling
