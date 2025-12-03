@@ -34,24 +34,24 @@ The following figure provides an overview of the BE3D workflow:
 
 BE3D enables structure-function analysis of BE tiling mutagenesis data by mapping mutation readouts (log fold change, LFC) onto 3D protein structures. This can be extended to multiple screens or cross-species comparisons. The workflow consists of:
 
-**A. BE-QA**: Assesses the quality of BE screens by testing if knockout annotated (e.g., nonsense or splice site) and neutral annotated (e.g., silent or no mutation) guides have significantly different LFC score distributions.
+**A. BE-QA**: Assesses the quality of BE screens by testing if annotated knockout guides (e.g., nonsense or splice site) and annotated neutral guides (e.g., silent or no mutation) guides have significantly different LFC score distributions.
 
-**B. BE-Clust3D**: Maps LFC values by amino acid residue onto 3D protein structures and computes a per-residue 3D-normalized LFC score (LFC3D score) based on spatial proximity (default: 6 Å). Then, agglomerative clustering is performed with a second spatial proximity parameter (default: 6 Å) to identify hotspots of potential functional importance. 
+**B. BE-Clust3D**: Maps LFC values by amino acid residue onto 3D protein structures and computes a per-residue 3D-normalized LFC score (LFC3D score) based on spatial proximity (default: 6 Å). Then, agglomerative clustering is performed with a second spatial proximity parameter (default: 6 Å) to identify hotspots of potential functional importance. This clustering can be performed on either the original LFC values by amino acid, or the new LFC3D score. 
 
-**C. BE-MetaClust3D**: Aggregates data from multiple screens to enhance signal strength and detect residues that might be missed due to the noise present base editing screens. 
+**C. BE-MetaClust3D**: Aggregates data from multiple screens to enhance signal strength and detect residues that might be missed due to the noise present in BE screens. Cross-species or cross-isoform screens can also be integrated together through an optional alignment step. 
 
 ## Input
 
 BE3D requires the following inputs:
 
-1. **BE Screen Scores (TSV)**: Must include Mutation Category, Amino Acid Edit, Gene Name, and Score. You must map column names in the config.
+1. **BE Screen Scores (TSV)**: Must include Mutation Category, Amino Acid Edit, Gene Name, and Score. You must indicate column names as part of the input. 
 
     Example TSV:
 
     ```tsv
-    predicted_edits	sgRNA_score	mutation	Gene
-    Gly2Arg;Met1Ile	-0.18977	Missense	MEN1
-    Leu10Leu	-0.22247	Silent		MEN1
+    Gene	sgRNA_score	mutation	predicted_edits
+    MEN1	-0.18977	Missense	Gly2Arg;Met1Ile
+    MEN1	-0.22247	Silent	Leu10Leu
     ```
 
     Example input config (Python):
@@ -69,7 +69,7 @@ BE3D requires the following inputs:
     input_uniprot = "O00255" # (MEN1)
     ```
 
-4. **Optional FASTA and PDB**: Provide custom protein sequence and structure files for non-canonical sequences, non-canonical proteins, or alternative structures. If these ields are left empty, the pipeline fetches the AlphaFold of the canonical isoform structure for the given Uniprot ID, so any other sequences or PDB structures would need to be linked manually like this. 
+4. **Optional FASTA and PDB**: Provide custom protein sequence and structure files for non-canonical sequences, non-canonical proteins, or alternative structures. If these fields are left empty, the pipeline fetches the AlphaFold of the canonical isoform structure for the given Uniprot ID. 
 
     ```python
     input_pdb   = 'men1_AF3.pdb'
@@ -109,10 +109,10 @@ Results are provided in G2P-compatible TSV file, which can be downloaded and int
 Install BE3D using pip:
 
 ```bash
-pip install git+https://github.com/broadinstitute/BEClust3D.git
+pip install git+https://github.com/broadinstitute/beclust3d-public.git
 ```
 
-This code block is in Google Colab notebooks (see below)
+This code block is also in the example Google Colab notebooks (see below)
 
 ## Getting Started Examples
 
@@ -137,9 +137,9 @@ if __name__ == '__main__':
 
 The pipeline automatically queries the UNIPROT protein sequence and AlphaFold structure of the protein of interest. If users want to use a PDB or other custom structure, they would need to upload the ```structure.pdb``` file and provide the filepath to the structure. 
 
-The pipeline also automatically uses DSSP to annotate a pdb file for secondary structures. However, this tool is known to sometimes fail on larger structures. Furthermore, for a custom PDB upload, it is recommended that the user uploads their own DSSP file, as DSSP may fail on these structures. The annotations for DSSP are not necessary for the pipeline until the final characterization step, and would not affect preprocessing, prioritizing hits, meta-aggregation, or clustering. Even for the final characterization step, DSSP annotations are an optional part. 
+The pipeline also automatically uses DSSP to annotate a pdb file for secondary structures. However, this tool is known to sometimes fail on larger structures. For a custom PDB upload, it is recommended that the user uploads their own DSSP file, as DSSP may fail on these structures. The annotations for DSSP are not necessary for the pipeline until the final characterization step, and would not affect preprocessing, prioritizing hits, meta-aggregation, or clustering. Even for the final characterization step, DSSP annotations are an optional input. 
 
-The DSSP Web Portal is here: https://pdb-redo.eu/dssp
+The DSSP Web Portal can be found at: https://pdb-redo.eu/dssp
 
 ### Conservation
 
