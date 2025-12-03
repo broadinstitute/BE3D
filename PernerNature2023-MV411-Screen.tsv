@@ -1,0 +1,519 @@
+predicted_edit	guide_order_targeting_the_MEN1_locus	delta_beta_score	mutation_category_list	mutation_category	predicted_edit_canonical	Gene Symbol
+utr;utr;utr;utr;	1	-0.217614	UTR;UTR;UTR;UTR	UTR		MEN1
+utr;utr;utr;utr;	2	-0.27772	UTR;UTR;UTR;UTR	UTR		MEN1
+utr;utr;utr;	3	-0.153437	UTR;UTR;UTR	UTR		MEN1
+utr;utr;utr;	4	0.39548	UTR;UTR;UTR	UTR		MEN1
+utr;utr;	5	0.24966	UTR;UTR	UTR		MEN1
+utr;	6	-0.179533	UTR	UTR		MEN1
+G2R;M1I	7	-0.18977	Missense;Missense	Missense	G2R;M1I	MEN1
+G2K;M1I	8	0.08166	Missense;Missense	Missense	G2K;M1I	MEN1
+G2K	9	-0.080037	Missense	Missense	G2K	MEN1
+L3L	10	0.05723	Silent	Silent	L3L	MEN1
+K4K;L3L	11	0.20651	Silent;Silent	Silent	K4K;L3L	MEN1
+A5T;K4K	12	-0.29245	Missense;Silent	Missense	A5T;K4K	MEN1
+A6T	13	-0.12581	Missense	Missense	A6T	MEN1
+L10L	14	-0.22247	Silent	Silent	L10L	MEN1
+R14C	15	-0.452454	Missense	Missense	R14C	MEN1
+P12P	16	0.292226	Silent	Silent	P12P	MEN1
+P12P	17	0.1595485	Silent	Silent	P12P	MEN1
+D18N;D17N	18	-0.4742	Missense;Missense	Missense	D18N;D17N	MEN1
+D18N;D17N	19	-0.81823837	Missense;Missense	Missense	D18N;D17N	MEN1
+R21R;L22L	20	0.02557	Silent;Silent	Silent	R21R;L22L	MEN1
+L22L	21	-1.19986	Silent	Silent	L22L	MEN1
+R21H;V20V	22	0.41957	Missense;Silent	Missense	R21H;V20V	MEN1
+A25V	23	0.7982	Missense	Missense	A25V	MEN1
+L27L	24	0.23433	Silent	Silent	L27L	MEN1
+G28G;R29*	25	0.426627	Silent;Nonsense	Nonsense	G28G;R29*	MEN1
+G28S;L27L;E26E	26	-0.05751	Missense;Silent;Silent	Missense	G28S;L27L;E26E	MEN1
+E31K;E30E	27	-1.02775	Missense;Silent	Missense	E31K;E30E	MEN1
+D33D;L34L	28	-0.5311	Silent;Silent	Silent	D33D;L34L	MEN1
+L36F;L37F	29	-1.1624	Missense;Missense	Missense	L36F;L37F	MEN1
+L36F;L37F	30	-0.61463	Missense;Missense	Missense	L36F;L37F	MEN1
+V35M;L34L	31	0.56178	Missense;Silent	Missense	V35M;L34L	MEN1
+S38S	32	-0.25256	Silent	Silent	S38S	MEN1
+none	33	-0.07051	No Mutation	No Mutation		MEN1
+V40M;L39L	34	0.83725	Missense;Silent	Missense	V40M;L39L	MEN1
+G42N;L41L	35	0.23062	Missense;Silent	Missense	G42N;L41L	MEN1
+V44I	36	-0.43325	Missense	Missense	V44I	MEN1
+V58I	37	-0.044881	Missense	Missense	V58I	MEN1
+E60K	38	0.151458	Missense	Missense	E60K	MEN1
+E60K	39	-0.145	Missense	Missense	E60K	MEN1
+none	40	-0.10454	No Mutation	No Mutation		MEN1
+P67F;A68V	41	0.6105	Missense;Missense	Missense	P67F;A68V	MEN1
+Q64Q	42	0.30863	Silent	Silent	Q64Q	MEN1
+Q64Q	43	0.343427	Silent	Silent	Q64Q	MEN1
+A68V;P69F	44	-0.0238182	Missense;Missense	Missense	A68V;P69F	MEN1
+A68T	45	0.04537	Missense	Missense	A68T	MEN1
+D70N	46	-0.471438	Missense	Missense	D70N	MEN1
+P71P	47	0.11551	Silent	Silent	P71P	MEN1
+G74G;L75F	48	0.306776	Silent;Missense	Missense	G74G;L75F	MEN1
+G73S;P71P	49	-0.09094	Missense;Silent	Missense	G73S;P71P	MEN1
+G73N	50	0.54751	Missense	Missense	G73N	MEN1
+G73N	51	0.062858	Missense	Missense	G73N	MEN1
+G74N;G73D	52	0.01909	Missense;Missense	Missense	G74N;G73D	MEN1
+G74N	53	-0.3819	Missense	Missense	G74N	MEN1
+G74N	54	0.71428	Missense	Missense	G74N	MEN1
+G74D	55	-0.43204	Missense	Missense	G74D	MEN1
+none	56	0.752752	No Mutation	No Mutation		MEN1
+none	57	-0.243162	No Mutation	No Mutation		MEN1
+none	58	-1.0113	No Mutation	No Mutation		MEN1
+A81T;V80I	59	-0.279873	Missense;Missense	Missense	A81T;V80I	MEN1
+D82N	60	0.03156	Missense	Missense	D82N	MEN1
+none	61	-0.72843	No Mutation	No Mutation		MEN1
+none	62	-0.219387	No Mutation	No Mutation		MEN1
+A87T	63	-0.5879774	Missense	Missense	A87T	MEN1
+A88T	64	-1.048776	Missense	Missense	A88T	MEN1
+F93F;T94I	65	-0.231511	Silent;Missense	Missense	F93F;T94I	MEN1
+R92H	66	-0.05919	Missense	Missense	R92H	MEN1
+none	67	-0.180207	No Mutation	No Mutation		MEN1
+A95T	68	-0.090398	Missense	Missense	A95T	MEN1
+Q96Q	69	-0.59294	Silent	Silent	Q96Q	MEN1
+Q96Q	70	-0.087596	Silent	Silent	Q96Q	MEN1
+A100T;G99D	71	-0.175661	Missense;Missense	Missense	A100T;G99D	MEN1
+V101I	72	0.195398	Missense	Missense	V101I	MEN1
+D102N;V101I	73	0.034337	Missense;Missense	Missense	D102N;V101I	MEN1
+S104F;L105F	74	0.34214	Missense;Missense	Missense	S104F;L105F	MEN1
+S104F;L105F	75	0.3512	Missense;Missense	Missense	S104F;L105F	MEN1
+S104S;L105F	76	-0.01636	Silent;Missense	Missense	S104S;L105F	MEN1
+L105F	77	0.35313	Missense	Missense	L105F	MEN1
+L103L	78	0.321809	Silent	Silent	L103L	MEN1
+none	79	-0.211341	No Mutation	No Mutation		MEN1
+E109K;R108Q	80	-0.15454	Missense;Missense	Missense	E109K;R108Q	MEN1
+V112V	81	1.12941	Silent	Silent	V112V	MEN1
+G110K	82	0.418325	Missense	Missense	G110K	MEN1
+G111S;G110K	83	-0.21349	Missense;Missense	Missense	G111S;G110K	MEN1
+S114S;R115C	84	0.231672	Silent;Missense	Missense	S114S;R115C	MEN1
+V112I	85	0.01461	Missense	Missense	V112I	MEN1
+V121V	86	0.39594	Silent	Silent	V121V	MEN1
+K119K;V118V	87	-1.591658	Silent;Silent	Silent	K119K;V118V	MEN1
+V121I;K120K;K119K	88	0.28357	Missense;Silent;Silent	Missense	V121I;K120K;K119K	MEN1
+L129L;S130S;R131C	89	-0.474544	Silent;Silent;Missense	Missense	L129L;S130S;R131C	MEN1
+S128N	90	0.35259	Missense	Missense	S128N	MEN1
+R131R;S132F	91	-0.0608	Silent;Missense	Missense	R131R;S132F	MEN1
+R131R;S132F	92	0.18597	Silent;Missense	Missense	R131R;S132F	MEN1
+none	93	0.85812	No Mutation	No Mutation		MEN1
+D136N;K135K	94	1.76701	Missense;Silent	Missense	D136N;K135K	MEN1
+A138T;R137Q	95	-0.1784687	Missense;Missense	Missense	A138T;R137Q	MEN1
+L143F	96	0.89288	Missense	Missense	L143F	MEN1
+F144F;S145S	97	0.50478	Silent;Silent	Silent	F144F;S145S	MEN1
+none	98	-0.313857	No Mutation	No Mutation		MEN1
+none	99	0.08144	No Mutation	No Mutation		MEN1
+T148I	100	0.51061	Missense	Missense	T148I	MEN1
+none	101	-0.147059	No Mutation	No Mutation		MEN1
+none	102	-0.84759	No Mutation	No Mutation		MEN1
+none	103	-0.057825	No Mutation	No Mutation		MEN1
+none	104	0.03951	No Mutation	No Mutation		MEN1
+G149S	105	0.009743	Missense	Missense	G149S	MEN1
+none	106	0.292271	No Mutation	No Mutation		MEN1
+none	107	0.019818	No Mutation	No Mutation		MEN1
+Exon1:+27;	108	0.23899	Intron	Intron		MEN1
+Exon2:-16;Exon2:-15;	109	-0.17509	Intron;Intron	Intron		MEN1
+Exon2:-6;Exon2:-5;	110	0.214505	Intron;Intron	Intron		MEN1
+none	111	0.170671	No Mutation	No Mutation		MEN1
+none	112	-0.2048986	No Mutation	No Mutation		MEN1
+T155I	113	-0.60284	Missense	Missense	T150I	MEN1
+none	114	-0.43256	No Mutation	No Mutation		MEN1
+Gly154Asp;Exon2:-1;	115	0.281642	Missense;Splice	Splice		MEN1
+none	116	-0.1370467	No Mutation	No Mutation		MEN1
+none	117	-0.07736	No Mutation	No Mutation		MEN1
+none	118	-0.38393	No Mutation	No Mutation		MEN1
+none	119	0.23036	No Mutation	No Mutation		MEN1
+D158N;L157L	120	0.355392	Missense;Silent	Missense	D153N;L152L	MEN1
+S160S	121	0.36152	Silent	Silent	S155S	MEN1
+A163V	122	-0.42314	Missense	Missense	A158V	MEN1
+A163V	123	-1.07305	Missense	Missense	A158V	MEN1
+A163V	124	0.076597	Missense	Missense	A158V	MEN1
+G161N	125	0.14091	Missense	Missense	G156N	MEN1
+none	126	-0.88764	No Mutation	No Mutation		MEN1
+none	127	-0.57634	No Mutation	No Mutation		MEN1
+V166I	128	0.01746	Missense	Missense	V161I	MEN1
+C170C;Q171*	129	-0.45865	Silent;Nonsense	Nonsense	C165C;Q166*	MEN1
+C170C;Q171*	130	-0.12242	Silent;Nonsense	Nonsense	C165C;Q166*	MEN1
+A169T;G168E	131	0.307459	Missense;Missense	Missense	A164T;G163E	MEN1
+G174D	132	0.480571	Missense	Missense	G169D	MEN1
+V178V;H179Y;L180F	133	-0.333024	Silent;Missense;Missense	Missense	V173V;H174Y;L175F	MEN1
+D177N;R176Q	134	0.48759	Missense;Missense	Missense	D172N;R171Q	MEN1
+V178I	135	-0.026013	Missense	Missense	V173I	MEN1
+V178I	136	-0.343601	Missense	Missense	V173I	MEN1
+S183F	137	0.097223	Missense	Missense	S178F	MEN1
+S183F	138	-0.84066	Missense	Missense	S178F	MEN1
+A181T	139	-0.03829	Missense	Missense	A176T	MEN1
+H186Y;A187V	140	-0.341048	Missense;Missense	Missense	H181Y;A182V	MEN1
+A187V	141	0.735691	Missense	Missense	A182V	MEN1
+D185N;E184K	142	-0.77235	Missense;Missense	Missense	D180N;E179K	MEN1
+D185N;E184E	143	-0.398833	Missense;Silent	Missense	D180N;E179E	MEN1
+none	144	-0.108381	No Mutation	No Mutation		MEN1
+none	145	0.06131	No Mutation	No Mutation		MEN1
+A187T	146	0.08955	Missense	Missense	A182T	MEN1
+none	147	0.57995	No Mutation	No Mutation		MEN1
+A187T	148	-0.236479	Missense	Missense	A182T	MEN1
+none	149	0.543465	No Mutation	No Mutation		MEN1
+G192E	150	0.02585	Missense	Missense	G187E	MEN1
+T198I	151	-0.02707	Missense	Missense	T193I	MEN1
+A199V	152	-0.073876	Missense	Missense	A194V	MEN1
+V201V	153	-0.58605	Silent	Silent	V196V	MEN1
+V201V;T202I	154	0.141602	Silent;Missense	Missense	V196V;T197I	MEN1
+A199T	155	0.775257	Missense	Missense	A194T	MEN1
+A199T	156	0.31585	Missense	Missense	A194T	MEN1
+H204Y	157	0.1578517	Missense	Missense	H199Y	MEN1
+G207G	158	0.062678	Silent	Silent	G202G	MEN1
+G207G	159	0.09088	Silent	Silent	G202G	MEN1
+G207G	160	-0.363073	Silent	Silent	G202G	MEN1
+G207D	161	-0.38143	Missense	Missense	G202D	MEN1
+G213G;Q214*	162	-0.33929	Silent;Nonsense	Nonsense	G208G;Q209*	MEN1
+T215I	163	-0.16123	Missense	Missense	T210I	MEN1
+A218V	164	-0.12301	Missense	Missense	A213V	MEN1
+A218V	165	0.38789	Missense	Missense	A213V	MEN1
+V216I	166	-0.137655	Missense	Missense	V211I	MEN1
+V220M;G219N	167	-1.676335	Missense;Missense	Missense	V215M;G214N	MEN1
+Exon2:+1;Arg223Gln;	168	-0.088972	Splice;Missense	Splice		MEN1
+Exon2:+25;	169	0.08119	Intron	Intron		MEN1
+Exon2:+25;	170	0.41558	Intron	Intron		MEN1
+none	171	-0.639239	No Mutation	No Mutation		MEN1
+none	172	-0.06838	No Mutation	No Mutation		MEN1
+none	173	0.332553	No Mutation	No Mutation		MEN1
+none	174	-0.414083	No Mutation	No Mutation		MEN1
+none	175	-0.12665	No Mutation	No Mutation		MEN1
+Exon2:+39;	176	0.301225	Intron	Intron		MEN1
+Exon2:+45;Exon2:+42;	177	0.43884	Intron;Intron	Intron		MEN1
+Exon2:+45;	178	0.639	Intron	Intron		MEN1
+Exon2:+45;	179	0.04122	Intron	Intron		MEN1
+S224S	180	0.28115	Silent	Silent	S219S	MEN1
+L226L;W225*	181	-0.35351	Silent;Nonsense	Nonsense	L221L;W220*	MEN1
+L226L;W225*	182	0.76095	Silent;Nonsense	Nonsense	L221L;W220*	MEN1
+L226L	183	0.05866	Silent	Silent	L221L	MEN1
+L226L	184	0.229073	Silent	Silent	L221L	MEN1
+L226L	185	0.38074	Silent	Silent	L221L	MEN1
+none	186	0.24427	No Mutation	No Mutation		MEN1
+R234C	187	-0.073133	Missense	Missense	R229C	MEN1
+R234R	188	0.21891	Silent	Silent	R229R	MEN1
+D236D;R237C	189	-0.02122	Silent;Missense	Missense	D231D;R232C	MEN1
+M233I	190	-0.16346	Missense	Missense	M228I	MEN1
+none	191	-0.316816	No Mutation	No Mutation		MEN1
+A242T;V241V	192	-0.37176	Missense;Silent	Missense	A237T;V236V	MEN1
+D253D;L254L;H255Y	193	-1.02602	Silent;Silent;Missense	Missense	D248D;L249L;H250Y	MEN1
+D253N	194	0.41049	Missense	Missense	D248N	MEN1
+L254L	195	0.2877711	Silent	Silent	L249L	MEN1
+none	196	-0.60792	No Mutation	No Mutation		MEN1
+D257N	197	-0.9441	Missense	Missense	D252N	MEN1
+L261F;L262L	198	-0.02291	Missense;Silent	Missense	L256F;L257L	MEN1
+E260K;L259L;S258S	199	-0.708072	Missense;Silent;Silent	Missense	E255K;L254L;S253S	MEN1
+Q263*	200	0.033502	Nonsense	Nonsense	Q258*	MEN1
+Q263*;L264L	201	0.20105	Nonsense;Silent	Nonsense	Q258*;L259L	MEN1
+L262L	202	0.07304	Silent	Silent	L257L	MEN1
+none	203	0.04728	No Mutation	No Mutation		MEN1
+none	204	0.30654	No Mutation	No Mutation		MEN1
+none	205	0.547003	No Mutation	No Mutation		MEN1
+Exon3:+8;	206	0.073476	Intron	Intron		MEN1
+Exon3:+13;Exon3:+14;	207	-0.8643	Intron;Intron	Intron		MEN1
+Exon3:+13;Exon3:+14;	208	-0.1214307	Intron;Intron	Intron		MEN1
+none	209	-0.0255381	No Mutation	No Mutation		MEN1
+Exon3:+31;Exon3:+30;Exon3:+29;	210	0.09078	Intron;Intron;Intron	Intron		MEN1
+Exon4:-27;Exon4:-25;	211	-0.01497	Intron;Intron	Intron		MEN1
+Exon4:-7;Exon4:-5;Exon4:-4;	212	-0.613217	Intron;Intron;Intron	Intron		MEN1
+L269L;L271L	213	0.40674	Silent;Silent	Silent	L264L;L266L	MEN1
+L271L	214	0.25672	Silent	Silent	L266L	MEN1
+L268L;K267K	215	0.264452	Silent;Silent	Silent	L263L;K262K	MEN1
+L272L	216	-1.18943	Silent	Silent	L267L	MEN1
+L271L;W270*	217	0.36508	Silent;Nonsense	Nonsense	L266L;W265*	MEN1
+D274D;L275L	218	-0.64124	Silent;Silent	Silent	D269D;L270L	MEN1
+L278L	219	0.08479	Silent	Silent	L273L	MEN1
+L278L	220	-0.79134	Silent	Silent	L273L	MEN1
+Exon4:+3;	221	0.136553	Intron	Intron		MEN1
+none	222	-0.27941	No Mutation	No Mutation		MEN1
+Exon4:+1;Arg280Lys;	223	-1.17765	Splice;Missense	Splice		MEN1
+none	224	0.72894	No Mutation	No Mutation		MEN1
+Exon4:+19;Exon4:+20;	225	0.09349	Intron;Intron	Intron		MEN1
+Exon4:+24;Exon4:+27;	226	0.62702	Intron;Intron	Intron		MEN1
+Exon4:+24;Exon4:+27;	227	-0.112999	Intron;Intron	Intron		MEN1
+Exon4:+27;Exon4:+29;	228	-0.251351	Intron;Intron	Intron		MEN1
+Exon4:+27;Exon4:+29;Exon4:+30;	229	-0.180209	Intron;Intron;Intron	Intron		MEN1
+Exon4:+27;Exon4:+29;Exon4:+30;	230	0.150592	Intron;Intron;Intron	Intron		MEN1
+none	231	0.19252	No Mutation	No Mutation		MEN1
+none	232	0.247392	No Mutation	No Mutation		MEN1
+Exon4:+38;Exon4:+37;Exon4:+35;	233	0.66275	Intron;Intron;Intron	Intron		MEN1
+Exon4:+46;Exon4:+45;Exon4:+44;	234	-0.97476	Intron;Intron;Intron	Intron		MEN1
+none	235	-0.33427	No Mutation	No Mutation		MEN1
+Exon5:-9;Exon5:-5;	236	-0.0359762	Intron;Intron	Intron		MEN1
+none	237	-0.63887	No Mutation	No Mutation		MEN1
+Y281Y	238	0.41232	Silent	Silent	Y276Y	MEN1
+none	239	0.247976	No Mutation	No Mutation		MEN1
+P282P	240	-0.148047	Silent	Silent	P277P	MEN1
+M283I	241	-0.169933	Missense	Missense	M278I	MEN1
+N287N;L288L	242	0.933134	Silent;Silent	Silent	N282N;L283L	MEN1
+A284T	243	-0.24083	Missense	Missense	A279T	MEN1
+A289V	244	0.61255	Missense	Missense	A284V	MEN1
+G286G	245	0.32606	Silent	Silent	G281G	MEN1
+none	246	-0.281299	No Mutation	No Mutation		MEN1
+L288L	247	0.01723	Silent	Silent	L283L	MEN1
+D290N	248	-0.487591	Missense	Missense	D285N	MEN1
+none	249	0.23312	No Mutation	No Mutation		MEN1
+E293K;E292E	250	0.36923	Missense;Silent	Missense	E288K;E287E	MEN1
+L304F	251	0.09821	Missense	Missense	L299F	MEN1
+D302N	252	0.19203	Missense	Missense	D297N	MEN1
+D302N	253	-0.388794	Missense	Missense	D297N	MEN1
+L304L;T305I;L306F	254	-0.18269	Silent;Missense;Missense	Missense	L299L;T300I;L301F	MEN1
+T305I;L306F	255	-0.35562	Missense;Missense	Missense	T300I;L301F	MEN1
+T305I;L306F	256	-0.3041	Missense;Missense	Missense	T300I;L301F	MEN1
+none	257	-0.89038	No Mutation	No Mutation		MEN1
+T305T;L306F	258	0.70654	Silent;Missense	Missense	T300T;L301F	MEN1
+none	259	0.319181	No Mutation	No Mutation		MEN1
+none	260	-0.6673	No Mutation	No Mutation		MEN1
+none	261	0.37507	No Mutation	No Mutation		MEN1
+H308H	262	0.31985	Silent	Silent	H303H	MEN1
+none	263	0.320801	No Mutation	No Mutation		MEN1
+none	264	0.345414	No Mutation	No Mutation		MEN1
+none	265	0.312109	No Mutation	No Mutation		MEN1
+none	266	0.253127	No Mutation	No Mutation		MEN1
+none	267	0.055897	No Mutation	No Mutation		MEN1
+Exon5:+11;	268	-0.61996	Intron	Intron		MEN1
+Exon5:+11;	269	0.3523	Intron	Intron		MEN1
+Exon5:+6;Exon5:+5;Exon5:+4;Exon5:+3;	270	-0.7454463	Intron;Intron;Intron;Intron	Intron		MEN1
+Exon5:+7;Exon5:+6;Exon5:+5;Exon5:+4;Exon5:+3;	271	0.04305	Intron;Intron;Intron;Intron;Intron	Intron		MEN1
+none	272	-0.172014	No Mutation	No Mutation		MEN1
+none	273	0.25573	No Mutation	No Mutation		MEN1
+Exon5:+34;Exon5:+35;Exon5:+36;	274	-0.41474	Intron;Intron;Intron	Intron		MEN1
+Exon6:-19;Exon6:-16;Exon6:-15;	275	-0.31274	Intron;Intron;Intron	Intron		MEN1
+Exon6:-16;Exon6:-15;	276	0.01262	Intron;Intron	Intron		MEN1
+none	277	-0.6082	No Mutation	No Mutation		MEN1
+Gly310Asn;Exon6:-1;	278	0.0615568	Missense;Splice	Splice		MEN1
+S313L;A314V	279	-1.01313	Missense;Missense	Missense	S308L;A309V	MEN1
+A314V	280	-0.24935	Missense	Missense	A309V	MEN1
+A312T	281	0.27195	Missense	Missense	A307T	MEN1
+none	282	0.02615	No Mutation	No Mutation		MEN1
+A314T	283	0.03312	Missense	Missense	A309T	MEN1
+none	284	-0.181511	No Mutation	No Mutation		MEN1
+D320N;R319Q	285	0.054014	Missense;Missense	Missense	D315N;R314Q	MEN1
+I323I;Y324Y;P325S	286	0.62645	Silent;Silent;Missense	Missense	I318I;Y319Y;P320S	MEN1
+none	287	0.53911	No Mutation	No Mutation		MEN1
+P325F	288	0.69712	Missense	Missense	P320F	MEN1
+G331S;A330T;L329L	289	-0.08875	Missense;Missense;Silent	Missense	G326S;A325T;L324L	MEN1
+G331N;A330T	290	0.307164	Missense;Missense	Missense	G326N;A325T	MEN1
+G331N	291	0.755882	Missense	Missense	G326N	MEN1
+R335C	292	-0.59941	Missense	Missense	R330C	MEN1
+R335C	293	-0.68469	Missense	Missense	R330C	MEN1
+C334Y	294	-0.28485	Missense	Missense	C329Y	MEN1
+R340W	295	-0.32455	Missense	Missense	R335W	MEN1
+none	296	-0.47808	No Mutation	No Mutation		MEN1
+none	297	-0.31916	No Mutation	No Mutation		MEN1
+V339M	298	-0.82746	Missense	Missense	V334M	MEN1
+A342V;L343L	299	-0.525728	Missense;Silent	Missense	A337V;L338L	MEN1
+Q344*	300	-0.17291	Nonsense	Nonsense	Q339*	MEN1
+A342T	301	0.06343	Missense	Missense	A337T	MEN1
+D348D;T349M	302	1.57918	Silent;Missense	Missense	D343D;T344M	MEN1
+D348N;A347A	303	0.175131	Missense;Silent	Missense	D343N;A342A	MEN1
+D348N;A347A	304	0.72911	Missense;Silent	Missense	D343N;A342A	MEN1
+T351I	305	-0.125922	Missense	Missense	T346I	MEN1
+none	306	-0.331877	No Mutation	No Mutation		MEN1
+none	307	0.13044	No Mutation	No Mutation		MEN1
+none	308	-0.028637	No Mutation	No Mutation		MEN1
+Exon6:+3;Exon6:+1;	309	-0.10138	Intron;Splice	Splice		MEN1
+none	310	0.046648	No Mutation	No Mutation		MEN1
+Exon6:+28;Exon6:+25;	311	-0.283929	Intron;Intron	Intron		MEN1
+Exon6:+28;Exon6:+25;	312	0.05483	Intron;Intron	Intron		MEN1
+Exon6:+28;	313	0.19973	Intron	Intron		MEN1
+Exon6:+28;	314	0.057539	Intron	Intron		MEN1
+none	315	-0.13004	No Mutation	No Mutation		MEN1
+none	316	-1.007909	No Mutation	No Mutation		MEN1
+Exon7:-3;Asp355Asp;	317	0.09097	Intron;Silent	Intron		MEN1
+Exon7:-3;Asp355Asp;	318	-0.39922	Intron;Silent	Intron		MEN1
+Exon7:-10;	319	0.13744	Intron	Intron		MEN1
+Exon7:-10;	320	0.269492	Intron	Intron		MEN1
+N357N;Y358Y	321	-0.255527	Silent;Silent	Silent	N352N;Y353Y	MEN1
+Exon7:-1;	322	-0.21084	Splice	Splice		MEN1
+Exon7:-1;	323	-0.90331	Splice	Splice		MEN1
+none	324	0.277625	No Mutation	No Mutation		MEN1
+D362D	325	0.142224	Silent	Silent	D357D	MEN1
+E364E	326	0.65476	Silent	Silent	E359E	MEN1
+V376V;I377I;P378S	327	0.36253	Silent;Silent;Missense	Missense	V371V;I372I;P373S	MEN1
+I377I;P378F	328	-0.10361	Silent;Missense	Missense	I372I;P373F	MEN1
+none	329	0.08517	No Mutation	No Mutation		MEN1
+none	330	-0.1532	No Mutation	No Mutation		MEN1
+A384V	331	0.23524	Missense	Missense	A379V	MEN1
+A385V	332	-0.38282	Missense	Missense	A380V	MEN1
+A385V	333	-0.224632	Missense	Missense	A380V	MEN1
+A384T;E383K;K382K	334	-0.035653	Missense;Missense;Silent	Missense	A379T;E378K;K377K	MEN1
+A384T;E383K	335	-0.3285093	Missense;Missense	Missense	A379T;E378K	MEN1
+A384T;E383E	336	1.12839	Missense;Silent	Missense	A379T;E378E	MEN1
+S386S;L388L	337	0.63376	Silent;Silent	Silent	S381S;L383L	MEN1
+A385T	338	0.18154	Missense	Missense	A380T	MEN1
+none	339	-0.63611	No Mutation	No Mutation		MEN1
+A390V	340	0.0079	Missense	Missense	A385V	MEN1
+A390V	341	0.149978	Missense	Missense	A385V	MEN1
+A390V;G391G	342	-0.38439	Missense;Silent	Missense	A385V;G386G	MEN1
+G391G	343	0.04333	Silent	Silent	G386G	MEN1
+G391N;A390A	344	0.255237	Missense;Silent	Missense	G386N;A385A	MEN1
+P395L	345	0.23885	Missense	Missense	P390L	MEN1
+Q398*	346	-0.204227	Nonsense	Nonsense	Q393*	MEN1
+S399S	347	-0.54664	Silent	Silent	S394S	MEN1
+Exon7:+1;Gln400Gln;	348	-0.21252	Splice;Silent	Splice		MEN1
+Exon7:+14;Exon7:+12;	349	0.871437	Intron;Intron	Intron		MEN1
+Exon7:+28;	350	-0.76708	Intron	Intron		MEN1
+Exon7:+29;Exon7:+32;Exon7:+33;	351	-1.19326	Intron;Intron;Intron	Intron		MEN1
+Exon7:+32;Exon7:+33;	352	0.080511	Intron;Intron	Intron		MEN1
+none	353	-0.78683	No Mutation	No Mutation		MEN1
+none	354	0.020866	No Mutation	No Mutation		MEN1
+Exon7:+47;Exon7:+43;	355	0.199529	Intron;Intron	Intron		MEN1
+Exon8:-18;Exon8:-17;Exon8:-16;	356	0.234378	Intron;Intron;Intron	Intron		MEN1
+Exon8:-18;Exon8:-17;Exon8:-16;	357	-0.26338	Intron;Intron;Intron	Intron		MEN1
+Exon8:-3;	358	-0.149497	Intron	Intron		MEN1
+Exon8:-6;	359	0.11878	Intron	Intron		MEN1
+Exon8:-6;	360	-0.3822	Intron	Intron		MEN1
+Gly401Asn;Exon8:-1;	361	-0.03347	Missense;Splice	Splice		MEN1
+Gly401Asn;Exon8:-1;	362	-0.14814	Missense;Splice	Splice		MEN1
+S404S;Q405*	363	-0.59527	Silent;Nonsense	Nonsense	S399S;Q400*	MEN1
+none	364	-0.28241	No Mutation	No Mutation		MEN1
+none	365	0.1198	No Mutation	No Mutation		MEN1
+Q403Q	366	0.35148	Silent	Silent	Q398Q	MEN1
+Q403Q	367	0.25351	Silent	Silent	Q398Q	MEN1
+G406S	368	-0.64671	Missense	Missense	G401S	MEN1
+A408T	369	0.19357	Missense	Missense	A403T	MEN1
+A408T	370	-0.3908395	Missense	Missense	A403T	MEN1
+D411N;Q410Q	371	0.654197	Missense;Silent	Missense	D406N;Q405Q	MEN1
+E413K	372	0.0332361	Missense	Missense	E408K	MEN1
+C414Y;E413E	373	-0.00219	Missense;Silent	Missense	C409Y;E408E	MEN1
+C414Y;E413E	374	0.210367	Missense;Silent	Missense	C409Y;E408E	MEN1
+A416T	375	0.57213	Missense	Missense	A411T	MEN1
+L418L;L419L	376	-0.09268	Silent;Silent	Silent	L413L;L414L	MEN1
+none	377	-0.03895	No Mutation	No Mutation		MEN1
+Y422Y;D423D	378	0.293069	Silent;Silent	Silent	Y417Y;D418D	MEN1
+Y422Y;D423D	379	0.0963	Silent;Silent	Silent	Y417Y;D418D	MEN1
+D423D;G424G	380	0.369259	Silent;Silent	Silent	D418D;G419G	MEN1
+none	381	0.63561	No Mutation	No Mutation		MEN1
+G424G;I425I	382	-1.00032	Silent;Silent	Silent	G419G;I420I	MEN1
+D423N	383	0.025758	Missense	Missense	D418N	MEN1
+I425I	384	0.240625	Silent	Silent	I420I	MEN1
+G424S;D423N	385	-0.3778	Missense;Missense	Missense	G419S;D418N	MEN1
+P433P;T434M;P435S	386	-0.26851	Silent;Missense;Missense	Missense	P428P;T429M;P430S	MEN1
+T434M;P435F	387	0.07805	Missense;Missense	Missense	T429M;P430F	MEN1
+P435L	388	-0.111899	Missense	Missense	P430L	MEN1
+L437L	389	0.360391	Silent	Silent	L432L	MEN1
+V439M	390	0.03032	Missense	Missense	V434M	MEN1
+V439I	391	-0.86518	Missense	Missense	V434I	MEN1
+W441*;G440N	392	-0.128834	Nonsense;Missense	Nonsense	W436*;G435N	MEN1
+L445F	393	-0.0600495	Missense	Missense	L440F	MEN1
+Q447Q	394	-0.033874	Silent	Silent	Q442Q	MEN1
+none	395	0.4459	No Mutation	No Mutation		MEN1
+G454K;E453E	396	-0.66728	Missense;Silent	Missense	G449K;E448E	MEN1
+none	397	-0.06836	No Mutation	No Mutation		MEN1
+G454K;E453E	398	0.52228	Missense;Silent	Missense	G449K;E448E	MEN1
+Exon8:+9;Exon8:+12;	399	-0.80313	Intron;Intron	Intron		MEN1
+Exon8:+9;Exon8:+12;	400	0.70166	Intron;Intron	Intron		MEN1
+Exon8:+3;Exon8:+1;Gln455Gln;	401	-0.05671	Intron;Splice;Silent	Splice		MEN1
+none	402	0.207404	No Mutation	No Mutation		MEN1
+Exon8:+24;	403	-0.31043	Intron	Intron		MEN1
+Exon9:-18;Exon9:-16;	404	-0.0030135	Intron;Intron	Intron		MEN1
+Exon9:-5;Exon9:-4;Exon9:-3;	405	0.30035	Intron;Intron;Intron	Intron		MEN1
+Exon9:-6;Exon9:-7;	406	0.154769	Intron;Intron	Intron		MEN1
+R457Q;V456V	407	0.075872	Missense;Silent	Missense	R452Q;V451V	MEN1
+R457Q;V456V	408	-1.709282	Missense;Silent	Missense	R452Q;V451V	MEN1
+R457Q	409	0.2592	Missense	Missense	R452Q	MEN1
+R461C	410	-0.54578	Missense	Missense	R456C	MEN1
+V460I;K459K	411	0.32342	Missense;Silent	Missense	V455I;K454K	MEN1
+none	412	0.23941	No Mutation	No Mutation		MEN1
+V460I;K459K	413	-0.76203	Missense;Silent	Missense	V455I;K454K	MEN1
+S464S;R465*	414	-0.358761	Silent;Nonsense	Nonsense	S459S;R460*	MEN1
+none	415	0.118801	No Mutation	No Mutation		MEN1
+A467A	416	-0.233855	Silent	Silent	A462A	MEN1
+A470V	417	-0.413461	Missense	Missense	A465V	MEN1
+A470A	418	0.22953835	Silent	Silent	A465A	MEN1
+A472V	419	-0.53647	Missense	Missense	A467V	MEN1
+A472A	420	-0.01731	Silent	Silent	A467A	MEN1
+E471K;A470T;A469A	421	0.10091	Missense;Missense;Silent	Missense	E466K;A465T;A464A	MEN1
+P475L	422	-0.06502	Missense	Missense	P470L	MEN1
+E473K	423	-0.03182	Missense	Missense	E468K	MEN1
+none	424	-0.195592	No Mutation	No Mutation		MEN1
+G477G	425	-0.041	Silent	Silent	G472G	MEN1
+none	426	0.57201	No Mutation	No Mutation		MEN1
+W476*;P475P	427	0.116755	Nonsense;Silent	Nonsense	W471*;P470P	MEN1
+A480V	428	0.174369	Missense	Missense	A475V	MEN1
+E478K;G477D	429	-1.02765	Missense;Missense	Missense	E473K;G472D	MEN1
+A480A;R481W	430	-0.371768	Silent;Missense	Missense	A475A;R476W	MEN1
+R481W	431	-0.0676221	Missense	Missense	R476W	MEN1
+R481Q;A480T	432	0.06672	Missense;Missense	Missense	R476Q;A475T	MEN1
+G483G;R484W	433	0.32964	Silent;Missense	Missense	G478G;R479W	MEN1
+R485W	434	0.19817	Missense	Missense	R480W	MEN1
+R485W;R486W	435	-0.09947	Missense;Missense	Missense	R480W;R481W	MEN1
+G487S;R486Q;R485R	436	0.74534	Missense;Missense;Silent	Missense	G482S;R481Q;R480R	MEN1
+R490W	437	0.252	Missense	Missense	R485W	MEN1
+R489Q	438	-0.125179	Missense	Missense	R484Q	MEN1
+K493K	439	-0.94402	Silent	Silent	K488K	MEN1
+K493K	440	-0.171213	Silent	Silent	K488K	MEN1
+P500F	441	-0.35167	Missense	Missense	P495F	MEN1
+P498P	442	-1.10329	Silent	Silent	P493P	MEN1
+P503S	443	-0.02531	Missense	Missense	P498S	MEN1
+P503L	444	0.45489	Missense	Missense	P498L	MEN1
+P499P	445	-1.759973	Silent	Silent	P494P	MEN1
+A504V;L505L	446	0.13829	Missense;Silent	Missense	A499V;L500L	MEN1
+A504V;L505L	447	0.43681	Missense;Silent	Missense	A499V;L500L	MEN1
+K502K	448	0.55541	Silent	Silent	K497K	MEN1
+K502K	449	0.21301	Silent	Silent	K497K	MEN1
+A504T;K502K	450	0.017875	Missense;Silent	Missense	A499T;K497K	MEN1
+D506D	451	0.4928	Silent	Silent	D501D	MEN1
+A504T	452	-0.02814	Missense	Missense	A499T	MEN1
+A504T	453	0.415002	Missense	Missense	A499T	MEN1
+G508G;L509L	454	0.5149	Silent;Silent	Silent	G503G;L504L	MEN1
+G508G;L509L	455	-0.14181	Silent;Silent	Silent	G503G;L504L	MEN1
+D506N;L505L	456	0.386976	Missense;Silent	Missense	D501N;L500L	MEN1
+D506N;L505L	457	-1.068587	Missense;Silent	Missense	D501N;L500L	MEN1
+G508N	458	0.07931	Missense	Missense	G503N	MEN1
+G512G;Q513*	459	0.40641	Silent;Nonsense	Nonsense	G507G;Q508*	MEN1
+A515V	460	0.09262	Missense	Missense	A510V	MEN1
+A515T;G514N;Q513Q	461	-0.463755	Missense;Missense;Silent	Missense	A510T;G509N;Q508Q	MEN1
+P519F;P520F	462	-1.80823	Missense;Missense	Missense	P514F;P515F	MEN1
+P519L;P520F	463	-0.277979	Missense;Missense	Missense	P514L;P515F	MEN1
+V516V	464	-0.500054	Silent	Silent	V511V	MEN1
+G518K	465	0.14484	Missense	Missense	G513K	MEN1
+P523F;P524F	466	-0.15647	Missense;Missense	Missense	P518F;P519F	MEN1
+V527V;A528V	467	-0.100679	Silent;Missense	Missense	V522V;A523V	MEN1
+G525K	468	-0.345405	Missense	Missense	G520K	MEN1
+G525K	469	0.038646	Missense	Missense	G520K	MEN1
+G525K	470	-0.09091	Missense	Missense	G520K	MEN1
+G525K	471	0.50094	Missense	Missense	G520K	MEN1
+G525E	472	-0.85896	Missense	Missense	G520E	MEN1
+V527I;G525G	473	0.05137	Missense;Silent	Missense	V522I;G520G	MEN1
+T530I;A531V	474	-0.070961	Missense;Missense	Missense	T525I;A526V	MEN1
+A531V;R532*	475	0.328851	Missense;Nonsense	Nonsense	A526V;R527*	MEN1
+G529N;A528T	476	-0.0680903	Missense;Missense	Missense	G524N;A523T	MEN1
+G529N	477	-0.63817	Missense	Missense	G524N	MEN1
+G533G;P534F	478	0.33825	Silent;Missense	Missense	G528G;P529F	MEN1
+none	479	-0.047754	No Mutation	No Mutation		MEN1
+G537N;G536D	480	0.210998	Missense;Missense	Missense	G532N;G531D	MEN1
+G537N	481	0.568312	Missense	Missense	G532N	MEN1
+A540T;T539T	482	0.00654	Missense;Silent	Missense	A535T;T534T	MEN1
+A540T;T539T	483	-0.47078	Missense;Silent	Missense	A535T;T534T	MEN1
+P545P;T546I	484	0.782443	Silent;Missense	Missense	P540P;T541I	MEN1
+A547V	485	0.57514	Missense	Missense	A542V	MEN1
+A547V;S548L	486	0.134593	Missense;Missense	Missense	A542V;S543L	MEN1
+P550P	487	-0.088737	Silent	Silent	P545P	MEN1
+P551P;P550P	488	0.50476	Silent;Silent	Silent	P546P;P545P	MEN1
+V555M	489	0.2055	Missense	Missense	V550M	MEN1
+V555I	490	-0.7067	Missense	Missense	V550I	MEN1
+F558F;Q559*	491	-0.60372	Silent;Nonsense	Nonsense	F553F;Q554*	MEN1
+Q559*	492	0.0841	Nonsense	Nonsense	Q554*	MEN1
+none	493	-0.40163	No Mutation	No Mutation		MEN1
+none	494	0.279775	No Mutation	No Mutation		MEN1
+S560N;Q559Q	495	-0.33334	Missense;Silent	Missense	S555N;Q554Q	MEN1
+G565G	496	-0.14363	Silent	Silent	G560G	MEN1
+G565S;K564K;M563I	497	-0.426376	Missense;Silent;Missense	Missense	G560S;K559K;M558I	MEN1
+A579A;I580I	498	0.214727	Silent;Silent	Silent	A574A;I575I	MEN1
+S578N;S577S	499	-0.06717	Missense;Silent	Missense	S573N;S572S	MEN1
+A579T;S578N	500	-0.21695	Missense;Missense	Missense	A574T;S573N	MEN1
+T585T	501	-0.32398	Silent	Silent	T580T	MEN1
+T604I;L605L	502	-0.39511	Missense;Silent	Missense	T599I;L600L	MEN1
+none	503	0.13626	No Mutation	No Mutation		MEN1
+L605L	504	-0.170102	Silent	Silent	L600L	MEN1
+L605L	505	-0.62412	Silent	Silent	L600L	MEN1
+L608F	506	-0.24045	Missense	Missense	L603F	MEN1
+L605L	507	0.141142	Silent	Silent	L600L	MEN1
+none	508	-0.062664	No Mutation	No Mutation		MEN1
+G614G	509	-0.01842	Silent	Silent	G609G	MEN1
+G614G;L615F	510	-0.19926	Silent;Missense	Missense	G609G;L610F	MEN1
+G614S	511	0.33713	Missense	Missense	G609S	MEN1
+utr;	512	0.9155	UTR	UTR		MEN1
+utr;	513	0.223251	UTR	UTR		MEN1
+utr;	514	0.016626	UTR	UTR		MEN1
+utr;utr;	515	-0.44431	UTR;UTR	UTR		MEN1
+utr;utr;utr;	516	0.04014	UTR;UTR;UTR	UTR		MEN1
+utr;utr;	517	-0.11534	UTR;UTR	UTR		MEN1
+utr;utr;	518	-0.332182	UTR;UTR	UTR		MEN1
