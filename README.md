@@ -1,11 +1,11 @@
 
 # BE3D (BEClust3D)
 
-**BE3D (or BEClust3D)** is a Python package for interpreting structure-function relationships in base editor (BE) tiling mutagenesis data. The workflow includes 3 main modules: quality assessment of screen data by gene, extrapolation of BE screen signals onto 3D structures and identification of significant residues and clusters (hotspots) from a structure-function perspective, and aggregation of multiple screens for the idenficiation of signficiant residues and clusters. 
+**BE3D (or BEClust3D)** is a Python package for interpreting structure-function relationships in base editor (BE) tiling mutagenesis data. The workflow includes 3 main modules: (1) quality assessment and statistical analysis of screen data by gene, (2) extrapolation of BE screen signals onto 3D structures, identification of significant residues, and clustering to identify hotspots from a structure-function perspective, and (3) aggregation of multiple screens for the idenficiation of signficiant residues and clusters
 
 You can run the BE3D pipeline either:
 - On **Google Colab** (no installation required), or
-- **Locally** (faster execution).
+- **Locally** (faster execution)
 
 ---
 
@@ -154,13 +154,13 @@ Another option to skip MUSCLE and CLUSTAL is for users to run alignment on their
 ## Sample Google Colab Notebooks
 
 Single Screen Notebook Example (DNMT3A): 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5_SingleScreen_Notebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-SingleScreen-Notebook.ipynb)
 
 Multi Screen Notebook with Meta-Aggregation Example (MEN1): 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5_MultiScreen_Notebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-MultipleScreens-Notebook.ipynb)
 
 Multi Screen Notebook with Meta-Aggregation and Conservation Example: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5_MultipleScreensConservation_Notebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-MultipleScreensConservation-Notebook.ipynb)
 
 ## License
 
