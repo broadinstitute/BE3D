@@ -1,11 +1,11 @@
 
 # BE3D (BEClust3D)
 
-**BE3D (or BEClust3D)** is a Python package for interpreting structure-function relationships in base editor (BE) tiling mutagenesis data. The workflow includes 3 main modules: quality assessment of screen data by gene, extrapolation of BE screen signals onto 3D structures and identification of significant residues and clusters (hotspots) from a structure-function perspective, and aggregation of multiple screens for the idenficiation of signficiant residues and clusters. 
+**BE3D (or BEClust3D)** is a Python package for interpreting structure-function relationships in base editor (BE) tiling mutagenesis data. The workflow includes 3 main modules: (1) quality assessment and statistical analysis of screen data by gene, (2) extrapolation of BE screen signals onto 3D structures, identification of significant residues, and clustering to identify hotspots from a structure-function perspective, and (3) aggregation of multiple screens for the idenficiation of signficiant residues and clusters
 
 You can run the BE3D pipeline either:
 - On **Google Colab** (no installation required), or
-- **Locally** (faster execution).
+- **Locally** (faster execution)
 
 ---
 
@@ -28,30 +28,28 @@ You can run the BE3D pipeline either:
 
 The following figure provides an overview of the BE3D workflow:
 
-[### Need to replace this with new Figure 1 schematic. ###]
-
 ![BE3D workflow](imgs/BE3D_workflow.png)
 
 BE3D enables structure-function analysis of BE tiling mutagenesis data by mapping mutation readouts (log fold change, LFC) onto 3D protein structures. This can be extended to multiple screens or cross-species comparisons. The workflow consists of:
 
-**A. BE-QA**: Assesses the quality of BE screens by testing if knockout annotated (e.g., nonsense or splice site) and neutral annotated (e.g., silent or no mutation) guides have significantly different LFC score distributions.
+**A. BE-QA**: Assesses the quality of BE screens by testing if annotated knockout guides (e.g., nonsense or splice site) and annotated neutral guides (e.g., silent or no mutation) guides have significantly different LFC score distributions.
 
-**B. BE-Clust3D**: Maps LFC values by amino acid residue onto 3D protein structures and computes a per-residue 3D-normalized LFC score (LFC3D score) based on spatial proximity (default: 6 Å). Then, agglomerative clustering is performed with a second spatial proximity parameter (default: 6 Å) to identify hotspots of potential functional importance. 
+**B. BE-Clust3D**: Maps LFC values by amino acid residue onto 3D protein structures and computes a per-residue 3D-normalized LFC score (LFC3D score) based on spatial proximity (default: 6 Å). Then, agglomerative clustering is performed with a second spatial proximity parameter (default: 6 Å) to identify hotspots of potential functional importance. This clustering can be performed on either the original LFC values by amino acid, or the new LFC3D score. 
 
-**C. BE-MetaClust3D**: Aggregates data from multiple screens to enhance signal strength and detect residues that might be missed due to the noise present base editing screens. 
+**C. BE-MetaClust3D**: Aggregates data from multiple screens to enhance signal strength and detect residues that might be missed due to the noise present in BE screens. Cross-species or cross-isoform screens can also be integrated together through an optional alignment step. 
 
 ## Input
 
 BE3D requires the following inputs:
 
-1. **BE Screen Scores (TSV)**: Must include Mutation Category, Amino Acid Edit, Gene Name, and Score. You must map column names in the config.
+1. **BE Screen Scores (TSV)**: Must include Mutation Category, Amino Acid Edit, Gene Name, and Score. You must indicate column names as part of the input. 
 
     Example TSV:
 
     ```tsv
-    predicted_edits	sgRNA_score	mutation	Gene
-    Gly2Arg;Met1Ile	-0.18977	Missense	MEN1
-    Leu10Leu	-0.22247	Silent		MEN1
+    Gene	sgRNA_score	mutation	predicted_edits
+    MEN1	-0.18977	Missense	Gly2Arg;Met1Ile
+    MEN1	-0.22247	Silent	Leu10Leu
     ```
 
     Example input config (Python):
@@ -69,7 +67,7 @@ BE3D requires the following inputs:
     input_uniprot = "O00255" # (MEN1)
     ```
 
-4. **Optional FASTA and PDB**: Provide custom protein sequence and structure files for non-canonical sequences, non-canonical proteins, or alternative structures. If these ields are left empty, the pipeline fetches the AlphaFold of the canonical isoform structure for the given Uniprot ID, so any other sequences or PDB structures would need to be linked manually like this. 
+4. **Optional FASTA and PDB**: Provide custom protein sequence and structure files for non-canonical sequences, non-canonical proteins, or alternative structures. If these fields are left empty, the pipeline fetches the AlphaFold of the canonical isoform structure for the given Uniprot ID. 
 
     ```python
     input_pdb   = 'men1_AF3.pdb'
@@ -80,21 +78,21 @@ BE3D requires the following inputs:
 
 ### Quality Assessment: Hypothesis Test Visualization
 
-BE-QA performs Mann-Whitney and Kolmogorov-Smirnov tests on LFC distributions, comparing knockout and neutral mutations. Knowckout mutations of a single gene in a single screen are compared against neutral mutations of that single gene (hypothesis 1) or neutral mutations of all genes in that screen (hypotehsis 2). Results are visualized with statistical annotations.
+BE-QA performs Mann-Whitney and Kolmogorov-Smirnov tests on LFC distributions, comparing knockout and neutral mutations. Knockout mutations of a single gene in a single screen are compared against neutral mutations of that single gene (hypothesis 1) or neutral mutations of all genes in that screen (hypotehsis 2). Results are visualized with statistical annotations.
 
 ![QA](imgs/QA.png)
 
 ### BE-Clust3D: Visualization of LFC and LFC3D Hits
 
-BE-Clust3D prioritizes residues by aggregating LFC values within a defined spatial range. This enhances signal detection by computing LFC3D scores. Results are visualized and can be clustered. 
+BE-Clust3D prioritizes residues by aggregating LFC values within a defined spatial range. This enhances signal detection by extrapolating functional data in 3D space to calculate an LFC3D score. Results are visualized and clustered. 
 
-This step also includes the preprocessing of scores organized by sgRNA to scores organized by residues, running sequence alignment to combine screens on different genes, and the calculation of p-values to define statistical thresholds for defining a hit. 
+This step also includes the preprocessing of scores organized by sgRNA to scores organized by residues, running sequence alignment to combine screens on different genes, and the calculation of p-values to define statistical thresholds to define what is a hit. 
 
 ![LFC/LFC3D](imgs/LFC_and_LFC3D.png)
 
 ### BE-MetaClust3D
 
-BE-MetaClust3D aggregates across multiple screens to identify consensus hotspots or enhance weaker signals across multiple screens. 
+BE-MetaClust3D aggregates across multiple screens to identify consensus hotspots and enhance weaker signals across multiple screens. 
 
 ![Meta-Aggregation](imgs/Meta-aggregation.png)
 
@@ -109,10 +107,10 @@ Results are provided in G2P-compatible TSV file, which can be downloaded and int
 Install BE3D using pip:
 
 ```bash
-pip install git+https://github.com/broadinstitute/BEClust3D.git
+pip install git+https://github.com/broadinstitute/beclust3d-public.git
 ```
 
-This code block is in Google Colab notebooks (see below)
+This code block is also in the example Google Colab notebooks (see below)
 
 ## Getting Started Examples
 
@@ -131,15 +129,17 @@ if __name__ == '__main__':
     ...
 ```
 
+## Github Structure
+
 ## Notes
 
 ### Structure
 
 The pipeline automatically queries the UNIPROT protein sequence and AlphaFold structure of the protein of interest. If users want to use a PDB or other custom structure, they would need to upload the ```structure.pdb``` file and provide the filepath to the structure. 
 
-The pipeline also automatically uses DSSP to annotate a pdb file for secondary structures. However, this tool is known to sometimes fail on larger structures. Furthermore, for a custom PDB upload, it is recommended that the user uploads their own DSSP file, as DSSP may fail on these structures. The annotations for DSSP are not necessary for the pipeline until the final characterization step, and would not affect preprocessing, prioritizing hits, meta-aggregation, or clustering. Even for the final characterization step, DSSP annotations are an optional part. 
+The pipeline also automatically uses DSSP to annotate a pdb file for secondary structures. However, this tool is known to sometimes fail on larger structures. For a custom PDB upload, it is recommended that the user uploads their own DSSP file, as DSSP may fail on these structures. The annotations for DSSP are not necessary for the pipeline until the final characterization step, and would not affect preprocessing, prioritizing hits, meta-aggregation, or clustering. Even for the final characterization step, DSSP annotations are an optional input. 
 
-The DSSP Web Portal is here: https://pdb-redo.eu/dssp
+The DSSP Web Portal can be found at: https://pdb-redo.eu/dssp
 
 ### Conservation
 
@@ -154,13 +154,13 @@ Another option to skip MUSCLE and CLUSTAL is for users to run alignment on their
 ## Sample Google Colab Notebooks
 
 Single Screen Notebook Example (DNMT3A): 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5_SingleScreen_Notebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-SingleScreen-Notebook.ipynb)
 
 Multi Screen Notebook with Meta-Aggregation Example (MEN1): 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5_MultiScreen_Notebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-MultipleScreens-Notebook.ipynb)
 
 Multi Screen Notebook with Meta-Aggregation and Conservation Example: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BEClust3Dv5_MultipleScreensConservation_Notebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-MultipleScreensConservation-Notebook.ipynb)
 
 ## License
 
