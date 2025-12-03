@@ -6,7 +6,7 @@ input_uniprot: Q9NVX7
 input_chain: A
 screens: YeoNature2025-ABE-Screen-NegCtrl.tsv,YeoNature2025-CBE-Screen-NegCtrl.tsv
 user_fasta: null
-user_pdb: 8voj_KBTBD4_single_chain_A.pdb
+user_pdb: KBTBD4_8voj_single_chain_A.pdb
 user_dssp: null
 nRandom: 500
 pthr:
