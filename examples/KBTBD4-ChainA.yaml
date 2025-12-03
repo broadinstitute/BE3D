@@ -1,0 +1,49 @@
+beclust3d_path: ""
+screen_dir: ""
+output_dir: ""
+input_gene: KBTBD4
+input_uniprot: Q9NVX7
+input_chain: A
+screens: YeoNature2025-ABE-Screen-NegCtrl.tsv,YeoNature2025-CBE-Screen-NegCtrl.tsv
+user_fasta: null
+user_pdb: 8voj_KBTBD4_single_chain_A.pdb
+user_dssp: null
+nRandom: 500
+pthr:
+  single_screen: 0.05
+  multi_screen: 0.05
+structure_radius: 6.0
+clustering_radius: 6.0
+function_for_lfc: max
+function_for_lfc3d: mean
+function_for_meta: SUM
+database:
+  mut_list_col: Mutation category
+  mut_col: Mutation_type
+  val_col: lfc_over_unsorted
+  gene_col: Gene Symbol
+  edits_col: Amino acid edits
+  mut_delimiter: ;
+  gRNA_col: null
+conservation:
+  run: false
+  v_score_threshold: 3
+  alt_gene_name: null
+  alt_uniprot_id: null
+  alt_screen_start: null
+mutation_category:
+  missense: [Missense]
+  silent: [Silent]
+  nonsense: [Nonsense]
+  no_mutation: [No Mutation]
+  splice: [Splice-donor, Splice-acceptor]
+  intron: [Intron]
+qa:
+  qa_passed_only: false
+  qa_only: false
+  cases: [Nonsense, Splice-donor, Splice-acceptor]
+  controls: [No Mutation]
+priority_on_alternative: false
+ppi_chain_gene_dict: null
+ppi_gene_edits_dict: null
+atom_level_naa: false
