@@ -87,7 +87,12 @@ conservation(
     email = None, # ONLY REQUIRED IF MODE='query'
     wait_time = 30, # ONLY REQUIRED IF MODE='query'
     muscle_path = 'muscle', # ONLY REQUIRED IF MODE='run', PATH TO MUSCLE EXE
-    cons_dict = {'*': ('conserved', 3), ':': ('similar', 2), '.': ('weakly_similar', 1), ' ': ('not_conserved', -1)}, # MAP OF SYMBOLS DENOTING CONSERVATION
+    cons_dict = {
+        '*': ('conserved', 3),
+        ':': ('similar', 2),
+        '.': ('weakly_similar', 1),
+        ' ': ('not_conserved', -1)
+    }, # MAP OF SYMBOLS DENOTING CONSERVATION
 )
 ```
 
@@ -258,7 +263,13 @@ calculate_lfc3d(
     target_gene_chain = 'A', # CHAIN OF GENE OF INTEREST ON THE STRUCTURE PROVIDED
     ppi_chain_gene_dict = {}, # IN THE CASE OF MULTI CHAIN, MAPPING OF GENES TO CHAINS {'GENE1':'B','GENE2':'C'}
     ppi_gene_edits_dict = {}, # IN THE CASE OF MULTI CHAIN, MAPPING OF GENES TO EDITS LIST {'GENE1': edits1, 'GENE2': edits2}
-    func_map = {'mean':np.mean, 'median':np.median, 'sum':np.sum, 'min':np.min, 'max':np.max}, # A MAP OF FUNCTIONS REFERRED TO
+    func_map = {
+        'mean':np.mean,
+        'median':np.median,
+        'sum':np.sum,
+        'min':np.min,
+        'max':np.max,
+    }, # A MAP OF FUNCTIONS REFERRED TO
 )
 ```
 
@@ -386,6 +397,7 @@ clustering(
         'metric': 'euclidean',
         'linkage': 'single'
     },
+    atom_level = False, # CALCULATE LFC3D BASED ON alpha-C (False) OR ON ANY ATOM (True)
 )
 ```
 
@@ -576,6 +588,13 @@ average_split_meta(
     score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
     nRandom=1000, # NUMBER OF RANDOMIZATIONS
     aggr_func_name = 'SUM', # ASSOCIATED FUNCTION NAME
+    func_map = {
+        'mean':np.mean,
+        'median':np.median,
+        'sum':np.sum,
+        'min':np.min,
+        'max':np.max,
+    }, # A MAP OF FUNCTIONS REFERRED TO
 )
 ```
 
@@ -597,6 +616,10 @@ bin_meta(
     # Optional
     score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
     aggr_func_name = 'SUM', # ASSOCIATED FUNCTION NAME FROM average_split_meta()
+    quantiles = {
+        'NEG_10p_v':0.1, 'POS_90p_v':0.9,
+        'NEG_05p_v':0.05, 'POS_95p_v':0.95,
+    }, # QUANTILES DENOTING NEGATIVE AND POSITIVE
 )
 ```
 
@@ -634,12 +657,12 @@ Generates histograms, histplots, and scatterplots for positive and negative scor
 
 ```python
 average_split_bin_plots(
-    df_z, # OUTPUT DF FROM znorm_meta()
+    df_z, # OUTPUT DF FROM znorm_score()
     workdir = 'PATH/TO/WORKING/DIRECTORY',
     input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
 
     # Optional
-    pthr=0.05,
+    pthr = 0.05, # P-VALUE CUTOFF TO Z-SCORE ON
     screen_name = '', # '' IF META-AGGREGATE, OR A UNIQUE SCREEN IDENTIFIER FOR NON-AGGREGATE
     func = 'SUM', # '' IF NON-AGGREGATE, OR aggr_func_name FROM znorm_meta() IF META-AGGREGATE
     score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
