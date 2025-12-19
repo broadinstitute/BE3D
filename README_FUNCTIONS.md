@@ -50,14 +50,15 @@ sequence_structural_features(
     input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
     input_uniprot = 'Q12345',
     structureid = 'UNIQUE-ID',
+    target_chainid = 'A', # CHAIN OF input_gene
 
     # Optional
-    chains = ['A'], # CHAIN OF input_gene
     radius = 6.0, # RADIUS OF LFC3D CALCULATION
-    user_uniprot = None, # RELATIVE/PATH/FROM/WORKING/DIR/TO/USER/PROVIDED/.FASTA/FILE
+    user_fasta = None, # RELATIVE/PATH/FROM/WORKING/DIR/TO/USER/PROVIDED/.FASTA/FILE
     user_pdb = None, # RELATIVE/PATH/FROM/WORKING/DIR/TO/USER/PROVIDED/.PDB/FILE
     user_dssp = None, # RELATIVE/PATH/FROM/WORKING/DIR/TO/USER/PROVIDED/.DSSP/FILE
     domains_dict = None, # DICT OF DOMAINS ie {'ZnF':(1,100), ...}
+    atom_level_naa = False, # CALCULATE LFC3D BASED ON alpha-C (False) OR ON ANY ATOM (True)
 )
 ```
 
@@ -82,9 +83,11 @@ conservation(
     alignment_filename = None, # RELATIVE/PATH/FROM/WORKING/DIR/TO/USER/PROVIDED/.ALIGN/FILE
     mode = 'run', # 'run' USES LOCAL PACKAGES WHILE 'query' USES THE MUSCLE API
                 # WHICH METHOD WORKS MAY VARY DEPENDING ON THE MACHINE
-    title = None, # ONLY REQUIRED IF MODE='QUERY', TITLE OF JOB
-    email = None, # ONLY REQUIRED IF MODE='QUERY'
-    wait_time = 30, # ONLY REQUIRED IF MODE='QUERY'
+    title = None, # ONLY REQUIRED IF MODE='query', TITLE OF JOB
+    email = None, # ONLY REQUIRED IF MODE='query'
+    wait_time = 30, # ONLY REQUIRED IF MODE='query'
+    muscle_path = 'muscle', # ONLY REQUIRED IF MODE='run', PATH TO MUSCLE EXE
+    cons_dict = {'*': ('conserved', 3), ':': ('similar', 2), '.': ('weakly_similar', 1), ' ': ('not_conserved', -1)}, # MAP OF SYMBOLS DENOTING CONSERVATION
 )
 ```
 
