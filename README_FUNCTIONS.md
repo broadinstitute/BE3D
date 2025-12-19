@@ -118,8 +118,8 @@ parse_be_data(
     mut_delimiter = ',', # DELIMITER IN edits_col
     conserv_dfs = [], # CONSERVATION DFs FROM conservation()
     conserv_col = 'alt_res_pos', # ALTERNATE RES POS ALIGNED WITH MAIN SEQUENCE
-    conserv_score_col='v_score', ###
-    gene_list=False, ###
+    v_score_threshold = 3, # V-SCORE THRESHOLD, ONLY KEEP >=THRESHOLD AS CONSERVED
+    gene_list = False, # LIST OF GENES CORRESPONDING WITH input_dfs
 )
 ```
 
@@ -251,10 +251,14 @@ calculate_lfc3d(
     # Optional
     nRandom = 1000, # NUMBER OF RANDOMIZATIONS
     muttype = 'Missense', # ONE OF THE MUTATION TYPES IN df_dict IN prioritize_by_sequence()
-    function_aggr = np.mean, # FUNCTION TO APPLY TO ALL LFC SCORES PER POSITION
-    function_type = 'mean', # ASSOCIATED FUNCTION NAME
+    function_type_lfc3d = 'mean', # FUNCTION TO APPLY TO ALL LFC SCORES PER POSITION
     LFC_only = False, # TRUE SKIPS THE LFC3D CALCULATION, FALSE KEEPS LFC3D CALCULATION
     conserved_only = False, # ONLY CONSIDER 'conserved' RESIDUES FOR SCORES TO AGGREGATE IF TRUE
+    gene_type = 'Human', # OPTIONAL ANNOTATION, STATES WHAT THE TARGET GENE IS IN THE CASE OF MULTIPLE SEQUENCES
+    target_gene_chain = 'A', # CHAIN OF GENE OF INTEREST ON THE STRUCTURE PROVIDED
+    ppi_chain_gene_dict = {}, # IN THE CASE OF MULTI CHAIN, MAPPING OF GENES TO CHAINS {'GENE1':'B','GENE2':'C'}
+    ppi_gene_edits_dict = {}, # IN THE CASE OF MULTI CHAIN, MAPPING OF GENES TO EDITS LIST {'GENE1': edits1, 'GENE2': edits2}
+    func_map = {'mean':np.mean, 'median':np.median, 'sum':np.sum, 'min':np.min, 'max':np.max}, # A MAP OF FUNCTIONS REFERRED TO
 )
 ```
 
@@ -278,6 +282,7 @@ average_split_score(
 
     # Optional
     score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
+    gene_type = 'Human', # OPTIONAL ANNOTATION, STATES WHAT THE TARGET GENE IS IN THE CASE OF MULTIPLE SEQUENCES
 )
 ```
 
@@ -299,6 +304,7 @@ bin_score(
 
     # Optional
     score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
+    gene_type = 'Human', # OPTIONAL ANNOTATION, STATES WHAT THE TARGET GENE IS IN THE CASE OF MULTIPLE SEQUENCES
 )
 ```
 
@@ -321,6 +327,7 @@ znorm_score(
     # Optional
     score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
     pthrs = [0.05, 0.01, 0.001], # LIST OF P-VALUE CUTOFF TO Z-SCORE ON
+    gene_type = 'Human', # OPTIONAL ANNOTATION, STATES WHAT THE TARGET GENE IS IN THE CASE OF MULTIPLE SEQUENCES
 )
 ```
 
