@@ -35,7 +35,6 @@ def plot_clustering(
     score_type='LFC3D',  
     merge_col=['unipos', 'chain'], 
     clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single"}, 
-
     horizontal=False, 
     line_subplots_kwargs={'figsize':(10,7)}, 
     dendrogram_subplots_kwargs={'figsize':(15, 12)}, 
@@ -58,7 +57,7 @@ def plot_clustering(
         DataFrame containing structure and significance information plus cluster labels assigned at each distance.
 
     dist : int, optional (default=25)
-        Tadius (in Angstroms) to consider for clustering. 
+        Radius (in Angstroms) to consider for clustering. 
 
     workdir : str
         Path to the working directory where output files and results will be saved.
@@ -101,6 +100,7 @@ def plot_clustering(
     -------
     None
     """
+    import json
 
     # MKDIR #
     working_filedir = Path(workdir)
@@ -125,12 +125,11 @@ def plot_clustering(
     assert len(df_struc) == len(df_pvals)
     assert len(psig_columns) == len(names) == len(pthr_cutoffs)
     
-    # GENERATE CONSISTENT COLORS (NEW)
+    # GENERATE CONSISTENT COLORS FOR ALL CLUSTERS
     cluster_colors = generate_cluster_colors(100)
     
-    # Save color mapping to file for JavaScript reference
+    # Save global color mapping to file for JavaScript reference
     color_map_file = working_filedir / f"cluster_{score_type}/cluster_color_mapping.json"
-    import json
     with open(color_map_file, 'w') as f:
         json.dump({f"cluster_{i}": color for i, color in enumerate(cluster_colors)}, f, indent=2)
 
@@ -158,7 +157,6 @@ def plot_clustering(
         
     # OPEN CLUSTERING FILE #
     for name, pthr, colname in zip(names, pthr_cutoffs, psig_columns):
-        # PLOT CLUSTERING DIST VS NUM OF CLUSTERS #        
         # EXTRACT ROWS ABOVE CUTOFF #
         df_pvals_temp = df_hits_clust.loc[(df_hits_clust[colname] == pthr), ].reset_index(drop=True)
         # REMOVE ROWS WITHOUT POSITION INFO FOR PDBs #
@@ -175,26 +173,20 @@ def plot_clustering(
 
         dend_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{name}_Dendrogram_{pthr}_{str(int(dist))}A.{save_type}"
         title = f'{input_gene} {score_type} {name} Clusters'
-
-        cluster_to_color = plot_dendrogram(
+        
+        # MODIFIED: plot_dendrogram now returns detailed cluster info
+        cluster_info = plot_dendrogram(
             clustering, df_pvals_temp, 
             dist, horizontal, pos_col, chain_col, 
             title, dend_filename, 
             dendrogram_subplots_kwargs, save_type,
             cluster_colors=cluster_colors)
         
-        import json
-        color_map_file = working_filedir / f"cluster_{score_type}/{prefix}_{name}_{pthr}_{int(dist)}A_color_mapping.json"
-        # Convert cluster labels to standard format
-        cluster_color_mapping = {
-            f"cluster_{int(cluster_id)}": color 
-            for cluster_id, color in cluster_to_color.items()
-        }
-        
-        with open(color_map_file, 'w') as f:
-            json.dump(cluster_color_mapping, f, indent=2)
-        
-        print(f"Saved color mapping: {color_map_file}")
+        # NEW: Save detailed color mapping with active/inactive status
+        analysis_color_file = working_filedir / f"cluster_{score_type}/{prefix}_{name}_{pthr}_{int(dist)}A_color_mapping.json"
+        with open(analysis_color_file, 'w') as f:
+            json.dump(cluster_info, f, indent=2)
+        print(f"Saved color mapping: {analysis_color_file}")
 
         # CLUSTERS RESIDUES AND LENGTH OF EACH CLUSTER #
         df_pvals_clust_i = df_pvals_clust.loc[(df_pvals_clust[colname] == pthr), ].reset_index(drop=True)
@@ -209,7 +201,15 @@ def plot_clustering(
                 if len(c_data) > 0: 
                     all_unipos = c_data[pos_col].tolist()
                     all_chains = c_data[chain_col].tolist()
-                    f.write(f'Cluster {c} : Length {len(c_data)} :\n')
+                    
+                    # Include color and status information
+                    cluster_key = f"cluster_{int(c)}"
+                    cluster_color = cluster_info['clusters'].get(cluster_key, {}).get('color', '#CCCCCC')
+                    is_active = cluster_info['clusters'].get(cluster_key, {}).get('active', False)
+                    status = "ACTIVE" if is_active else "GRAYED OUT"
+                    
+                    f.write(f'Cluster {c} (Color: {cluster_color}, Status: {status}) : Length {len(c_data)} :\n')
+                    
                     f.write('   ')
                     for unipos, chain in zip(all_unipos, all_chains): 
                         f.write(f'{chain}-{unipos} ')
@@ -219,37 +219,57 @@ def plot_clustering(
 
 def generate_cluster_colors(n_clusters=50):
     """
-    Generate cluster colors matching the JavaScript HSL algorithm.
-    Returns a list of hex colors for clusters 0 to n_clusters-1.
+    Generate maximally distinct colors suitable for scientific visualization.
+    Combines hand-picked colors for small sets with algorithmic generation for larger sets.
     """
-    def hsl_to_hex(h, s, l):
-        """Convert HSL to HEX (matching JavaScript logic)"""
-        s /= 100.0
-        l /= 100.0
-        
-        def hue_to_rgb(n):
-            k = (n + h / 30.0) % 12
-            a = s * min(l, 1 - l)
-            return l - a * max(-1, min(k - 3, min(9 - k, 1)))
-        
-        r = round(255 * hue_to_rgb(0))
-        g = round(255 * hue_to_rgb(8))
-        b = round(255 * hue_to_rgb(4))
-        
-        return f"#{r:02x}{g:02x}{b:02x}"
+    import colorsys
     
-    # Lightness tiers: base, lighter, lightest
-    lightness = [45, 65, 80]
-    saturation = [90, 90, 90]
+    # Hand-picked distinct colors for first 12 clusters
+    base_colors = [
+        '#e6194B',  # Red
+        '#3cb44b',  # Green
+        '#ffe119',  # Yellow
+        '#4363d8',  # Blue
+        '#f58231',  # Orange
+        '#911eb4',  # Purple
+        '#42d4f4',  # Cyan
+        '#f032e6',  # Magenta
+        '#bfef45',  # Lime
+        '#fabed4',  # Pink
+        '#469990',  # Teal
+        '#dcbeff',  # Lavender
+    ]
     
-    colors = []
-    for i in range(n_clusters):
-        tier_raw = i // 10                      # 0..4 for 50 values
-        tier = tier_raw % len(lightness)        # wrap into 0..2
-        j = i % 10                              # 0..9 within the tier
-        hue = j * 36                            # 10 distinct hues (0, 36, 72, ..., 324)
+    if n_clusters <= len(base_colors):
+        return base_colors[:n_clusters]
+    
+    # For more clusters, start with base and add generated ones
+    colors = base_colors.copy()
+    
+    # Generate additional colors using golden ratio
+    golden_ratio = 0.618033988749895
+    h = 0.5  # Start at a different hue
+    
+    for i in range(n_clusters - len(base_colors)):
+        h = (h + golden_ratio) % 1.0
         
-        hex_color = hsl_to_hex(hue, saturation[tier], lightness[tier])
+        # Vary lightness and saturation more dramatically
+        pattern = i % 6
+        if pattern == 0:
+            s, l = 0.95, 0.35
+        elif pattern == 1:
+            s, l = 0.60, 0.75
+        elif pattern == 2:
+            s, l = 0.90, 0.55
+        elif pattern == 3:
+            s, l = 0.70, 0.45
+        elif pattern == 4:
+            s, l = 0.85, 0.65
+        else:
+            s, l = 0.75, 0.85
+        
+        r, g, b = colorsys.hls_to_rgb(h, l, s)
+        hex_color = f"#{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}"
         colors.append(hex_color)
     
     return colors
@@ -295,10 +315,19 @@ def plot_dendrogram(
     save_type,
     cluster_colors=None,
 ):  
+    """
+    Plot hierarchical clustering dendrogram with consistent cluster coloring.
+    Only colors links below the distance threshold.
+    """
+    from scipy.cluster.hierarchy import dendrogram
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
     fig, ax = plt.subplots(**subplots_kwargs)
     counts = np.zeros(clustering.children_.shape[0])
     n_samples = len(clustering.labels_)
     
+    # Build linkage matrix from AgglomerativeClustering result
     for i, merge in enumerate(clustering.children_):
         current_count = 0
         for child_idx in merge:
@@ -311,6 +340,7 @@ def plot_dendrogram(
     linkage_matrix = np.column_stack(
         [clustering.children_, clustering.distances_, counts]).astype(float)
     
+    # Create labels with cluster information
     xlbl_pos = list(df_pvals_temp[pos_col])
     xlbl_chain = list(df_pvals_temp[chain_col])
     xlbl_cluster = list(clustering.labels_)
@@ -318,48 +348,132 @@ def plot_dendrogram(
     xlbl = [f'{pos}-{chain} (C{clust})' 
             for pos, chain, clust in zip(xlbl_pos, xlbl_chain, xlbl_cluster)]
     
-    # SET CLUSTER COLOR PALETTE
-    if cluster_colors is None:
-        cluster_colors = generate_cluster_colors(100)
+    # Generate colors if not provided
+    if cluster_colors is None or len(cluster_colors) < len(xlbl_cluster):
+        cluster_colors = generate_cluster_colors(len(xlbl_cluster))
     
-    n_clusters = len(np.unique(clustering.labels_))
-    set_link_color_palette(cluster_colors[:n_clusters])
+    # Helper function: map cluster ID to color
+    def get_cluster_color(cluster_id):
+        """Always return the same color for the same cluster ID"""
+        return cluster_colors[int(cluster_id)]
+    
+    # Helper function: trace node to its cluster
+    def get_cluster_for_node(node_id, linkage_mat, labels):
+        """Find which cluster a node belongs to by tracing to leaves."""
+        if node_id < len(labels):
+            # It's a leaf node - return its cluster label
+            return labels[node_id]
+        else:
+            # It's an internal node - trace down to left child
+            merge_idx = int(node_id - len(labels))
+            if merge_idx < len(linkage_mat):
+                left_child = int(linkage_mat[merge_idx, 0])
+                return get_cluster_for_node(left_child, linkage_mat, labels)
+        return 0
+    
+    # Helper function: get distance for a node
+    def get_node_distance(node_id, linkage_mat, n_samples):
+        """Get the distance at which this node was formed."""
+        if node_id < n_samples:
+            # Leaf nodes have distance 0
+            return 0.0
+        else:
+            # Internal node - look up merge distance
+            merge_idx = int(node_id - n_samples)
+            if merge_idx < len(linkage_mat):
+                return linkage_mat[merge_idx, 2]
+        return 0.0
+    
+    # Color function for dendrogram links
+    def link_color_func(node_id):
+        """
+        Determine color for each link in the dendrogram.
+        - If link distance <= threshold: use cluster color
+        - If link distance > threshold: use gray
+        """
+        # Get the distance at which this node was formed
+        node_distance = get_node_distance(node_id, linkage_matrix, n_samples)
+        
+        # If above threshold, return gray
+        if node_distance > dist:
+            return '#CCCCCC'
+        
+        # If below threshold, color by cluster
+        cluster_id = get_cluster_for_node(node_id, linkage_matrix, clustering.labels_)
+        return get_cluster_color(cluster_id)
+    
+    # Plot dendrogram with custom coloring
+    dend_result = dendrogram(
+        linkage_matrix,
+        color_threshold=dist,
+        above_threshold_color='#CCCCCC',
+        labels=xlbl,
+        orientation='right' if horizontal else 'top',
+        leaf_rotation=90. if not horizontal else 0.,
+        ax=ax,
+        link_color_func=link_color_func
+    )
+    
+    # ANALYZE THE ACTUAL COLORS USED IN THE DENDROGRAM
+    # dend_result['color_list'] contains the actual colors assigned to each link
+    actual_colors_used = set(dend_result.get('color_list', []))
+    
+    # Check which clusters were actually displayed in gray vs color
+    all_cluster_ids = np.unique(clustering.labels_)
+    cluster_color_status = {}
+    
+    for cluster_id in all_cluster_ids:
+        expected_color = get_cluster_color(cluster_id).upper()
+        # Check if this cluster's color appears in the dendrogram
+        # Convert to uppercase for comparison
+        cluster_is_colored = any(
+            expected_color == actual_color.upper() 
+            for actual_color in actual_colors_used
+        )
+        cluster_color_status[cluster_id] = cluster_is_colored
+    
+    # Count active vs grayed
+    active_clusters = [cid for cid, is_colored in cluster_color_status.items() if is_colored]
+    grayed_clusters = [cid for cid, is_colored in cluster_color_status.items() if not is_colored]
+    
+    # Create detailed cluster information
+    cluster_info = {
+        "threshold_distance": float(dist),
+        "total_clusters": int(len(all_cluster_ids)),
+        "active_clusters": int(len(active_clusters)),
+        "grayed_clusters": int(len(grayed_clusters)),
+        "clusters": {}
+    }
+    
+    # Populate cluster information based on actual dendrogram display
+    for cluster_id in all_cluster_ids:
+        cluster_key = f"cluster_{int(cluster_id)}"
+        is_active = cluster_color_status[cluster_id]
+        assigned_color = get_cluster_color(cluster_id)
+        
+        cluster_info["clusters"][cluster_key] = {
+            "cluster_id": int(cluster_id),
+            "color": assigned_color,
+            "active": is_active,
+            "displayed_color": assigned_color if is_active else "#CCCCCC",
+            "status": "active" if is_active else "grayed_out"
+        }
 
-    # PLOT DENDROGRAM
+    # Styling
+    ax.set_title(title, fontsize=10, pad=10)
     if horizontal:
-        dend_result = dendrogram(linkage_matrix, 
-                   color_threshold=dist, 
-                   above_threshold_color='#CCCCCC',
-                   labels=xlbl, 
-                   orientation='right',
-                   ax=ax,
-                   no_plot=False)  # Get dendrogram data
+        ax.set_xlabel('Distance (Å)', fontsize=8)
+        ax.tick_params(axis='y', labelsize=6)
+        ax.axvline(x=dist, color='red', linestyle='--', linewidth=1, alpha=0.5, label=f'Threshold: {dist}Å')
     else:
-        dend_result = dendrogram(linkage_matrix, 
-                   color_threshold=dist,
-                   above_threshold_color='#CCCCCC',
-                   labels=xlbl, 
-                   leaf_rotation=90.,
-                   ax=ax,
-                   no_plot=False)
-
-    # ====== NEW: Extract actual cluster-to-color mapping ======
-    # Get leaf colors from dendrogram result
-    leaf_colors = dend_result['leaves_color_list']
-    leaf_order = dend_result['leaves']  # indices in original data order
+        ax.set_ylabel('Distance (Å)', fontsize=8)
+        ax.tick_params(axis='x', labelsize=6, rotation=90)
+        ax.axhline(y=dist, color='red', linestyle='--', linewidth=1, alpha=0.5, label=f'Threshold: {dist}Å')
     
-    # Build mapping: cluster_label -> actual_color
-    cluster_to_color = {}
-    for idx, leaf_idx in enumerate(leaf_order):
-        cluster_label = clustering.labels_[leaf_idx]
-        color = leaf_colors[idx]
-        if cluster_label not in cluster_to_color:
-            cluster_to_color[cluster_label] = color
+    ax.legend(loc='best', fontsize=6)
     
-    # Return this mapping so we can save it
-    plt.title(title)
     plt.tight_layout()
     plt.savefig(dend_filename, dpi=100, transparent=True, format=save_type, bbox_inches='tight')
     plt.close()
     
-    return cluster_to_color  # ← NEW: return the mapping
+    return cluster_info
