@@ -473,7 +473,7 @@ def plot_dendrogram(
     ax.legend(loc='best', fontsize=6)
     
     plt.tight_layout()
-    plt.savefig(dend_filename, dpi=100, transparent=True, format=save_type, bbox_inches='tight')
+    plt.savefig(dend_filename, dpi=100, transparent=False, format=save_type, bbox_inches='tight')
     plt.close()
     
     return cluster_info
