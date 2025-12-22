@@ -42,7 +42,7 @@ input_chain: A
 screens: PernerNature2023-MOLM13-Screen.tsv, PernerNature2023-MV411-Screen.tsv
 output_dir: /content/
 user_fasta: /content/men1.fasta
-user_pdb: /content/men1_AF3.pdb
+user_pdb: /content/men1.pdb
 priority_on_alternative: false
 ppi_chain_gene_dict: null
 ppi_gene_edits_dict: null
