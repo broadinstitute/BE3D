@@ -349,8 +349,8 @@ def plot_dendrogram(
             for pos, chain, clust in zip(xlbl_pos, xlbl_chain, xlbl_cluster)]
     
     # Generate colors if not provided
-    if cluster_colors is None:
-        cluster_colors = generate_cluster_colors(100)
+    if cluster_colors is None or len(cluster_colors) < len(xlbl_cluster):
+        cluster_colors = generate_cluster_colors(len(xlbl_cluster))
     
     # Helper function: map cluster ID to color
     def get_cluster_color(cluster_id):
