@@ -1,0 +1,58 @@
+beclust3d_path: ""
+screen_dir: ""
+nRandom: 500
+pthr:
+  single_screen: 0.05
+  multi_screen: 0.001
+structure_radius: 6.0
+clustering_radius: 6.0
+function_for_lfc: mean
+function_for_lfc3d: mean
+function_for_meta: SUM
+database:
+  mut_list_col: Mutation_Type
+  mut_col: Mutation_Category
+  val_col: Score
+  gene_col: Gene_Name
+  edits_col: Amino_Acid_Edits
+  mut_delimiter: ;
+  gRNA_col: null
+mutation_category:
+  missense: [Missense]
+  silent: [Silent]
+  nonsense: [Nonsense]
+  no_mutation: [No Mutation]
+  splice: [Splice Site]
+  intron: [Intron]
+qa:
+  qa_passed_only: false
+  qa_only: false
+  cases: [Nonsense]
+  controls: [No Mutation]
+output_dir: ""
+input_gene: MORC2
+input_uniprot: Q9Y6X9
+input_chain: A
+screens: Human_InVitro_HS294T_Apobec_D24_Input.txt, Human_InVitro_HS294T_TadA_D14_Input.txt,
+  Human_InVitro_SK-ES_Apobec_D23_Input.txt, Human_InVitro_SK-ES_TadA_D17_Input.txt,
+  Human_InVitro_SW480_Apobec_D14_Input.txt, Human_InVitro_SW480_TadA_D14_Input.txt,
+  Human_InVitro_SW480flow_Apobec_D10_Enriched.txt, Human_InVitro_SW480flow_Apobec_D10_Input1.txt,
+  Human_InVitro_SW480flow_Apobec_Enriched_Input2.txt, Human_InVitro_SW480flow_TadA_D10_Enriched.txt,
+  Human_InVitro_SW480flow_TadA_D10_Input.txt, Human_InVitro_SW480repeat_Apobec_D7_Input.txt,
+  Human_InVitro_SW480repeat_TadA_D7_Input.txt, Mouse_InVitro_B16_TadA_D14-IFNg_Input.txt,
+  Mouse_InVivo_LLC_Apobec_Tx_NSG.txt
+user_fasta: null
+user_pdb: Q9Y6X9.pdb
+user_dssp: null
+conservation:
+  run: true
+  v_score_threshold: 3
+  alt_gene_name: Morc2a
+  alt_uniprot_id: Q69ZX6
+  alt_screen_start: Mouse
+ppi_chain_gene_dict: null
+ppi_gene_edits_dict: null
+priority_on_alternative: null
+ppi_chain_gene_dict: null
+ppi_gene_edits_dict: null
+atom_level_naa: false

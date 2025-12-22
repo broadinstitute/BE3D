@@ -1,5 +1,13 @@
-beclust3d_path: ../
-screen_dir : /content/
+beclust3d_path: ""
+screen_dir: ""
+output_dir: ""
+input_gene: KBTBD4
+input_uniprot: Q9NVX7
+input_chain: A
+screens: YeoNature2025-ABE-Screen-NegCtrl.tsv,YeoNature2025-CBE-Screen-NegCtrl.tsv
+user_fasta: null
+user_pdb: KBTBD4_8voj_single_chain_A.pdb
+user_dssp: null
 nRandom: 500
 pthr:
   single_screen: 0.05
@@ -10,13 +18,13 @@ function_for_lfc: max
 function_for_lfc3d: mean
 function_for_meta: SUM
 database:
-  mut_list_col: null
-  mut_col: mutation_category
-  val_col: delta_beta_score
+  mut_list_col: Mutation category
+  mut_col: Mutation_type
+  val_col: lfc_over_unsorted
   gene_col: Gene Symbol
-  edits_col: predicted_edit
-  gRNA_col: null
+  edits_col: Amino acid edits
   mut_delimiter: ;
+  gRNA_col: null
 conservation:
   run: false
   v_score_threshold: 3
@@ -28,21 +36,13 @@ mutation_category:
   silent: [Silent]
   nonsense: [Nonsense]
   no_mutation: [No Mutation]
-  splice: [Splice]
+  splice: [Splice-donor, Splice-acceptor]
   intron: [Intron]
-user_dssp: null
 qa:
   qa_passed_only: false
   qa_only: false
-  cases: [Nonsense,Splice]
+  cases: [Nonsense, Splice-donor, Splice-acceptor]
   controls: [No Mutation]
-input_gene: MEN1
-input_uniprot: O00255
-input_chain: A
-screens: PernerNature2023-MOLM13-Screen.tsv, PernerNature2023-MV411-Screen.tsv
-output_dir: /content/
-user_fasta: /content/men1.fasta
-user_pdb: /content/men1_AF3.pdb
 priority_on_alternative: false
 ppi_chain_gene_dict: null
 ppi_gene_edits_dict: null
