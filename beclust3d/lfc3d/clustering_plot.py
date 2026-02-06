@@ -186,7 +186,7 @@ def plot_clustering(
         analysis_color_file = working_filedir / f"cluster_{score_type}/{prefix}_{name}_{pthr}_{int(dist)}A_color_mapping.json"
         with open(analysis_color_file, 'w') as f:
             json.dump(cluster_info, f, indent=2)
-        print(f"Saved color mapping: {analysis_color_file}")
+        #print(f"Saved color mapping: {analysis_color_file}")
 
         # CLUSTERS RESIDUES AND LENGTH OF EACH CLUSTER #
         df_pvals_clust_i = df_pvals_clust.loc[(df_pvals_clust[colname] == pthr), ].reset_index(drop=True)
