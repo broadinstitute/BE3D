@@ -65,8 +65,10 @@ def main(**kwargs):
     def find_union(input, pthr_str):
         if input[0] == f'p<{pthr_str}' or input[1] == f'p<{pthr_str}':
             return f'p<{pthr_str}'
-        else:
+        elif input[0] == f'p>={pthr_str}' or input[1] == f'p>={pthr_str}':
             return f'p>={pthr_str}'
+        else:
+            return '-'
 
     os.makedirs(output_dir, exist_ok=True)
     shutil.copy2(config_yaml, os.path.join(output_dir,os.path.basename(config_yaml)))
@@ -612,9 +614,6 @@ def main(**kwargs):
             df_hits_clust, distances, yvalues = clustering(
                 df_struc, df_pvals,
                 output_dir, gene,
-                # psig_columns=[f'{function_for_meta}_{score_type}_neg_{pthr_str_short}_psig',
-                #             f'{function_for_meta}_{score_type}_pos_{pthr_str_short}_psig'],
-                # pthr_cutoffs=[f'p<{pthr_str}', f'p<{pthr_str}'],
                 psig_columns=[f'{function_for_meta}_{score_type}_neg_05_psig',
                             f'{function_for_meta}_{score_type}_pos_05_psig',
                             f'{function_for_meta}_{score_type}_neg_01_psig',
