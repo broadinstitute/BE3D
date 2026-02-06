@@ -60,7 +60,6 @@ def main(**kwargs):
         
     single_screen_pthr_str = str(single_screen_pthr)
     multi_screen_pthr_str = str(multi_screen_pthr)
-    # pthr_str_short = str(pthr).split('.')[1]
     pdb_file = os.path.join(output_dir, "sequence_structure", f"{structureid}_processed.pdb")
 
     def find_union(input, pthr_str):
@@ -69,9 +68,6 @@ def main(**kwargs):
         else:
             return f'p>={pthr_str}'
 
-    ## ASSIGN VALUES FOR EMPTY VARIABLES
-    # if output_dir == '' or not output_dir:
-    #     output_dir = os.path.join(workdir, f'{gene}')
     os.makedirs(output_dir, exist_ok=True)
     shutil.copy2(config_yaml, os.path.join(output_dir,os.path.basename(config_yaml)))
     print('All results will be saved in the following directory:')
@@ -90,22 +86,21 @@ def main(**kwargs):
                     input_gene, alt_gene_name,
                     input_uniprot, alt_uniprot_id,
         )
-    #     for screen_name in screen_names: # mCherry-high or mCherry-low
-    #             conserv_dfs.append(df_residuemap)
-    #             gene_list.append(alt_gene_name)
 
-    # else:
-    #     for screen_name in screen_names: # mCherry-high or mCherry-low
-    #         conserv_dfs.append(None)
-    #         gene_list.append(input_gene)
-
-    # TODO: conservation mode : Human + Mouse to Human # SETDDB1
-    # TODO: transfer mode : Mouse to Human
-    for screen_name in screen_names: # 
-        if alt_gene_name and screen_name.startswith(alt_screen_start):
-            conserv_dfs.append(df_residuemap)
-            gene_list.append(alt_gene_name)
+        if priority_on_alternative:
+            for screen_name in screen_names:
+                conserv_dfs.append(df_residuemap)
+                gene_list.append(alt_gene_name)
         else:
+            for screen_name in screen_names:
+                if alt_gene_name and screen_name.startswith(alt_screen_start):
+                    conserv_dfs.append(df_residuemap)
+                    gene_list.append(alt_gene_name)
+                else:
+                    conserv_dfs.append(None)
+                    gene_list.append(input_gene)
+    else:
+        for screen_name in screen_names:
             conserv_dfs.append(None)
             gene_list.append(input_gene)
 
