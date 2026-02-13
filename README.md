@@ -103,31 +103,75 @@ Results are provided in G2P-compatible TSV file, which can be downloaded and int
 ![G2P](imgs/G2P.png)
 
 ## Installation
+### 1. Install BE3D
 
-Install BE3D using pip:
+Install directly from GitHub:
 
-```bash
+``` bash
 pip install git+https://github.com/broadinstitute/beclust3d-public.git
 ```
 
-This code block is also in the example Google Colab notebooks (see below)
+> This installation command is also included in the example Google Colab
+> notebooks.
 
-## Getting Started Examples
+### 2. Create Conda Environment
 
-### Example 1: MEN1 (Local)
+We recommend creating a dedicated conda environment before running BE3D
+locally.
 
-The script `Example/men1.py` runs BE3D on two screens. Customize this script for your use case.
+#### Apple Silicon (ARM Mac OS)
 
-```python
-if __name__ == '__main__':
-    ...
-    screens = 'molm13.tsv,mv411.tsv'
-    input_gene = 'MEN1'
-    input_uniprot = 'O00255'
-    input_pdb = 'men1_AF3.pdb'
-    input_fasta = 'men1.fasta'
-    ...
+``` bash
+conda env create -f environment_arm.yml
 ```
+
+#### Linux (x86_64)
+
+``` bash
+conda env create -f environment.yml
+```
+
+Activate the environment:
+
+``` bash
+conda activate beclust3d
+```
+
+## Getting Started
+### Running BE3D Locally
+
+The script `examples/beclust3d_local.py` runs BE3D using a YAML
+configuration file that specifies:
+
+-   Input screen data
+-   Structural model
+-   Parameters
+-   Output directory
+
+Example usage:
+
+``` bash
+conda activate beclust3d
+cd examples/
+
+# DNMT3A example (Lue et al.)
+python beclust3d_local.py dnmt3a_local.yaml
+
+# MEN1 example (Perner et al.)
+python beclust3d_local.py men1_local.yaml
+```
+
+## Google Colab Notebooks
+BE3D can also be run directly in Google Colab.
+
+**Single Screen Notebook Example (DNMT3A)**: 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-SingleScreen-Notebook.ipynb)
+
+**Multi Screen Notebook with Meta-Aggregation Example (MEN1)**: 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-MultipleScreens-Notebook.ipynb)
+
+**Multi Screen Notebook with Meta-Aggregation and Conservation Example**: 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-MultipleScreensConservation-Notebook.ipynb)
 
 ## Github Structure
 
@@ -151,16 +195,7 @@ If MUSCLE or CLUSTAL cannot be run locally, the pipeline queries the MUSCLE API,
 
 Another option to skip MUSCLE and CLUSTAL is for users to run alignment on their own in a CLUSTAL format, and provide the ```sequence.align``` alignment file into the pipeline which is one of the optional inputs. 
 
-## Sample Google Colab Notebooks
 
-Single Screen Notebook Example (DNMT3A): 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-SingleScreen-Notebook.ipynb)
-
-Multi Screen Notebook with Meta-Aggregation Example (MEN1): 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-MultipleScreens-Notebook.ipynb)
-
-Multi Screen Notebook with Meta-Aggregation and Conservation Example: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-MultipleScreensConservation-Notebook.ipynb)
 
 ## License
 
