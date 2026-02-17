@@ -155,10 +155,10 @@ conda activate beclust3d
 cd examples/
 
 # DNMT3A example (Lue et al.)
-python beclust3d_local.py dnmt3a_local.yaml
+python beclust3d_local.py yaml/dnmt3a_local.yaml
 
 # MEN1 example (Perner et al.)
-python beclust3d_local.py men1_local.yaml
+python beclust3d_local.py yaml/men1_local.yaml
 ```
 
 ## Google Colab Notebooks
