@@ -1,5 +1,5 @@
 beclust3d_path: ../
-screen_dir : ./
+screen_dir : ../data/
 nRandom: 500
 pthr:
   single_screen: 0.05
@@ -42,7 +42,7 @@ input_chain: A
 screens: NZL-DNMT3A-CBE-LueNatChemBiol2022_negcontrol.tsv
 output_dir: ./results/
 user_fasta: null
-user_pdb: ./dnmt3a.pdb
+user_pdb: ../pdb/dnmt3a.pdb
 priority_on_alternative: false
 ppi_chain_gene_dict: null
 ppi_gene_edits_dict: null
