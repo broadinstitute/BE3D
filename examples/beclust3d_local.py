@@ -52,6 +52,7 @@ def main(**kwargs):
     ppi_gene_edits_dict=kwargs['ppi_gene_edits_dict']
     v_score_threshold=kwargs['v_score_threshold']
     atom_level_naa=kwargs['atom_level_naa']
+    muscle_path=kwargs['muscle_path']
 
     if user_pdb:
         structureid = f'PDB-{input_uniprot}'
@@ -87,6 +88,7 @@ def main(**kwargs):
         _, df_residuemap = conservation(output_dir,
                     input_gene, alt_gene_name,
                     input_uniprot, alt_uniprot_id,
+                    muscle_path=muscle_path, 
         )
 
         if priority_on_alternative:
