@@ -920,5 +920,5 @@ if __name__ == '__main__':
         alt_screen_start=alt_screen_start,v_score_threshold=v_score_threshold,
         function_for_meta=function_for_meta, qa_passed_only=qa_passed_only, qa_only=qa_only, qa_controls=qa_controls, qa_cases=qa_cases,
         priority_on_alternative=priority_on_alternative, ppi_chain_gene_dict=ppi_chain_gene_dict, ppi_gene_edits_dict=ppi_gene_edits_dict,
-        config_yaml=config_yaml,atom_level_naa=atom_level_naa
+        config_yaml=config_yaml,atom_level_naa=atom_level_naa,muscle_path=muscle_path,
         )
