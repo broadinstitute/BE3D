@@ -909,6 +909,7 @@ if __name__ == '__main__':
     ppi_chain_gene_dict = config['ppi_chain_gene_dict']
     ppi_gene_edits_dict = config['ppi_gene_edits_dict']
     atom_level_naa = config['atom_level_naa']
+    muscle_path = config['muscle_path']
     
     main(input_gene=input_gene, input_uniprot=input_uniprot, input_chain=input_chain, screen_dir=screen_dir,\
         screens=screens, mut_col=mut_col, val_col=val_col, gene_col=gene_col, edits_col=edits_col,\
