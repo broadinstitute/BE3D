@@ -56,3 +56,4 @@ priority_on_alternative: null
 ppi_chain_gene_dict: null
 ppi_gene_edits_dict: null
 atom_level_naa: false
+muscle_path: muscle
