@@ -64,11 +64,11 @@ BE3D requires the following inputs:
 2. **Uniprot ID**: Required to fetch an AlphaFold structure. It can fetch other isoforms by providing isoform identifier, `-isoform number`
 
     ```python
-    input_uniprot = "O00255" # for canonical isoform of MEN1
+    input_uniprot = "O00255" # for MEN1 canonical isoform
     ```
 	
     ```python
-    input_uniprot = "O00255-3" # for isoform-3 of MEN1
+    input_uniprot = "O00255-3" # for MEN1 isoform-3
     ```
 4. **Optional FASTA and PDB**: Provide custom protein sequence and structure files. If these fields are left empty, the pipeline fetches the AlphaFold structure for the given Uniprot ID. 
 
