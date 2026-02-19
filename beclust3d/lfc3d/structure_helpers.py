@@ -66,7 +66,9 @@ def query_uniprot(
     if not os.path.exists(os.path.join(working_filedir, 'sequence_structure', ffile)): 
         _ = wget.download(f'https://rest.uniprot.org/uniprotkb/{ffile}', 
                           out=str(working_filedir / 'sequence_structure'))
-    else: print(f'sequence_structure/{ffile} exists')
+    else: 
+        # print(f'sequence_structure/{ffile} exists')
+        pass
 
     uFasta_file = os.path.join(working_filedir, f'sequence_structure/{ffile}')
     return uFasta_file

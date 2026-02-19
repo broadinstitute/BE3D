@@ -63,7 +63,7 @@ def main(**kwargs):
     multi_screen_pthr_str = str(multi_screen_pthr)
     pdb_file = os.path.join(output_dir, "sequence_structure", f"{structureid}_processed.pdb")
 
-    def find_union(input, pthr_str):
+    def find_union(input, pthr_str): #TODO: this should be moved to helper
         if input[0] == f'p<{pthr_str}' or input[1] == f'p<{pthr_str}':
             return f'p<{pthr_str}'
         elif input[0] == f'p>={pthr_str}' or input[1] == f'p>={pthr_str}':
@@ -73,8 +73,7 @@ def main(**kwargs):
 
     os.makedirs(output_dir, exist_ok=True)
     shutil.copy2(config_yaml, os.path.join(output_dir,os.path.basename(config_yaml)))
-    print('All results will be saved in the following directory:')
-    print(output_dir)
+    print(f'All results will be saved in the following directory: {output_dir}')
 
     screens = [screen.strip() for screen in screens.split(',')]
     screen_names = [s.split('.')[0] for s in screens]
@@ -153,7 +152,6 @@ def main(**kwargs):
                 conserv_dfs.append(None)
                 gene_list.append(input_gene)
 
-    # sys.exit()
     ## WHERE WE CAN HAVE A BARRICADE FOR FILTERING QA_PASSED or ALL screens # Re-organise input_dfs, conservation_dfs
 
     # For All    
@@ -189,7 +187,10 @@ def main(**kwargs):
         pd.read_csv(f'{output_dir}/screendata/{gene}_{screen_name}_Missense.tsv',
                     sep='\t') for gene, screen_name in zip(gene_list, screen_names)
     ]
-
+    
+    df_struc = pd.read_csv(f'{output_dir}/sequence_structure/{structureid}_coord_struc_features.tsv', sep='\t')
+    sanitary_check(df_struc, df_missense_list)
+    
     # For All
     for df_missense, screen_name, gene in zip(df_missense_list, screen_names, gene_list):
         randomize_data(
@@ -201,7 +202,6 @@ def main(**kwargs):
             )
 
     ## PRIORITIZE
-    df_struc = pd.read_csv(f'{output_dir}/sequence_structure/{structureid}_coord_struc_features.tsv', sep='\t')
 
     # Human and Non-human mixed
     for gene, screen_name, df_consrv in zip(gene_list, screen_names, conserv_dfs):
@@ -842,7 +842,7 @@ if __name__ == '__main__':
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), beclust3d_path)))
 
     from beclust3d.lfc3d.structure import sequence_structural_features
-    from beclust3d.lfc3d.preprocess_data import parse_be_data
+    from beclust3d.lfc3d.preprocess_data import parse_be_data, sanitary_check
     from beclust3d.lfc3d.preprocess_data_plot import plot_rawdata
     from beclust3d.qc.hypothesis_tests import hypothesis_test
     from beclust3d.lfc3d.randomize_data import randomize_data

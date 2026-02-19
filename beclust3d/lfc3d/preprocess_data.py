@@ -7,6 +7,7 @@ Description: Parses raw base editing screen data into DataFrames for each mutati
 
 import os
 import warnings
+import pandas as pd
 from pathlib import Path
 
 from .preprocess_data_helpers import *
@@ -172,3 +173,28 @@ def parse_be_data(
         print(gene_mut_df) # OUTPUT COUNTS PER GENE FOR EA MUTATION #
 
     return mut_dfs
+
+def sanitary_check(df_struc, df_missense_list):
+    """
+        Check how the number of missense edits mapped to the target protein.
+
+        Parameters
+        ----------
+        df_struc : pd.DataFrame
+            Dataframe for target structure-sequence information.
+
+        df_missense_list : list of pd.DataFrame
+            List of missense dataframes, one for each screen.
+
+        Returns
+        -------
+        """    
+    struc_refAA_pos_list = (df_struc['unires']+df_struc['unipos'].astype(str)).to_list()
+
+    for each_df_missense in df_missense_list:
+        missense_refAA_pos_list = each_df_missense['this_edit'].str[:-1].to_list()
+        print('-----[SANITARY CHECK]-----')
+        print(f'#of missense edits:{len(set(missense_refAA_pos_list))},\
+              #of mapped missense edits:{len(set(missense_refAA_pos_list).intersection(set(struc_refAA_pos_list)))},\
+              #of not mapped missense edits:{len(set(missense_refAA_pos_list).difference(set(struc_refAA_pos_list)))},\
+              list of not mapped missense edits: {list(set(missense_refAA_pos_list).difference(set(struc_refAA_pos_list)))}')
