@@ -4,8 +4,8 @@
 **BE3D** is a Python package for interpreting structure-function relationships in base editor (BE) tiling mutagenesis data. The workflow includes 3 main modules: (1) quality assessment and statistical analysis of screen data by gene, (2) extrapolation of BE screen signals onto 3D structures, identification of significant residues, and clustering to identify hotspots from a structure-function perspective, and (3) aggregation of multiple screens for the idenficiation of signficiant residues and clusters
 
 You can run the BE3D pipeline either:
-- On **[Google Colab Notebooks](#sample-google-colab-notebooks)** (no installation required), or
-- **Locally** (faster execution) using `./examples/be3d_local.py`
+1. **[Google Colab Notebooks](#google-colab-notebooks)** - no installation required; ideal for quick testing and exploration.
+2. **[Local execution](#running-be3d-locally)** - faster and recommended for large datasets, using `./examples/be3d_local.py`
 
 ---
 
