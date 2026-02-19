@@ -1,5 +1,5 @@
 beclust3d_path: ../
-screen_dir : ../data/
+screen_dir : ./data/
 nRandom: 500
 pthr:
   single_screen: 0.05
@@ -41,8 +41,8 @@ input_uniprot: O00255
 input_chain: A
 screens: PernerNature2023-MOLM13-Screen.tsv, PernerNature2023-MV411-Screen.tsv
 output_dir: ./results/
-user_fasta: ../data/men1.fasta
-user_pdb: ../pdb/men1.pdb
+user_fasta: ./data/men1.fasta
+user_pdb: ./pdb/men1.pdb
 priority_on_alternative: false
 ppi_chain_gene_dict: null
 ppi_gene_edits_dict: null
