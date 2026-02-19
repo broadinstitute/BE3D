@@ -188,16 +188,16 @@ BE3D can also be run directly in Google Colab.
 Newer versions: 
 
 - **Single Screen Notebook Example (DNMT3A)**: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-SingleScreen-LocalScriptNotebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6_SingleScreen_LocalScriptNotebook.ipynb)
 
 - **Multi Screen Notebook with Meta-Aggregation Example (MEN1)**: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-MultipleScreens-LocalScriptNotebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6_MultipleScreens_LocalScriptNotebook.ipynb)
 
 - **Multi Screen Notebook with Meta-Aggregation and Conservation Example (MORC2)**: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-MultipleScreensConservation-LocalScriptNotebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6_MultipleScreensConservation_LocalScriptNotebook.ipynb)
 
 - **Multi Screen Notebook with Meta-Aggregation and Across Complex Example (KBTBD4)**: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-MultipleScreensComplex-LocalScriptNotebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6_MultipleScreensComplex_LocalScriptNotebook.ipynb)
 
 ## Github Structure
 
