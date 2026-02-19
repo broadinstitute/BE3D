@@ -3,7 +3,7 @@ from .qc.hypothesis_tests import hypothesis_test
 from .lfc3d.structure import sequence_structural_features
 from .lfc3d.conservation import conservation
 
-from .lfc3d.preprocess_data import parse_be_data
+from .lfc3d.preprocess_data import parse_be_data, sanitary_check
 from .lfc3d.randomize_data import randomize_data
 from .lfc3d.preprocess_data_plot import plot_rawdata
 
@@ -30,7 +30,7 @@ __all__ = [
     "sequence_structural_features", 
     "conservation", 
 
-    "parse_be_data", 
+    "parse_be_data", "sanitary_check",
     "randomize_data", 
     "plot_rawdata", 
 
