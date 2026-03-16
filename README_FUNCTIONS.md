@@ -11,22 +11,22 @@ This document summarizes the major functions used in the analysis pipeline. Each
 ### 1. `hypothesis_test`
 
 **Description:**
-Conducts hypothesis 1 (for one gene) and hypothesis 2 (across multiple genes) statistical tests.
+Runs Mann-Whitney U and Kolmogorov-Smirnov tests for Hypothesis 1 (case vs. control within a single screen) and Hypothesis 2 (case in one screen vs. controls pooled across all screens).
 
 ```python
 hypothesis_test(
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_dfs = [pd.DataFrame()], # LIST OF DFs, ONE FOR EACH SCREEN
-    screen_names = ['screen_name_1'], # LIST OF UNIQUE SCREEN IDENTIFIERS
-    cases = ['Nonsense', 'Splice Site'], # DELETERIOUS TYPES OF MUTATIONS UNDER mut_col
-    controls = ['Silent', 'No Mutation'], # DELETERIOUS TYPES OF MUTATIONS UNDER mut_col
+    workdir = 'PATH/TO/WORKING/DIRECTORY',   # output directory
+    input_dfs = [pd.DataFrame()],            # one DataFrame per screen
+    screen_names = ['screen_name_1'],        # screen identifier for each DataFrame in input_dfs
+    cases = ['Nonsense', 'Splice Site'],     # mutation categories treated as the case group
+    controls = ['Silent', 'No Mutation'],    # mutation categories treated as the control group
 
     # Optional
-    comp_name = 'CaseVsControl', # FOR NAMING HYPOTHESIS DF COLUMNS
-    mut_col = 'Mutation category', # MUTATION CATEGORY COLUMN IN input_dfs
-    val_col = 'logFC', # SCORE COLUMN IN input_dfs
-    gene_col = 'Target Gene Symbol', # GENE NAME COLUMN IN input_dfs
-    save_type = 'png', # OUTPUT GRAPH SAVE TYPE (ie 'png', 'pdf', 'svg', etc)
+    comp_name = 'CaseVsControl',             # label used in output filenames and plot titles
+    mut_col = 'Mutation category',           # mutation category column in input_dfs
+    val_col = 'logFC',                       # numeric measurement column in input_dfs
+    gene_col = 'Target Gene Symbol',         # gene identifier column in input_dfs
+    save_type = 'png',                       # plot format ('png', 'pdf', 'svg', etc.)
 )
 ```
 
