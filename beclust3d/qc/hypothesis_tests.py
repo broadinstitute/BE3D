@@ -37,10 +37,10 @@ def hypothesis_test(
         Path to the working directory where output files and results will be saved.
 
     input_dfs : list of pd.DataFrame
-        List of input dataframes, one for each screen.
+        List of input dataframes, one for each screen, each containing mutation category, gene, and value columns.
 
     screen_names : list of str
-        Names of the different screens corresponding to each DataFrame in input_dfs.
+        Names of the different screens corresponding to each DataFrame in input_dfs, used in plot labels and output filenames.
 
     cases : list of str
         List of mutation categories considered as the "case" group (e.g., ['Nonsense']).
@@ -48,7 +48,7 @@ def hypothesis_test(
     controls : list of str
         List of mutation categories considered as the "control" group (e.g., ['No Mutation', 'Silent']).
 
-    comp_name : str
+    comp_name : str, optional (default='CaseVsControl')
         Comparison label used for naming plots and outputs (e.g., 'Nonsense_vs_Control').
         
     mut_col : str, optional (default='Mutation category')
@@ -61,21 +61,21 @@ def hypothesis_test(
         Column name specifying the target gene name in input_dfs.
 
     save_type : str, optional (default='png')
-        Format for saving output plots (e.g., 'png', 'pdf').
+        Format for saving output plots (e.g., 'png', 'pdf', 'svg').
 
     Returns
     -------
     df_MW1_input : pd.DataFrame
-        DataFrame containing Mann-Whitney U test results for Hypothesis 1 (within each screen).
+        DataFrame containing Mann-Whitney U test results for Hypothesis 1, with one row per gene-screen combination.
 
     df_MW2_input : pd.DataFrame
-        DataFrame containing Mann-Whitney U test results for Hypothesis 2 (across all screens).
+        DataFrame containing Mann-Whitney U test results for Hypothesis 2, with one row per gene-screen combination.
 
     df_KS1_input : pd.DataFrame
-        DataFrame containing Kolmogorov-Smirnov test results for Hypothesis 1 (within each screen).
+        DataFrame containing Kolmogorov-Smirnov test results for Hypothesis 1, with one row per gene-screen combination.
 
     df_KS2_input : pd.DataFrame
-        DataFrame containing Kolmogorov-Smirnov test results for Hypothesis 2 (across all screens).
+        DataFrame containing Kolmogorov-Smirnov test results for Hypothesis 2, with one row per gene-screen combination.
     """
 
     # MKDIR #
