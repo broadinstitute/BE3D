@@ -10,7 +10,7 @@ This document summarizes the major functions used in the analysis pipeline. Each
 
 ### 1. `hypothesis_test`
 
-**Description:**
+**Description:** \
 Runs Mann-Whitney U and Kolmogorov-Smirnov tests for Hypothesis 1 (case vs. control within a single screen) and Hypothesis 2 (case in one screen vs. controls pooled across all screens).
 
 ```python
@@ -40,24 +40,24 @@ Files are output to ```'[workdir]/hypothesis_qc'```
 
 ### 2. `sequence_structural_features`
 
-**Description:**
-Queries UniProt, AlphaFold, DSSP, and domain features.
-Generates a combined sequence-structure feature table.
+**Description:** \
+Queries UniProt, AlphaFold, and DSSP to generate a combined sequence-structure feature table.
 
 ```python
 sequence_structural_features(
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-    input_uniprot = 'Q12345',
-    structureid = 'UNIQUE-ID',
+    workdir = 'PATH/TO/WORKING/DIRECTORY',   # output directory
+    input_gene = 'GENE_NAME',                # gene name (e.g., 'DNMT3A', 'MEN1')
+    input_uniprot = 'Q12345',                # UniProt accession ID for input_gene
+    structureid = 'UNIQUE-ID',               # identifier used for naming output files
+    target_chainid = 'A',                    # chain ID of input_gene in the PDB structure
 
     # Optional
-    chains = ['A'], # CHAIN OF input_gene
-    radius = 6.0, # RADIUS OF LFC3D CALCULATION
-    user_uniprot = None, # RELATIVE/PATH/FROM/WORKING/DIR/TO/USER/PROVIDED/.FASTA/FILE
-    user_pdb = None, # RELATIVE/PATH/FROM/WORKING/DIR/TO/USER/PROVIDED/.PDB/FILE
-    user_dssp = None, # RELATIVE/PATH/FROM/WORKING/DIR/TO/USER/PROVIDED/.DSSP/FILE
-    domains_dict = None, # DICT OF DOMAINS ie {'ZnF':(1,100), ...}
+    radius = 6.0,                            # neighbor count radius in Angstroms
+    user_fasta = None,                       # path to user-supplied FASTA file; skips UniProt query
+    user_pdb = None,                         # path to user-supplied PDB file; skips AlphaFold query
+    user_dssp = None,                        # path to user-supplied DSSP file; skips DSSP locally
+    domains_dict = None,                     # domain annotations e.g. {'ZnF': (1, 100), ...}
+    atom_level_naa = False,                  # if True, counts neighbors at atom level rather than residue level
 )
 ```
 
@@ -67,24 +67,25 @@ Files are output to ```'[workdir]/sequence_structure'```
 
 ### 3. `conservation`
 
-**Description:**
-Generates dataframes of sequence conservation by aligning sequences across species or isoforms.
+**Description:** \
+Aligns two protein sequences and generates per-residue conservation scores.
 
 ```python
 conservation(
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-    alt_input_gene = 'ALT_GENE_NAME',
-    input_uniprot = 'Q12345',
-    alt_input_uniprot = 'P12345',
+    workdir = 'PATH/TO/WORKING/DIRECTORY',   # output directory
+    input_gene = 'GENE_NAME',                # gene name (e.g., 'DNMT3A', 'MEN1')
+    alt_input_gene = 'ALT_GENE_NAME',        # alternate gene name (e.g., mouse ortholog or isoform)
+    input_uniprot = 'Q12345',                # UniProt accession ID for input_gene
+    alt_input_uniprot = 'P12345',            # UniProt accession ID for alt_input_gene
 
     # Optional
-    alignment_filename = None, # RELATIVE/PATH/FROM/WORKING/DIR/TO/USER/PROVIDED/.ALIGN/FILE
-    mode = 'run', # 'run' USES LOCAL PACKAGES WHILE 'query' USES THE MUSCLE API
-                # WHICH METHOD WORKS MAY VARY DEPENDING ON THE MACHINE
-    title = None, # ONLY REQUIRED IF MODE='QUERY', TITLE OF JOB
-    email = None, # ONLY REQUIRED IF MODE='QUERY'
-    wait_time = 30, # ONLY REQUIRED IF MODE='QUERY'
+    alignment_filename = None,               # path to precomputed alignment file; skips MUSCLE entirely
+    mode = 'run',                            # 'run' uses local MUSCLE; 'query' uses remote MUSCLE API
+    title = None,                            # job title for remote API request; required if mode='query'
+    email = None,                            # email for remote API request; required if mode='query'
+    wait_time = 30,                          # seconds between API re-polls; only used if mode='query'
+    muscle_path = 'muscle',                  # path to local MUSCLE executable; only used if mode='run'
+    cons_dict = {'*': ('conserved', 3), ...} # alignment symbol to conservation label/score mapping
 )
 ```
 
@@ -96,27 +97,40 @@ Files are output to ```'[workdir]/conservation'```
 
 ### 4. `parse_be_data`
 
-**Description:**
-Parses raw base editing screen data into DataFrames for each mutation type.
+**Description:** \
+Parses raw base editing screen data into per-mutation-type DataFrames for each screen.
 
 ```python
 parse_be_data(
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_dfs = [pd.DataFrame()], # LIST OF DFs, ONE FOR EACH SCREEN
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-    screen_names = ['screen_name_1'], # LIST OF UNIQUE SCREEN IDENTIFIERS
+    workdir = 'PATH/TO/WORKING/DIRECTORY',              # output directory
+    input_dfs = [pd.DataFrame()],                       # one DataFrame per screen
+    input_gene = 'GENE_NAME',                           # gene name (e.g., 'DNMT3A', 'MEN1')
+    screen_names = ['screen_name_1'],                   # screen identifier for each DataFrame in input_dfs
 
     # Optional
-    mut_col = 'Mutation category', # MUTATION CATEGORY COLUMN IN input_dfs (ie 'Missense', 'Silent', etc)
-    val_col = 'logFC', # SCORE COLUMN IN input_dfs
-    gene_col = 'Target Gene Symbol', # GENE NAME COLUMN IN input_dfs
-    edits_col = 'Amino Acid Edits', # EDITS CATEGORY COLUMN IN input_dfs (ie 'M1V,Q2Q', etc)
-    mut_categories = ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"], # CATEGORIES IN mut_col
-    mut_delimiter = ',', # DELIMITER IN edits_col
-    conserv_dfs = [], # CONSERVATION DFs FROM conservation()
-    conserv_col = 'alt_res_pos', # ALTERNATE RES POS ALIGNED WITH MAIN SEQUENCE
-    conserv_score_col='v_score', ###
-    gene_list=False, ###
+    mut_col = 'Mutation category',                      # mutation category column in input_dfs
+    val_col = 'logFC',                                  # numeric measurement column in input_dfs
+    gene_col = 'Target Gene Symbol',                    # gene identifier column in input_dfs
+    edits_col = 'Amino Acid Edits',                     # amino acid edits column in input_dfs (e.g., 'M1V,Q2Q')
+    mut_categories = ["Nonsense", "Splice Site", ...],  # mutation categories to extract from mut_col
+    mut_delimiter = ',',                                # delimiter used within edits_col
+    conserv_dfs = [],                                   # conservation DataFrames from conservation()
+    conserv_col = 'alt_res_pos',                        # residue position column in conserv_dfs to filter on
+    v_score_threshold = 3,                              # minimum conservation score (-1, 1, 2, or 3)
+    gene_list = False,                                  # if True, processes a list of genes
+)
+
+    # Optional
+    mut_col = 'Mutation category',                      # mutation category column in input_dfs
+    val_col = 'logFC',                                  # numeric measurement column in input_dfs
+    gene_col = 'Target Gene Symbol',                    # gene identifier column in input_dfs
+    edits_col = 'Amino Acid Edits',                     # amino acid edits column in input_dfs (e.g., 'M1V,Q2Q')
+    mut_categories = ["Nonsense", "Splice Site", ...],  # mutation categories to extract from mut_col
+    mut_delimiter = ',',                                # delimiter used within edits_col
+    conserv_dfs = [],                                   # conservation DataFrames from conservation()
+    conserv_col = 'alt_res_pos',                        # residue position column in conserv_dfs to filter on
+    v_score_threshold = 3,                              # minimum conservation score (-1, 1, 2, or 3)
+    gene_list = False,                                  # if True, processes a list of genes
 )
 ```
 
@@ -126,7 +140,7 @@ Files are output to ```'[workdir]/screendata'```
 
 ### 5. `plot_rawdata`
 
-**Description:**
+**Description:** \
 Parses raw screen data and generates summary plots per mutation category.
 
 ```python
@@ -150,7 +164,7 @@ Files are output to ```'[workdir]/screendata/plots'```
 
 ### 6. `randomize_data`
 
-**Description:**
+**Description:** \
 Randomizes missense mutation scores to create a baseline distribution.
 
 ```python
@@ -176,7 +190,7 @@ Files are output to ```'[workdir]/screendata_rand'```
 
 ### 7. `prioritize_by_sequence`
 
-**Description:**
+**Description:** \
 Aggregates mutation effects across edit types, sequence positions, and conservation features.
 
 ```python
@@ -206,7 +220,7 @@ Files are output to ```'[workdir]/screendata_sequence'```
 
 ### 8. `randomize_sequence`
 
-**Description:**
+**Description:** \
 Randomizes scores based on structural sequence and conservation information.
 
 ```python
@@ -233,7 +247,7 @@ Files are output to ```'[workdir]/screendata_sequence_rand'```
 
 ### 9. `calculate_lfc3d`
 
-**Description:**
+**Description:** \
 Calculates LFC3D scores by aggregating local neighborhood mutation effects.
 
 ```python
@@ -263,7 +277,7 @@ Files are output to ```'[workdir]/LFC3D'```
 
 ### 10. `average_split_score`
 
-**Description:**
+**Description:** \
 Splits LFC/LFC3D scores into positive and negative components and aggregates randomized scores.
 
 ```python
@@ -284,7 +298,7 @@ Files are output to ```'[workdir]/[score_type]'```
 
 ### 11. `bin_score`
 
-**Description:**
+**Description:** \
 Bins positive and negative LFC3D scores into percentile thresholds.
 
 ```python
@@ -305,7 +319,7 @@ Files are output to ```'[workdir]/[score_type]'```
 
 ### 12. `znorm_score`
 
-**Description:**
+**Description:** \
 Z-normalizes scores against randomized controls and labels significance.
 
 ```python
@@ -327,7 +341,7 @@ Files are output to ```'[workdir]/[score_type]'```
 
 ### 13. `average_split_bin_plots`
 
-**Description:**
+**Description:** \
 Generates histograms, histplots, and scatterplots for positive and negative scores after binning.
 
 ```python
@@ -354,7 +368,7 @@ Files are output to ```'[workdir]/[score_type]/plots'```
 
 ### 14. `clustering`
 
-**Description:**
+**Description:** \
 Performs spatial clustering of significant residues over a range of distance thresholds.
 
 ```python
@@ -385,7 +399,7 @@ Files are output to ```'[workdir]/cluster_[score_type]'```
 
 ### 15. `plot_clustering`
 
-**Description:**
+**Description:** \
 Plots clustering results including line plots and dendrograms.
 
 ```python
@@ -426,7 +440,7 @@ Files are output to ```'[workdir]/cluster_[score_type]/plots'```
 
 ### 16. `enrichment_test`
 
-**Description:**
+**Description:** \
 Performs enrichment tests (e.g., Fisher's exact test) for structural features.
 
 ```python
@@ -450,7 +464,7 @@ Files are output to ```'[workdir]/characterization'```
 
 ### 17. `plot_enrichment_test`
 
-**Description:**
+**Description:** \
 Plots enrichment test results as odds ratios with confidence intervals.
 
 ```python
@@ -473,7 +487,7 @@ Files are output to ```'[workdir]/characterization/plots''```
 
 ### 18. `lfc_lfc3d_scatter`
 
-**Description:**
+**Description:** \
 Generates LFC vs LFC3D scatter plots colored by hit significance.
 
 ```python
@@ -495,7 +509,7 @@ Files are output to ```'[workdir]/characterization/plots''```
 
 ### 19. `pLDDT_RSA_scatter`
 
-**Description:**
+**Description:** \
 Generates scatter plot of RSA vs pLDDT scores, scaled by mutation weight.
 
 ```python
@@ -520,7 +534,7 @@ Files are output to ```'[workdir]/characterization/plots''```
 
 ### 20. `hits_feature_barplot`
 
-**Description:**
+**Description:** \
 Generates bar plots of hit counts (or fractions) across different structural categories.
 
 ```python
@@ -552,7 +566,7 @@ Replaces Steps 10-13 under Non Aggregating for Single Screens
 
 ### 21. `average_split_meta`
 
-**Description:**
+**Description:** \
 Aggregates scores across multiple screens into a meta score before splitting and averaging.
 
 ```python
@@ -575,7 +589,7 @@ Files are output to ```'[workdir]/meta-aggregate'```
 
 ### 22. `bin_meta`
 
-**Description:**
+**Description:** \
 Bins meta-aggregated LFC3D scores into percentile thresholds.
 
 ```python
@@ -596,7 +610,7 @@ Files are output to ```'[workdir]/meta-aggregate'```
 
 ### 23. `znorm_meta`
 
-**Description:**
+**Description:** \
 Z-normalizes meta-aggregated scores against randomized controls and labels significance.
 
 ```python
@@ -619,7 +633,7 @@ Files are output to ```'[workdir]/meta-aggregate'```
 
 ### 13. `average_split_bin_plots`
 
-**Description:**
+**Description:** \
 Generates histograms, histplots, and scatterplots for positive and negative scores after binning.
 
 ```python
