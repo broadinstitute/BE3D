@@ -2,7 +2,8 @@
 File: preprocess_data.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: Parses raw base editing screen data into DataFrames for each mutation type.
+Description: 
+    Parses raw base editing screen data into per-mutation-type DataFrames for each screen.
 """
 
 import os
@@ -29,21 +30,24 @@ def parse_be_data(
     gene_list=False, 
 ): 
     """
-    Parse raw base editing screen data and create separate DataFrames for each mutation type per screen.
+    Parses raw base editing screen data into per-mutation-type DataFrames for each screen.
+
+    Optionally filters mutations based on conservation scores from conservation DataFrames produced by conservation().
 
     Parameters
     ----------
+    
     workdir : str
         Path to the working directory where output files and results will be saved.
 
     input_dfs : list of pd.DataFrame
-        List of input dataframes, one for each screen.
-
+        List of input dataframes, one for each screen, each containing mutation category, gene, and value columns.
+    
     input_gene : str
-        Name of the gene being processed. 
-
+        Gene name being processed (e.g., 'DNMT3A', 'MEN1').
+        
     screen_names : list of str
-        Names of the different screens corresponding to each DataFrame in input_dfs.
+        Names of the different screens corresponding to each DataFrame in input_dfs, used in plot labels and output filenames.
 
     mut_col : str, optional (default='Mutation category')
         Column name in input_dfs specifying the mutation category (e.g., 'Missense', 'Nonsense').
@@ -68,12 +72,13 @@ def parse_be_data(
         List of conservation DataFrames, one per screen, used to optionally filter mutations based on conserved residues.
 
     conserv_col : str, optional (default='mouse_res_pos')
-        Column name in the conservation DataFrames containing residue positions considered conserved.
-
-    v_score_threshold : int (default=3)
-        Threshold value for v_score. -1: not conserved, 1: weakly similar, 2: similar, 3: conserved.
-
-    gene_list : 
+        Column name in conserv_dfs containing residue positions to filter on.
+        
+    v_score_threshold : int, optional (default=3)
+        Conservation score for filtering. Scores are: -1 (not conserved), 1 (weakly similar), 2 (similar), 3 (conserved).
+        
+    gene_list : bool, optional (default=False)
+        If True, processes a list of genes rather than a single gene.
 
     Returns
     -------
