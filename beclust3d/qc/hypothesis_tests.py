@@ -2,7 +2,9 @@
 File: hypothesis_tests.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2025-02-23
-Description: Conducts hypothesis 1 (for one gene) and hypothesis 2 (across multiple genes) statistical tests.
+Description: 
+    Run two hypothesis tests across a set of screens and genes, comparing case vs. control
+    mutation categories using Mann-Whitney U and Kolmogorov-Smirnov tests.
 """
 
 import os
@@ -23,8 +25,11 @@ def hypothesis_test(
     save_type='png', 
 ): 
     """
-    Conduct hypothesis 1 (one gene and one screen vs control from same screen) and hypothesis 2
-    (one gene and one screen vs control from that same gene from all screen) on the set of input screens and genes. 
+    Run two hypothesis tests across a set of screens and genes, comparing case vs. control
+    mutation categories using Mann-Whitney U and Kolmogorov-Smirnov tests.
+
+    Hypothesis 1 tests whether case and control values differ for a given gene within a single screen. 
+    Hypothesis 2 tests the same gene's case values in one screen against its control values pooled across all screens.
 
     Parameters
     ----------
