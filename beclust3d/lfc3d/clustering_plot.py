@@ -48,18 +48,18 @@ def plot_clustering(
     Parameters
     ----------
     df_struc : pd.DataFrame
-        DataFrame containing structural data for residues. 
+        Structural feature DataFrame from sequence_structural_features(). 
         Must include columns ['unipos', 'unires', 'chain', 'x_coord', 'y_coord', 'z_coord'].
 
     df_pvals : pd.DataFrame
-        DataFrame containing per-residue statistical significance categories.
+        Z-score and significance label DataFrame from znorm_score(), znorm_meta(), or prioritize_by_sequence(). 
         Must include columns ['unipos', 'unires', 'chain'] plus columns listed in `psig_columns`.
 
     df_pvals_clust : pd.DataFrame
-        DataFrame containing structure and significance information plus cluster labels assigned at each distance.
+        Cluster label DataFrame from clustering().
 
     dist : int, optional (default=25)
-        Radius (in Angstroms) to consider for clustering. 
+        Clustering radius in Angstroms to plot results for.
 
     workdir : str
         Path to the working directory where output files and results will be saved.
@@ -68,24 +68,25 @@ def plot_clustering(
         Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     distances : list of int
-        List of distances (from 1 to `max_distances`) at which clustering was performed.
+        List of distances at which clustering was performed; output from clustering().
 
     yvalue_lists : list of list of int
-        List of lists, containing the number of clusters found at each distance for each psig_column.
+        Number of clusters at each distance for each psig_column; output from clustering().
 
     psig_columns : list of str, optional
-        List of column names in `df_pvals` indicating categorical significance labels 
-        (e.g., 'p<0.05' for significant residues to cluster).
+        Column names in df_pvals containing categorical significance labels to cluster on.
+        Should match psig_columns used in clustering().
 
     names : list of str, optional
-        List of names corresponding to `psig_columns`.
+        Display names corresponding to each column in psig_columns
+        (e.g., ['Negative', 'Positive']).
 
     pthr_cutoffs : list of str, optional
-        List of significance thresholds corresponding to `psig_columns`.
-        Only residues matching the given thresholds are included in clustering.
+        Significance threshold values corresponding to each column in psig_columns.
+        Should match pthr_cutoffs used in clustering().
 
     screen_name : str
-        Name of the screen corresponding to df_missense.
+        Screen identifier used in output filenames.
 
     score_type : str, optional (default='LFC3D')
         Label for the type of mutation score analyzed. Either 'LFC' or 'LFC3D'.
@@ -96,7 +97,19 @@ def plot_clustering(
     clustering_kwargs : dict, optional
         Dictionary of additional keyword arguments passed to `AgglomerativeClustering`.
         Must include keys like "metric" and "linkage". "n_clusters" should be set to None to enable distance-threshold clustering.
-
+        
+    horizontal : bool, optional (default=False)
+        If True, renders plots with a horizontal layout.
+        
+    line_subplots_kwargs : dict, optional (default={'figsize': (10, 7)})
+        Keyword arguments passed to the line plot figure.
+        
+    dendrogram_subplots_kwargs : dict, optional (default={'figsize': (15, 12)})
+        Keyword arguments passed to the dendrogram figure.
+        
+    save_type : str, optional (default='png')
+        File format for saved plots (e.g., 'png', 'pdf', 'svg').
+        
     Returns
     -------
     None
