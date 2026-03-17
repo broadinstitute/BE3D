@@ -2,8 +2,9 @@
 File: prioritize_sequence.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-25
-Description: Aggregates mutation effects across edit types, sequence positions, and conservation features.
-             Translated from Notebook 3.2
+Description: 
+    Takes in results across multiple edit types for a screen, and
+    aggregates the edits for each residue with sequence and conservation information. 
 """
 
 import os
