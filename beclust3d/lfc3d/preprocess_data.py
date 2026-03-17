@@ -44,7 +44,7 @@ def parse_be_data(
         List of input dataframes, one for each screen, each containing mutation category, gene, and value columns.
     
     input_gene : str
-        Gene name being processed (e.g., 'DNMT3A', 'MEN1').
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
         
     screen_names : list of str
         Names of the different screens corresponding to each DataFrame in input_dfs, used in plot labels and output filenames.
