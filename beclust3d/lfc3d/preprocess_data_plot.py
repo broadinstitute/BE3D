@@ -2,8 +2,8 @@
 File: preprocess_data_plot.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: Parses raw screen data and generates summary plots per mutation category.
-             Translated from Notebook 3.1
+Description: 
+    Parses raw screen data and generates summary plots per mutation category for each screen.
 """
 
 import os
@@ -28,7 +28,7 @@ def plot_rawdata(
     save_type='png', 
 ): 
     """
-    Parse raw data and create plots for each input screen.
+    Parses raw screen data and generates summary plots per mutation category for each screen.
 
     Parameters
     ----------
