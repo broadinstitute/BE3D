@@ -3,8 +3,8 @@ File: randomize_sequence.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-25
 Description: 
-    Randomizes per-residue scores weighted by structural and conservation features to create a baseline distribution for significance testing.
-
+    Randomizes per-residue scores weighted by structural and conservation features 
+    to create a baseline distribution for significance testing.
 """
 
 import os
@@ -31,7 +31,6 @@ def randomize_sequence(
         # AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE, SO MEAN IS HARD CODED HERE #
 ): 
     """
-    Description
     Randomizes per-residue scores weighted by structural and conservation features 
     to create a baseline distribution for significance testing.
             
