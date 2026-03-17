@@ -3,9 +3,9 @@ File: metaaggregate.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-25
 Description: 
-    Aggregates scores across multiple screens into a meta score before splitting and averaging.
-    Bins meta-aggregated LFC3D scores into percentile thresholds.
-    Z-normalizes meta-aggregated scores against randomized controls and labels significance.
+    Aggregates scores across screens into a meta score, then splits into positive and negative components and averages randomized scores.
+    Bins positive and negative meta-aggregated LFC or LFC3D scores into percentile thresholds.
+    Z-normalizes meta-aggregated LFC or LFC3D scores against randomized control distributions and assigns significance labels at multiple p-value thresholds.
 """
 
 import os
@@ -28,8 +28,7 @@ def average_split_meta(
     func_map={'MEAN':np.mean, 'MIN':np.min, 'MAX':np.max, 'MEDIAN':np.median, 'SUM':np.sum}, 
 ): 
     """
-    Aggregates screens into a meta score using the provided function. Then,
-    splits LFC or LFC3D scores into positive and negative components and aggregates randomized scores.
+    Aggregates scores across screens into a meta score, then splits into positive and negative components and averages randomized scores.
 
     Parameters
     ----------
@@ -40,13 +39,13 @@ def average_split_meta(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     screen_names : list of str
-        Names of the different screens corresponding to each DataFrame in df_edits_list and df_rand_list.
+        Names of the different screens corresponding to each DataFrame in input_dfs, used in plot labels and output filenames.
 
     score_type : str, optional (default='LFC3D')
-        Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
+        Label for the type of mutation score analyzed. Either 'LFC' or 'LFC3D'.
 
     nRandom : int, optional (default=500)
         Number of randomizations per screen for calculating randomized LFC and LFC3D scores.
@@ -57,7 +56,7 @@ def average_split_meta(
     Returns
     -------
     df_bidir_meta : pd.DataFrame
-        DataFrame containing split positive/negative scores and randomized averages for each screen.
+        DataFrame containing meta-aggregated split positive/negative scores and randomized averages per residue.
     """
     
     # MKDIR #
@@ -156,21 +155,21 @@ def bin_meta(
     quantiles={'NEG_10p_v':0.1, 'POS_90p_v':0.9, 'NEG_05p_v':0.05, 'POS_95p_v':0.95}, 
 ): 
     """
-    Bins positive and negative LFC or LFC3D scores into percentile thresholds.
+    Bins positive and negative meta-aggregated LFC or LFC3D scores into percentile thresholds.
 
     Parameters
     ----------
     df_bidir_meta : pd.DataFrame
-        DataFrame containing split positive/negative scores and randomized averages for each screen.
+        DataFrame containing meta-aggregated split positive/negative scores and randomized averages per residue.
 
     workdir : str
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     screen_names : list of str
-        Names of the different screens corresponding to each DataFrame in df_edits_list and df_rand_list.
+        Names of the different screens corresponding to each DataFrame in input_dfs, used in plot labels and output filenames.
 
     aggr_func_name : str, optional
         Name corresponding to 'aggr_func'. 
@@ -178,13 +177,13 @@ def bin_meta(
     Returns
     -------
     df_dis : pd.DataFrame
-        DataFrame containing percentile bins and weighted scores for each residue and screen.
-
-    df_neg_stats : list of pd.Series
-        List containing descriptive statistics for negative scores in each screen.
-
-    df_pos_stats : list of pd.Series
-        List containing descriptive statistics for positive scores in each screen.
+        DataFrame containing percentile bins and weighted scores per residue.
+        
+    df_neg_stats : pd.Series
+        Descriptive statistics for negative scores.
+        
+    df_pos_stats : pd.Series
+        Descriptive statistics for positive scores.
     """
     
     # MKDIR #
@@ -239,24 +238,24 @@ def znorm_meta(
     aggr_func_name='SUM', 
 ): 
     """
-    Z-normalizes scores against randomized control distributions and assigns significance labels.
+    Z-normalizes meta-aggregated LFC or LFC3D scores against randomized control distributions and assigns significance labels at multiple p-value thresholds.
 
     Parameters
     ----------
     df_bidir_meta : pd.DataFrame
-        DataFrame containing percentile bins and weighted scores for each residue and screen.
+        DataFrame containing meta-aggregated split positive/negative scores and randomized averages per residue.
 
     workdir : str
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     screen_names : list of str
-        Names of the different screens corresponding to each DataFrame in df_edits_list and df_rand_list.
-        
+        Names of the different screens corresponding to each DataFrame in input_dfs, used in plot labels and output filenames.
+
     score_type : str, optional (default='LFC3D')
-        Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
+        Label for the type of mutation score analyzed. Either 'LFC' or 'LFC3D'.
 
     pthrs : list of float, optional
         List of p-value thresholds used to define significance (default [0.05, 0.01, 0.001]).
@@ -267,7 +266,7 @@ def znorm_meta(
     Returns
     -------
     df_meta_Z : pd.DataFrame
-        DataFrame containing z-scores, p-values, and significance labels for scores at multiple thresholds.
+        DataFrame containing z-scores, p-values, and significance labels per residue at each threshold in pthrs.
     """
 
     # THE META-AGGREGATED RESULTS ARE Z SCORED TO THE WHOLE SET OF RANDOMIZED CONTROLS #
