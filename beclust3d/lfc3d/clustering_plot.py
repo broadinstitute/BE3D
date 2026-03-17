@@ -2,10 +2,12 @@
 File: clustering_plot.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: Plots clustering results including line plots and dendrograms.
+Description: 
+    Generates line plots and dendrograms for clustering results at a specified distance threshold.
 """
 
 import os
+import json
 import warnings
 from pathlib import Path
 import numpy as np
@@ -41,17 +43,17 @@ def plot_clustering(
     save_type='png', 
 ): 
     """
-    Calculates number of clusters for one clustering radius and its associated plots.
+    Generates line plots and dendrograms for clustering results at a specified distance threshold.
 
     Parameters
     ----------
     df_struc : pd.DataFrame
         DataFrame containing structural data for residues. 
-        Must include ['unipos', 'unires', 'chain', 'x_coord', 'y_coord', 'z_coord'].
+        Must include columns ['unipos', 'unires', 'chain', 'x_coord', 'y_coord', 'z_coord'].
 
     df_pvals : pd.DataFrame
         DataFrame containing per-residue statistical significance categories.
-        Must include ['unipos', 'unires', 'chain'] plus columns listed in `psig_columns`.
+        Must include columns ['unipos', 'unires', 'chain'] plus columns listed in `psig_columns`.
 
     df_pvals_clust : pd.DataFrame
         DataFrame containing structure and significance information plus cluster labels assigned at each distance.
@@ -63,7 +65,7 @@ def plot_clustering(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     distances : list of int
         List of distances (from 1 to `max_distances`) at which clustering was performed.
@@ -83,25 +85,22 @@ def plot_clustering(
         Only residues matching the given thresholds are included in clustering.
 
     screen_name : str
-        Name of the screens corresponding to df_missense.
+        Name of the screen corresponding to df_missense.
 
     score_type : str, optional (default='LFC3D')
-        Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
+        Label for the type of mutation score analyzed. Either 'LFC' or 'LFC3D'.
 
     merge_cols : list of str, optional (default=['unipos', 'chain'])
         Columns used to merge clustering results back into the main DataFrame.
 
     clustering_kwargs : dict, optional
         Dictionary of additional keyword arguments passed to `AgglomerativeClustering`.
-        Must include keys like "metric" and "linkage".
-        "n_clusters" should be set to None to enable distance-threshold clustering.
+        Must include keys like "metric" and "linkage". "n_clusters" should be set to None to enable distance-threshold clustering.
 
     Returns
     -------
     None
     """
-    import json
-
     # MKDIR #
     working_filedir = Path(workdir)
     if not os.path.exists(working_filedir): 
