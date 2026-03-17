@@ -371,27 +371,23 @@ Files are output to ```'[workdir]/[score_type]/plots'```
 ### 15. `clustering`
 
 **Description:** \
-Performs spatial clustering of significant residues over a range of distance thresholds.
+Performs spatial agglomerative clustering of significant residues over a range of distance thresholds.
 
 ```python
 clustering(
-    df_struc, # OUTPUT DF FROM sequence_structural_features()
-    df_pvals, # OUTPUT DF FROM znorm_score() OR znorm_meta() OR prioritize_by_sequence()
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-
+    df_struc,                              # structural feature DataFrame from sequence_structural_features()
+    df_pvals,                              # significance label DataFrame from znorm_score(), znorm_meta(), or prioritize_by_sequence()
+    workdir = 'PATH/TO/WORKING/DIRECTORY', # output directory
+    input_gene = 'GENE_NAME',              # gene name (e.g., 'DNMT3A', 'MEN1')
     # Optional
-    max_distances = 25, # RANGE OF DISTANCES TO TRY CLUSTERING OVER
-    psig_columns = ['SUM_LFC3D_neg_05_psig', 'SUM_LFC3D_pos_05_psig'], # COLUMNS IN df_pvals IDENTIFYING WHAT TO CLUSTER
-    pthr_cutoffs = ['p<0.05', 'p<0.05'], # VALUES IN COLUMNS IN df_pvals IDENTIFYING WHAT TO CLUSTER
-    screen_name = 'Meta', # IDENTIFIER FOR NAMING OUTPUT FILES
-    score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
-    merge_cols = ['unipos', 'chain'],
-    clustering_kwargs = {
-        'n_clusters': None,
-        'metric': 'euclidean',
-        'linkage': 'single'
-    },
+    max_distances = 25,                    # maximum clustering radius in Angstroms
+    psig_columns = ['SUM_LFC3D_neg_05_psig', 'SUM_LFC3D_pos_05_psig'], # significance columns in df_pvals to cluster on
+    pthr_cutoffs = ['p<0.05', 'p<0.05'],   # significance values in psig_columns to include in clustering
+    screen_name = 'Meta',                  # screen identifier for output filenames
+    score_type = 'LFC3D',                  # score type to cluster; 'LFC' or 'LFC3D'
+    merge_cols = ['unipos', 'chain'],      # columns used to merge clustering results
+    clustering_kwargs = {'n_clusters': None, 'metric': 'euclidean', 'linkage': 'single'} # None enables distance-threshold clustering
+    atom_level = False,                    # if True, clusters at atom level rather than residue level
 )
 ```
 
@@ -402,35 +398,30 @@ Files are output to ```'[workdir]/cluster_[score_type]'```
 ### 16. `plot_clustering`
 
 **Description:** \
-Plots clustering results including line plots and dendrograms.
+Generates line plots and dendrograms for clustering results at a specified distance threshold.
 
 ```python
 plot_clustering(
-    df_struc, # OUTPUT DF FROM sequence_structural_features()
-    df_pvals, # OUTPUT DF FROM znorm_score() OR znorm_meta() OR prioritize_by_sequence()
-    df_pvals_clust, # OUTPUT DF FROM clustering()
-    dist, # DISTANCE TO CLUSTER ON
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-    distances, # OUTPUT FROM clustering()
-    yvalues, # OUTPUT FROM clustering()
-
+    df_struc,                              # structural feature DataFrame from sequence_structural_features()
+    df_pvals,                              # significance label DataFrame from znorm_score(), znorm_meta(), or prioritize_by_sequence()
+    df_pvals_clust,                        # cluster label DataFrame from clustering()
+    dist,                                  # clustering radius in Angstroms to plot results for
+    workdir = 'PATH/TO/WORKING/DIRECTORY', # output directory
+    input_gene = 'GENE_NAME',              # gene name (e.g., 'DNMT3A', 'MEN1')
+    distances,                             # distances output from clustering()
+    yvalues,                               # cluster counts output from clustering()
     # Optional
-    psig_columns = ['SUM_LFC3D_neg_05_psig', 'SUM_LFC3D_pos_05_psig'], # COLUMNS IN df_pvals IDENTIFYING WHAT TO CLUSTER
-    names = ['Negative', 'Positive'], # NAMES OF CONDITIONS IN df_pvals IDENTIFYING WHAT TO CLUSTER
-    pthr_cutoffs = ['p<0.05', 'p<0.05'], # VALUES IN COLUMNS IN df_pvals IDENTIFYING WHAT TO CLUSTER
-    screen_name = 'Meta', # IDENTIFIER FOR NAMING OUTPUT FILES
-    score_type = 'LFC3D', # 'LFC' OR 'LFC3D'
-    merge_col = ['unipos', 'chain'],
-    clustering_kwargs = {
-        'n_clusters': None,
-        'metric': 'euclidean',
-        'linkage': 'single'
-    },
-    horizontal = False,
-    line_subplots_kwargs = {'figsize': (10, 7)},
-    dendogram_subplots_kwargs = {'figsize': (15, 12)},
-    save_type = 'png', # OUTPUT GRAPH SAVE TYPE (ie 'png', 'pdf', 'svg', etc)
+    psig_columns = ['SUM_LFC3D_neg_05_psig', 'SUM_LFC3D_pos_05_psig'], # significance columns in df_pvals; match clustering()
+    names = ['Negative', 'Positive'],      # display names corresponding to each psig_column
+    pthr_cutoffs = ['p<0.05', 'p<0.05'],   # significance values in psig_columns; match clustering()
+    screen_name = 'Meta',                  # screen identifier for output filenames
+    score_type = 'LFC3D',                  # score type to plot; 'LFC' or 'LFC3D'
+    merge_col = ['unipos', 'chain'],       # columns used to merge clustering results
+    clustering_kwargs = {'n_clusters': None, 'metric': 'euclidean', 'linkage': 'single'} # AgglomerativeClustering kwargs; match clustering()
+    horizontal = False,                    # if True, renders plots with a horizontal layout
+    line_subplots_kwargs = {'figsize': (10, 7)},       # kwargs for line plot figure
+    dendrogram_subplots_kwargs = {'figsize': (15, 12)}, # kwargs for dendrogram figure
+    save_type = 'png',                     # plot format ('png', 'pdf', 'svg', etc.)
 )
 ```
 
