@@ -47,26 +47,25 @@ def randomize_sequence(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     screen_name : str
-        Name of the screens corresponding to df_missense.
+        Name of the screen corresponding to df_missense.
 
     nRandom : int, optional (default=1000)
         Number of randomizations per screen for calculating randomized LFC and LFC3D scores.
     
     conservation : bool, optional (default=False)
-        If True, aggregates LFC only for residues marked as conserved. Non-conserved
-        residues are skipped. Should match whether df_consrv was provided in
-        prioritize_by_sequence().
+        If True, aggregates LFC only for residues marked as conserved. Non-conserved residues are skipped. 
+        Should match whether df_consrv was provided in prioritize_by_sequence().
         
     muttype : str, optional (default='Missense')
-        Mutation category to randomize (e.g., 'Missense', 'Nonsense'). Should match
-        one of the mutation types in df_dict from prioritize_by_sequence().
+        Mutation category to randomize (e.g., 'Missense', 'Nonsense'). 
+        Should match one of the mutation types in df_dict from prioritize_by_sequence().
         
     function_name : str, optional (default='mean')
-        Aggregation function name to apply per residue. Should match one of the
-        function_names used in prioritize_by_sequence().
+        Aggregation function name to apply per residue. 
+        Should match one of the function_names used in prioritize_by_sequence().
         
     target_pos : str, optional (default='unipos')
         Column name in df_missense containing the primary sequence residue positions.
