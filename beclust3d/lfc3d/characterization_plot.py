@@ -4,9 +4,9 @@ Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2025-02-04
 Description: 
     Plots enrichment test results as odds ratios with confidence intervals.
-    Generates LFC vs LFC3D scatter plots colored by hit significance.
-    Generates scatter plot of RSA vs pLDDT scores, scaled by mutation weight.
-    Generates bar plots of hit counts (or fractions) across different structural categories.
+    Generates a scatter plot of LFC vs LFC3D scores, color-coded by significance.
+    Generates a scatter plot of RSA vs pLDDT scores, scaled by mutation effect weight.
+    Generates bar plots of hit counts or fractions across structural feature categories.
 """
 
 import os
@@ -30,8 +30,7 @@ def plot_enrichment_test(
     save_type='png', 
 ):
     """
-    Description
-        Plot enrichment test results as odds ratio.
+    Plots enrichment test results as odds ratios with confidence intervals.
 
     Parameters
     ----------
@@ -42,7 +41,7 @@ def plot_enrichment_test(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Gene name being processed (e.g., 'DNMT3A', 'MEN1').
 
     hit_value : float
         Significance threshold for highlighting significant odds ratios.
@@ -54,7 +53,7 @@ def plot_enrichment_test(
         Extra space to pad on the Y-axis above and below plotted points.
 
     save_type : str, optional (default='png')
-        Format for saving output plots (e.g., 'png', 'pdf').
+        File format for saved plots (e.g., 'png', 'pdf', 'svg').
 
     Returns
     -------
@@ -119,7 +118,7 @@ def lfc_lfc3d_scatter(
     save_type='png', 
 ): 
     """
-    Generate LFC vs LFC3D scatter plot, color-coded by significance categories.
+    Generates a scatter plot of LFC vs LFC3D scores, color-coded by significance.
 
     Parameters
     ----------
@@ -130,7 +129,7 @@ def lfc_lfc3d_scatter(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Gene name being processed (e.g., 'DNMT3A', 'MEN1').
 
     screen_name : list of str
         Name of a screen corresponding to df_input.
@@ -139,7 +138,7 @@ def lfc_lfc3d_scatter(
         Threshold used to determine significance coloring.
 
     save_type : str, optional (default='png')
-        Format for saving output plots (e.g., 'png', 'pdf').
+        File format for saved plots (e.g., 'png', 'pdf', 'svg').
 
     Returns
     -------
@@ -224,7 +223,7 @@ def pLDDT_RSA_scatter(
     save_type='png', 
 ):
     """
-    Generates a scatter plot of RSA vs pLDDT scores.
+    Generates a scatter plot of RSA vs pLDDT scores, scaled by mutation effect weight.
 
     Parameters
     ----------
@@ -235,7 +234,7 @@ def pLDDT_RSA_scatter(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Gene name being processed (e.g., 'DNMT3A', 'MEN1').
 
     pLDDT_col : str, optional (default='bfactor_pLDDT')
         Column name for per-residue pLDDT confidence scores.
@@ -253,7 +252,7 @@ def pLDDT_RSA_scatter(
         Dictionary mapping directions to colors.
 
     save_type : str, optional (default='png')
-        Format for saving output plots (e.g., 'png', 'pdf').
+        File format for saved plots (e.g., 'png', 'pdf', 'svg').
         
     Returns
     -------
@@ -312,7 +311,7 @@ def hits_feature_barplot(
     save_type='png', 
 ):
     """
-    Generates a barplot of hit counts (or fractions) across categories (e.g., domains, RSA bins).
+    Generates bar plots of hit counts or fractions across structural feature categories.
 
     Parameters
     ----------
@@ -323,7 +322,7 @@ def hits_feature_barplot(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Gene name being processed (e.g., 'DNMT3A', 'MEN1').
 
     category_col : str
         Column name representing the feature category (e.g., domain, pLDDT bin).
@@ -344,7 +343,7 @@ def hits_feature_barplot(
         Colors for the different hit categories.
 
     save_type : str, optional (default='png')
-        Format for saving output plots (e.g., 'png', 'pdf').
+        File format for saved plots (e.g., 'png', 'pdf', 'svg').
         
     Returns
     -------
