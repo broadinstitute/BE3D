@@ -434,20 +434,19 @@ Files are output to ```'[workdir]/cluster_[score_type]/plots'```
 ### 17. `enrichment_test`
 
 **Description:** \
-Performs enrichment tests (e.g., Fisher's exact test) for structural features.
+Performs Fisher's exact test to assess enrichment of structural features among significant residues, and plots the results.
 
 ```python
 enrichment_test(
-    df,
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-    hit_columns,
-    hit_threshold,
-    feature_column,
-    feature_values,
-
+    df,                                    # DataFrame containing per-residue significance scores and feature annotations
+    workdir = 'PATH/TO/WORKING/DIRECTORY', # output directory
+    input_gene = 'GENE_NAME',              # gene name (e.g., 'DNMT3A', 'MEN1')
+    hit_columns,                           # significance score columns in df to test for enrichment
+    hit_threshold,                         # threshold on hit_columns to define significant residues
+    feature_column,                        # structural/functional feature column in df to test
+    feature_values,                        # feature values within feature_column to test for enrichment
     # Optional
-    confidence_level = 0.95,
+    confidence_level = 0.95,              # confidence level for odds ratio confidence intervals
 )
 ```
 
@@ -462,15 +461,14 @@ Plots enrichment test results as odds ratios with confidence intervals.
 
 ```python
 plot_enrichment_test(
-    enrichment_results,
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-    hit_value,
-    feature_values,
-
+    enrichment_results,                    # enrichment results from enrichment_test()
+    workdir = 'PATH/TO/WORKING/DIRECTORY', # output directory
+    input_gene = 'GENE_NAME',              # gene name (e.g., 'DNMT3A', 'MEN1')
+    hit_value,                             # significance threshold for highlighting odds ratios
+    feature_values,                        # feature values tested; output from enrichment_test()
     # Optional
-    padding = 0.5,
-    save_type = 'png', # OUTPUT GRAPH SAVE TYPE (ie 'png', 'pdf', 'svg', etc)
+    padding = 0.5,                         # Y-axis padding above and below plotted points
+    save_type = 'png',                     # plot format ('png', 'pdf', 'svg', etc.)
 )
 ```
 
@@ -481,7 +479,7 @@ Files are output to ```'[workdir]/characterization/plots''```
 ### 19. `lfc_lfc3d_scatter`
 
 **Description:** \
-Generates LFC vs LFC3D scatter plots colored by hit significance.
+Generates a scatter plot of LFC vs LFC3D scores, color-coded by significance.
 
 ```python
 lfc_lfc3d_scatter(
@@ -503,21 +501,21 @@ Files are output to ```'[workdir]/characterization/plots''```
 ### 20. `pLDDT_RSA_scatter`
 
 **Description:** \
-Generates scatter plot of RSA vs pLDDT scores, scaled by mutation weight.
+Generates a scatter plot of RSA vs pLDDT scores, scaled by mutation effect weight.
 
 ```python
 pLDDT_RSA_scatter(
-    df_input,
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
+    df_input,                              # DataFrame containing pLDDT, RSA, weight, and directionality columns
+    workdir = 'PATH/TO/WORKING/DIRECTORY', # output directory
+    input_gene = 'GENE_NAME',              # gene name (e.g., 'DNMT3A', 'MEN1')
 
     # Optional
-    pLDDT_col = 'bfactor_pLDDT',
-    RSA_col = 'RSA',
-    size_col = 'LFC3D_wght',
-    direction_col = 'direction',
-    color_map = {'NEG': 'darkred', 'POS': 'darkblue'},
-    save_type = 'png', # OUTPUT GRAPH SAVE TYPE (ie 'png', 'pdf', 'svg', etc)
+    pLDDT_col = 'bfactor_pLDDT',          # pLDDT confidence score column in df_input
+    RSA_col = 'RSA',                       # relative solvent accessibility column in df_input
+    size_col = 'LFC3D_wght',              # point size column in df_input
+    direction_col = 'direction',           # mutation effect direction column in df_input (e.g., 'NEG', 'POS')
+    color_map = {'NEG': 'darkred', 'POS': 'darkblue'}, # direction to color mapping
+    save_type = 'png',                     # plot format ('png', 'pdf', 'svg', etc.)
 )
 ```
 
@@ -528,22 +526,22 @@ Files are output to ```'[workdir]/characterization/plots''```
 ### 21. `hits_feature_barplot`
 
 **Description:** \
-Generates bar plots of hit counts (or fractions) across different structural categories.
+Generates bar plots of hit counts or fractions across structural feature categories.
 
 ```python
 hits_feature_barplot(
-    df_input,
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-    category_col,
-    values_cols,
-    values_vals,
-    value_names,
+    df_input,                              # DataFrame containing hit annotations and feature categories
+    workdir = 'PATH/TO/WORKING/DIRECTORY', # output directory
+    input_gene = 'GENE_NAME',              # gene name (e.g., 'DNMT3A', 'MEN1')
+    category_col,                          # feature category column in df_input to group by
+    values_cols,                           # hit direction columns in df_input to plot
+    values_vals,                           # values within values_cols that define a hit
+    value_names,                           # display names for each hit category in the legend
 
     # Optional
-    plot_type = 'Count',
-    colors = ['darkred', 'darkblue'],
-    save_type = 'png', # OUTPUT GRAPH SAVE TYPE (ie 'png', 'pdf', 'svg', etc)
+    plot_type = 'Count',                   # 'Count' for raw counts or 'Fraction' for proportions
+    colors = ['darkred', 'darkblue'],      # colors for each hit category
+    save_type = 'png',                     # plot format ('png', 'pdf', 'svg', etc.)
 )
 ```
 
