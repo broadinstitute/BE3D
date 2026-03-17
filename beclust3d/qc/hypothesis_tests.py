@@ -49,7 +49,7 @@ def hypothesis_test(
         List of mutation categories considered as the "control" group (e.g., ['No Mutation', 'Silent']).
 
     comp_name : str, optional (default='CaseVsControl')
-        Comparison label used for naming plots and outputs (e.g., 'Nonsense_vs_Control').
+        Comparison label used for naming plots and outputs (e.g., 'CaseVsControl').
         
     mut_col : str, optional (default='Mutation category')
         Column name in input_dfs specifying the mutation category (e.g., 'Missense', 'Nonsense').
