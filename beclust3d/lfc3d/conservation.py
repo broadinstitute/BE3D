@@ -48,16 +48,16 @@ def conservation(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     alt_input_gene : str
         Name of the alternate gene (e.g., mouse ortholog or isoform) to align against.
 
     input_uniprot : str
-        Uniprot of the gene being processed. 
+        Uniprot of the gene being processed (e.g., 'Q12345').. 
 
     alt_input_uniprot : str
-        UniProt for the alternate gene.
+        Uniprot of the alternate gene (e.g., mouse ortholog or isoform) to align against.
 
     alignment_filename : str or None, optional (default=None)
         Path to a precomputed alignment file. If provided, skips running MUSCLE entirely.
@@ -72,6 +72,9 @@ def conservation(
         
     email : str or None, optional
         Email address for the remote MUSCLE API request. Required if mode='query'.
+    
+    muscle_path : str, optional (default='muscle')
+        Path to the local MUSCLE executable. Only used if mode='run'.
         
     wait_time : int, optional (default=30)
         Seconds to wait between re-polling the MUSCLE API. Only used if mode='query'.
