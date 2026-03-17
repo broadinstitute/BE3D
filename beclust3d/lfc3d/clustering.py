@@ -29,7 +29,7 @@ def clustering(
     score_type='LFC3D', 
     merge_cols=['unipos', 'chain'], 
     clustering_kwargs={"n_clusters": None, "metric": "euclidean", "linkage": "single"},
-    atom_level=False
+    atom_level=False,
 ): 
     """
     Performs spatial agglomerative clustering of significant residues over a range of distance thresholds.
@@ -37,11 +37,11 @@ def clustering(
     Parameters
     ----------
     df_struc : pd.DataFrame
-        DataFrame containing structural data for residues. 
+        Structural feature DataFrame from sequence_structural_features(). 
         Must include columns ['unipos', 'unires', 'chain', 'x_coord', 'y_coord', 'z_coord'].
 
     df_pvals : pd.DataFrame
-        DataFrame containing per-residue statistical significance categories.
+        Z-score and significance label DataFrame from znorm_score(), znorm_meta(), or prioritize_by_sequence(). 
         Must include columns ['unipos', 'unires', 'chain'] plus columns listed in `psig_columns`.
 
     workdir : str
@@ -54,15 +54,15 @@ def clustering(
         Maximum radius (in Angstroms) to consider for clustering. Clustering is repeated at every integer from 3 to `max_distances`.
         
     psig_columns : list of str, optional
-        List of column names in `df_pvals` indicating categorical significance labels 
-        (e.g., 'p<0.05' for significant residues to cluster).
+        Column names in df_pvals containing categorical significance labels to cluster on
+        (e.g., ['SUM_LFC3D_neg_05_psig', 'SUM_LFC3D_pos_05_psig']).
 
     pthr_cutoffs : list of str, optional
-        List of significance thresholds corresponding to `psig_columns`.
-        Only residues matching the given thresholds are included in clustering.
+        Significance threshold values corresponding to each column in psig_columns.
+        Only residues matching these values are included in clustering (e.g., ['p<0.05', 'p<0.05']).
 
     screen_name : str
-        Name of the screen corresponding to df_missense.
+        Screen identifier used in output filenames.
 
     score_type : str, optional (default='LFC3D')
         Label for the type of mutation score analyzed. Either 'LFC' or 'LFC3D'.
@@ -71,19 +71,22 @@ def clustering(
         Columns used to merge clustering results back into the main DataFrame.
 
     clustering_kwargs : dict, optional
-        Dictionary of additional keyword arguments passed to `AgglomerativeClustering`.
-        Must include keys like "metric" and "linkage". "n_clusters" should be set to None to enable distance-threshold clustering.
+        Keyword arguments passed to AgglomerativeClustering. 'n_clusters' should be None to enable distance-threshold clustering.
+        Default: {"n_clusters": None, "metric": "euclidean", "linkage": "single"}.
+        
+    atom_level : bool, optional (default=False)
+        If True, performs clustering at the atom level rather than residue level.
 
     Returns
     -------
     df_hits_clust : pd.DataFrame
-        DataFrame containing structure and significance information plus cluster labels assigned at each distance.
+        DataFrame containing structural and significance data plus cluster labels assigned at each distance threshold.
 
     distances : list of int
-        List of distances (from 1 to `max_distances`) at which clustering was performed.
+        List of distances from 1 to max_distances at which clustering was performed.
 
     yvalue_lists : list of list of int
-        List of lists, containing the number of clusters found at each distance for each psig_column.
+        Number of clusters found at each distance for each column in psig_columns.
     """
 
     # MKDIR #
