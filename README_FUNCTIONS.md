@@ -141,20 +141,20 @@ Files are output to ```'[workdir]/screendata'```
 ### 5. `plot_rawdata`
 
 **Description:** \
-Parses raw screen data and generates summary plots per mutation category.
+Parses raw screen data and generates summary plots per mutation category for each screen.
 
 ```python
 plot_rawdata(
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_dfs = [pd.DataFrame()], # LIST OF DFs, ONE FOR EACH SCREEN
-    screen_names = ['screen_name_1'], # LIST OF UNIQUE SCREEN IDENTIFIERS
+    workdir = 'PATH/TO/WORKING/DIRECTORY',                              # output directory
+    input_dfs = [pd.DataFrame()],                                       # one DataFrame per screen
+    screen_names = ['screen_name_1'],                                   # screen identifier for each DataFrame in input_dfs
 
     # Optional
-    mut_col = 'Mutation category', # MUTATION CATEGORY COLUMN IN input_dfs (ie 'Missense', 'Silent', etc)
-    val_col = 'logFC', # SCORE COLUMN IN input_dfs
-    gene_col = 'Target Gene Symbol', # GENE NAME COLUMN IN input_dfs
-    mut_categories = ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"], # CATEGORIES IN mut_col
-    save_type = 'png', # OUTPUT GRAPH SAVE TYPE (ie 'png', 'pdf', 'svg', etc)
+    mut_col = 'Mutation category',                                      # mutation category column in input_dfs
+    val_col = 'logFC',                                                  # numeric measurement column in input_dfs
+    gene_col = 'Target Gene Symbol',                                    # gene identifier column in input_dfs
+    mut_categories = ["Nonsense", "Splice Site", "Missense", ...],      # mutation categories to plot from mut_col
+    save_type = 'png',                                                  # plot format ('png', 'pdf', 'svg', etc.)
 )
 ```
 
@@ -165,20 +165,20 @@ Files are output to ```'[workdir]/screendata/plots'```
 ### 6. `randomize_data`
 
 **Description:** \
-Randomizes missense mutation scores to create a baseline distribution.
+Randomizes mutation scores from a parsed screen DataFrame to create a baseline distribution.
 
 ```python
 randomize_data(
-    df_missense, # OUTPUT DF FROM parse_be_data()
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-    screen_name = 'screen_name_1', # UNIQUE SCREEN IDENTIFIER FOR df_missense
+    df_missense,                      # parsed mutation DataFrame from parse_be_data()
+    workdir = 'PATH/TO/WORKING/DIRECTORY',   # output directory
+    input_gene = 'GENE_NAME',         # gene name (e.g., 'DNMT3A', 'MEN1')
+    screen_name = 'screen_name_1',    # screen identifier for df_missense
 
     # Optional
-    nRandom = 1000, # NUMBER OF RANDOMIZATIONS
-    val_colname = 'LFC', # SCORE COLUMN IN df_missense 
-    muttype = 'Missense', # MUTATION TYPE OF df_missense
-    seed = False, # SEED CREATES REPRODUCIBLE RANDOMIZATIONS
+    nRandom = 1000,                   # number of randomizations to perform
+    val_colname = 'LFC',              # numeric measurement column in df_missense
+    muttype = 'Missense',             # mutation category of df_missense
+    seed = False,                     # if True, uses a fixed seed for reproducibility
 )
 ```
 
@@ -191,26 +191,26 @@ Files are output to ```'[workdir]/screendata_rand'```
 ### 7. `prioritize_by_sequence`
 
 **Description:** \
-Aggregates mutation effects across edit types, sequence positions, and conservation features.
-
+Aggregates mutation effects across edit types and sequence positions, combining
+structural, conservation, and statistical features per residue.
+    
 ```python
 prioritize_by_sequence(
-    df_dict, # DICTIONARY OF OUTPUT DF FROM prioritize_by_sequence() {'Missense':pd.DataFrame(), ...}
-    df_struc, # OUTPUT DF FROM sequence_structural_features()
-    df_consrv, # OUTPUT DF FROM conservation() OR 'NONE'
-    df_control, # OUTPUT DF FROM prioritize_by_sequence() OR SEPARATE CONTROL POPULATION DF
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-    screen_name = 'screen_name_1', # UNIQUE SCREEN IDENTIFIER FOR ITEMS IN df_dict
+    df_dict,                               # dict of parsed DataFrames from parse_be_data() e.g. {'Missense': pd.DataFrame(), ...}
+    df_struc,                              # structural feature DataFrame from sequence_structural_features()
+    df_consrv,                             # conservation DataFrame from conservation(), or None
+    df_control,                            # control/no-mutation LFC DataFrame, or None
+    workdir = 'PATH/TO/WORKING/DIRECTORY', # output directory
+    input_gene = 'GENE_NAME',              # gene name (e.g., 'DNMT3A', 'MEN1')
+    screen_name = 'screen_name_1',         # screen identifier for DataFrames in df_dict
 
     # Optional
-    pthr = 0.05, # P-VALUE CUTOFF TO Z-SCORE ON
-    functions = [statistics.mean, min, max], # LIST OF FUNCTIONS TO APPLY TO ALL SCORES PER POSITION
-    function_names = ['mean', 'min', 'max'], # LIST OF ASSOCIATED FUNCTION NAMES
-    target_res_pos = 'original_res_pos', # ORIGINAL RES POS OF THE MAIN SEQUENCE
-    target_res = 'original_res', # ORIGINAL RES OF THE MAIN SEQUENCE
-    alt_res_pos='mouse_res_pos', # ALTERNATIVE RES POS OF THE SECONDARY SEQUENCE TO BE ALIGNED TO THE MAIN
-    alt_res='mouse_res', # ALTERNATIVE RES OF THE MAIN SEQUENCE TO BE ALIGNED TO THE MAIN
+    pthr = 0.05,                           # p-value threshold for significance labeling
+    functions = [statistics.mean, min, max, sum],        # aggregation functions applied per residue
+    function_names = ['mean', 'min', 'max', 'sum'],      # names corresponding to each function
+    target_res_pos = 'human_res_pos',      # primary sequence residue position column in df_consrv
+    alt_res_pos = 'mouse_res_pos',         # alternate sequence residue position column in df_consrv
+    alt_res = 'mouse_res',                 # alternate sequence residue identity column in df_consrv
 )
 ```
 
@@ -221,23 +221,23 @@ Files are output to ```'[workdir]/screendata_sequence'```
 ### 8. `randomize_sequence`
 
 **Description:** \
-Randomizes scores based on structural sequence and conservation information.
+Randomizes per-residue scores weighted by structural and conservation features to create a baseline distribution for significance testing.
 
 ```python
 randomize_sequence(
-    df_missense, # OUTPUT DF FROM prioritize_by_sequence()
-    df_rand, # OUTPUT DF FROM randomize_data()
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-    screen_name = 'screen_name_1', # UNIQUE SCREEN IDENTIFIER FOR df_missense
+    df_missense,                           # per-residue LFC DataFrame from prioritize_by_sequence()
+    df_rand,                               # randomized per-guide LFC DataFrame from randomize_data()
+    workdir = 'PATH/TO/WORKING/DIRECTORY', # output directory
+    input_gene = 'GENE_NAME',              # gene name (e.g., 'DNMT3A', 'MEN1')
+    screen_name = 'screen_name_1',         # screen identifier for df_missense
 
     # Optional
-    nRandom = 1000, # NUMBER OF RANDOMIZATIONS
-    conservation = False, # TRUE IF df_consrv IS NONE IN prioritize_by_sequence()
-    muttype = 'Missense', # ONE OF THE MUTATION TYPES IN df_dict IN prioritize_by_sequence()
-    function_name = 'mean', # ONE OF THE FUNCTIONS APPLIED IN prioritize_by_sequence()
-    target_pos = 'unipos', # ORIGINAL RES POS OF THE MAIN SEQUENCE
-    target_res = None, # ORIGINAL RES OF THE MAIN SEQUENCE
+    nRandom = 1000,                        # number of randomizations to perform
+    conservation = False,                  # if True, only aggregates conserved residues; match prioritize_by_sequence()
+    muttype = 'Missense',                  # mutation category to randomize; match df_dict in prioritize_by_sequence()
+    function_name = 'mean',                # aggregation function name; match function_names in prioritize_by_sequence()
+    target_pos = 'unipos',                 # primary sequence residue position column in df_missense
+    target_res = None,                     # primary sequence residue identity column in df_missense, or None
 )
 ```
 
@@ -245,7 +245,30 @@ Files are output to ```'[workdir]/screendata_sequence_rand'```
 
 ---
 
-### 9. `calculate_lfc3d`
+### 9. `plot_screendata_sequence`
+
+**Description:** \
+Generates per-residue sequence-level plots for a single screen from prioritize_by_sequence() output.
+
+```python
+plot_screendata_sequence(
+    df_protein,                            # per-residue feature DataFrame from prioritize_by_sequence()
+    workdir = 'PATH/TO/WORKING/DIRECTORY', # output directory
+    input_gene = 'GENE_NAME',              # gene name (e.g., 'DNMT3A', 'MEN1')
+    screen_name = 'screen_name_1',         # screen identifier for df_protein
+
+    # Optional
+    function_name = 'mean',                # aggregation function name to plot; match function_names in prioritize_by_sequence()
+    muttype = 'Missense',                  # mutation category to plot; match df_dict in prioritize_by_sequence()
+    save_type = 'png',                     # plot format ('png', 'pdf', 'svg', etc.)
+)
+```
+
+Files are output to ```'[workdir]/screendata_sequence'```
+
+---
+
+### 10. `calculate_lfc3d`
 
 **Description:** \
 Calculates LFC3D scores by aggregating local neighborhood mutation effects.
@@ -275,7 +298,7 @@ Files are output to ```'[workdir]/LFC3D'```
 
 ## Non Aggregating for Single Screens
 
-### 10. `average_split_score`
+### 11. `average_split_score`
 
 **Description:** \
 Splits LFC/LFC3D scores into positive and negative components and aggregates randomized scores.
@@ -296,7 +319,7 @@ Files are output to ```'[workdir]/[score_type]'```
 
 ---
 
-### 11. `bin_score`
+### 12. `bin_score`
 
 **Description:** \
 Bins positive and negative LFC3D scores into percentile thresholds.
@@ -317,7 +340,7 @@ Files are output to ```'[workdir]/[score_type]'```
 
 ---
 
-### 12. `znorm_score`
+### 13. `znorm_score`
 
 **Description:** \
 Z-normalizes scores against randomized controls and labels significance.
@@ -339,7 +362,7 @@ Files are output to ```'[workdir]/[score_type]'```
 
 ---
 
-### 13. `average_split_bin_plots`
+### 14. `average_split_bin_plots`
 
 **Description:** \
 Generates histograms, histplots, and scatterplots for positive and negative scores after binning.
@@ -366,7 +389,7 @@ Files are output to ```'[workdir]/[score_type]/plots'```
 
 ## Clustering
 
-### 14. `clustering`
+### 15. `clustering`
 
 **Description:** \
 Performs spatial clustering of significant residues over a range of distance thresholds.
@@ -397,7 +420,7 @@ Files are output to ```'[workdir]/cluster_[score_type]'```
 
 ---
 
-### 15. `plot_clustering`
+### 16. `plot_clustering`
 
 **Description:** \
 Plots clustering results including line plots and dendrograms.
@@ -438,7 +461,7 @@ Files are output to ```'[workdir]/cluster_[score_type]/plots'```
 
 ## Characterization
 
-### 16. `enrichment_test`
+### 17. `enrichment_test`
 
 **Description:** \
 Performs enrichment tests (e.g., Fisher's exact test) for structural features.
@@ -462,7 +485,7 @@ Files are output to ```'[workdir]/characterization'```
 
 ---
 
-### 17. `plot_enrichment_test`
+### 18. `plot_enrichment_test`
 
 **Description:** \
 Plots enrichment test results as odds ratios with confidence intervals.
@@ -485,7 +508,7 @@ Files are output to ```'[workdir]/characterization/plots''```
 
 ---
 
-### 18. `lfc_lfc3d_scatter`
+### 19. `lfc_lfc3d_scatter`
 
 **Description:** \
 Generates LFC vs LFC3D scatter plots colored by hit significance.
@@ -507,7 +530,7 @@ Files are output to ```'[workdir]/characterization/plots''```
 
 ---
 
-### 19. `pLDDT_RSA_scatter`
+### 20. `pLDDT_RSA_scatter`
 
 **Description:** \
 Generates scatter plot of RSA vs pLDDT scores, scaled by mutation weight.
@@ -532,7 +555,7 @@ Files are output to ```'[workdir]/characterization/plots''```
 
 ---
 
-### 20. `hits_feature_barplot`
+### 21. `hits_feature_barplot`
 
 **Description:** \
 Generates bar plots of hit counts (or fractions) across different structural categories.
@@ -564,7 +587,7 @@ Files are output to ```'[workdir]/characterization/plots'```
 
 Replaces Steps 10-13 under Non Aggregating for Single Screens
 
-### 21. `average_split_meta`
+### 22. `average_split_meta`
 
 **Description:** \
 Aggregates scores across multiple screens into a meta score before splitting and averaging.
@@ -587,7 +610,7 @@ Files are output to ```'[workdir]/meta-aggregate'```
 
 ---
 
-### 22. `bin_meta`
+### 23. `bin_meta`
 
 **Description:** \
 Bins meta-aggregated LFC3D scores into percentile thresholds.
@@ -608,7 +631,7 @@ Files are output to ```'[workdir]/meta-aggregate'```
 
 ---
 
-### 23. `znorm_meta`
+### 24. `znorm_meta`
 
 **Description:** \
 Z-normalizes meta-aggregated scores against randomized controls and labels significance.
@@ -631,7 +654,7 @@ Files are output to ```'[workdir]/meta-aggregate'```
 
 ---
 
-### 13. `average_split_bin_plots`
+### 14. `average_split_bin_plots`
 
 **Description:** \
 Generates histograms, histplots, and scatterplots for positive and negative scores after binning.
