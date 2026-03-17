@@ -37,16 +37,18 @@ def plot_screendata_sequence(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Gene name being processed (e.g., 'DNMT3A', 'MEN1').
 
     screen_name : str
-        Name of the screens corresponding to df_missense.
+        Screen identifier corresponding to df_protein.
 
-    function_name : str, optional
-        Name corresponding to the 'functions'. 
+    function_name : str, optional (default='mean')
+        Aggregation function name to plot per residue. 
+        Should match one of the function_names used in prioritize_by_sequence().
 
     muttype : str, optional (default='Missense')
-        Type of mutation to focus on (e.g., 'Missense', 'Nonsense', etc.).
+        Mutation category to plot (e.g., 'Missense', 'Nonsense'). Should match
+        one of the mutation types in df_dict from prioritize_by_sequence().
 
     save_type : str, optional (default='png')
         Format for saving output plots (e.g., 'png', 'pdf').
