@@ -2,7 +2,8 @@
 File: aggregate_plot.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2025-01-01
-Description: Generates histograms, histplots, and scatterplots for positive and negative scores after binning.
+Description: 
+    Generates histograms and scatterplots for positive and negative scores with binning and significance thresholds.
 """
 
 import os
@@ -29,8 +30,7 @@ def average_split_bin_plots(
     save_type='png', 
 ): 
     """
-    Generates histograms, histplots, and scatterplots for positive and negative scores 
-    with binning and significance thresholds.
+    Generates histograms and scatterplots for positive and negative scores with binning and significance thresholds.
 
     Parameters
     ----------
@@ -41,25 +41,27 @@ def average_split_bin_plots(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     pthr : float, optional (default=0.05)
         p-value threshold for labeling statistical significance.
 
-    screen_name : str
-        Name of the screens corresponding to df_missense.
+    screen_name : str, optional (default='')
+        Screen identifier for df_z. 
+        Use '' for meta-aggregate output or a single screen identifier for per-screen output.
 
     func : str, optional (default='SUM')
-        Name corresponding to 'aggr_func' (e.g., 'SUM', 'MEAN').
+        Aggregation function name. 
+        Use '' for per-screen output or the aggr_func_name used in znorm_meta() for meta-aggregate output.
 
     score_type : str, optional (default='LFC3D')
-        Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
+        Label for the type of mutation score analyzed. Either 'LFC' or 'LFC3D'.
 
     aggregate_dir : str, optional (default='meta-aggregate')
         Subdirectory name where plots are stored (e.g., 'meta-aggregate', 'LFC3D', 'LFC').
 
     save_type : str, optional (default='png')
-        Format for saving output plots (e.g., 'png', 'pdf').
+        Format for saving output plots (e.g., 'png', 'pdf', 'svg').
     
     Returns
     ----------
