@@ -487,7 +487,6 @@ lfc_lfc3d_scatter(
     workdir = 'PATH/TO/WORKING/DIRECTORY',
     input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
     screen_name = 'screen_name_1', # UNIQUE SCREEN IDENTIFIER FOR df_input
-
     # Optional
     pthr = 0.05, # P-VALUE CUTOFF TO Z-SCORE ON
     save_type = 'png', # OUTPUT GRAPH SAVE TYPE (ie 'png', 'pdf', 'svg', etc)
@@ -508,7 +507,6 @@ pLDDT_RSA_scatter(
     df_input,                              # DataFrame containing pLDDT, RSA, weight, and directionality columns
     workdir = 'PATH/TO/WORKING/DIRECTORY', # output directory
     input_gene = 'GENE_NAME',              # gene name (e.g., 'DNMT3A', 'MEN1')
-
     # Optional
     pLDDT_col = 'bfactor_pLDDT',          # pLDDT confidence score column in df_input
     RSA_col = 'RSA',                       # relative solvent accessibility column in df_input
@@ -537,7 +535,6 @@ hits_feature_barplot(
     values_cols,                           # hit direction columns in df_input to plot
     values_vals,                           # values within values_cols that define a hit
     value_names,                           # display names for each hit category in the legend
-
     # Optional
     plot_type = 'Count',                   # 'Count' for raw counts or 'Fraction' for proportions
     colors = ['darkred', 'darkblue'],      # colors for each hit category
