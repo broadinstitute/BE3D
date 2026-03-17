@@ -36,7 +36,7 @@ def plot_rawdata(
         Path to the working directory where output files and results will be saved.
 
     input_dfs : list of pd.DataFrame
-        List of input dataframes, one for each screen.
+        List of input dataframes, one for each screen, each containing mutation category, gene, and value columns.
 
     screen_names : list of str
         Names of the different screens corresponding to each DataFrame in input_dfs.
@@ -55,7 +55,7 @@ def plot_rawdata(
         Default includes ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"].
         
     save_type : str, optional (default='png')
-        Format for saving output plots (e.g., 'png', 'pdf').
+        Format for saving output plots (e.g., 'png', 'pdf', 'svg').
         
     Returns
     -------
