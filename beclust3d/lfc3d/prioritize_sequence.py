@@ -42,24 +42,25 @@ def prioritize_by_sequence(
         Each DataFrame must include columns ['edit_pos', 'LFC', 'this_edit'].
             
     df_struc : pd.DataFrame
-        DataFrame containing structural data for residues. Must include columns ['unipos', 'unires', 'chain'].
+        DataFrame containing structural data for residues. 
+        Must include columns ['unipos', 'unires', 'chain'].
 
     df_consrv : pd.DataFrame
         DataFrame containing conservation data for residues. If None, conservation is ignored.
-        Must include columns 'original_res_pos', 'alternate_res_pos', 'alternate_res', and 'conservation'.
+        Must include columns ['original_res_pos', 'alternate_res_pos', 'alternate_res', and 'conservation'].
 
     df_control : pd.DataFrame or None
         DataFrame of control or no-mutation LFC measurements, used to estimate background mean and std for z-scores.
-        Must include 'LFC' column.
+        Must include column ['LFC'].
 
     workdir : str
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     screen_name : str
-        Name of the screens corresponding to df_missense.
+        Name of the screen corresponding to df_missense.
 
     pthr : float, optional (default=0.05)
         p-value threshold for labeling statistical significance.
