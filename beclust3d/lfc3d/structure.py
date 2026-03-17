@@ -59,7 +59,7 @@ def sequence_structural_features(
 
     domains_dict : dict or None, optional
         Dictionary specifying domain annotations (e.g., Pfam, InterPro) for the protein.
-        If None, domain information will be queried automatically from UniProt or another source.
+        If None, domain information will be queried automatically from UniProt.
         
     atom_level_naa : bool, optional (default=False)
         If True, counts neighboring amino acids at the atom level rather than residue level.
