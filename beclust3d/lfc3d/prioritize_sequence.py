@@ -28,6 +28,7 @@ def prioritize_by_sequence(
     pthr=0.05, 
     functions=[statistics.mean, min, max, sum], 
     function_names=['mean', 'min', 'max', 'sum'], 
+    # func_map={'mean':statistics.mean, 'median':np.median, 'sum':sum, 'min':min, 'max':max}, 
     target_res_pos='human_res_pos',
     alt_res_pos='mouse_res_pos',
     alt_res='mouse_res', 
