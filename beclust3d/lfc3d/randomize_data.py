@@ -35,10 +35,10 @@ def randomize_data(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Gene name being processed (e.g., 'DNMT3A', 'MEN1').
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
         
     screen_name : str
-        Screen identifier corresponding to df_missense.
+        Name of the screen corresponding to df_missense.
 
     nRandom : int, optional (default=1000)
         Number of randomizations per screen for calculating randomized LFC and LFC3D scores.
