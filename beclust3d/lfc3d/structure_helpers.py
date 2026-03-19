@@ -416,12 +416,12 @@ def parse_domains(
     working_filedir, 
     out_fasta, 
     domains_filename, 
-    domains_dict
+    domains_list, 
 ): 
     df_sequence = pd.read_csv(out_fasta, sep='\t')
     df_sequence = df_sequence.rename(columns={'unipos':'Position', 'unires':'Residue'})
 
-    df_sequence['Domain'] = df_sequence['Position'].apply(lambda x: get_domain(x, domains_dict))
+    df_sequence['Domain'] = df_sequence['Position'].apply(lambda x: get_domain(x, domains_list))
     df_sequence.to_csv(working_filedir / domains_filename, sep='\t',index=False)
     return None
 
@@ -429,7 +429,7 @@ def get_domain(
     pos, 
     domains, 
 ):
-    for name, (start, end) in domains.items():
+    for name, start, end in domains:
         if start <= pos <= end:
             return name
     return 'None'
