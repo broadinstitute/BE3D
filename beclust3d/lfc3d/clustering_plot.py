@@ -19,7 +19,6 @@ import matplotlib as mpl
 from scipy.cluster.hierarchy import dendrogram, set_link_color_palette
 from sklearn.cluster import AgglomerativeClustering
 mpl.rcParams['svg.fonttype'] = 'none'
-mpl.rcParams['font.family'] = 'Arial'
 
 def plot_clustering(
     df_struc, 
