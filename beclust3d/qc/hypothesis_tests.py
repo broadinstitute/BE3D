@@ -116,14 +116,12 @@ def hypothesis_test(
         working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name, 
         gene_col, mut_col, val_col, testtype='KolmogorovSmirnov', col_names = ['screenid','gene_name'])
     
-    if len(unique_genes) > 1:
-        hypothesis_plot(
-            working_filedir, df_MW1_input.copy(), df_KS1_input.copy(), screen_names, 'screenid', 'gene_name', 
-            hypothesis='1', header=comp_name, save_type=save_type)
-    if len(screen_names) > 1:
-        hypothesis_plot(
-            working_filedir, df_MW1_input.copy(), df_KS1_input.copy(), unique_genes, 'gene_name', 'screenid', 
-            hypothesis='1', header=comp_name, save_type=save_type)
+    hypothesis_plot(
+        working_filedir, df_MW1_input.copy(), df_KS1_input.copy(), screen_names, 'screenid', 'gene_name', 
+        hypothesis='1', header=comp_name, save_type=save_type)
+    hypothesis_plot(
+        working_filedir, df_MW1_input.copy(), df_KS1_input.copy(), unique_genes, 'gene_name', 'screenid', 
+        hypothesis='1', header=comp_name, save_type=save_type)
 
     # MW AND KS TESTS HYPOTHESIS 2 #
     df_MW2_input = hypothesis_two(
@@ -133,13 +131,11 @@ def hypothesis_test(
         working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name, 
         gene_col, mut_col, val_col, testtype='KolmogorovSmirnov', col_names = ['screenid','gene_name'])
     
-    if len(unique_genes) > 1:
-        hypothesis_plot(
-            working_filedir, df_MW2_input.copy(), df_KS2_input.copy(), screen_names, 'screenid', 'gene_name', 
-            hypothesis='2', header=comp_name, save_type=save_type)
-    if len(screen_names) > 1:
-        hypothesis_plot(
-            working_filedir, df_MW2_input.copy(), df_KS2_input.copy(), unique_genes, 'gene_name', 'screenid', 
-            hypothesis='2', header=comp_name, save_type=save_type)
+    hypothesis_plot(
+        working_filedir, df_MW2_input.copy(), df_KS2_input.copy(), screen_names, 'screenid', 'gene_name', 
+        hypothesis='2', header=comp_name, save_type=save_type)
+    hypothesis_plot(
+        working_filedir, df_MW2_input.copy(), df_KS2_input.copy(), unique_genes, 'gene_name', 'screenid', 
+        hypothesis='2', header=comp_name, save_type=save_type)
     
     return df_MW1_input, df_MW2_input, df_KS1_input, df_KS2_input
