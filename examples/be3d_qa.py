@@ -27,7 +27,6 @@ def main(**kwargs):
     alt_uniprot_id   = kwargs['alt_uniprot_id']
     alt_screen_start = kwargs['alt_screen_start']
     config_yaml      = kwargs['config_yaml']
-
     # OPTIONAL
     user_fasta              = kwargs['user_fasta']
     user_pdb                = kwargs['user_pdb']
@@ -112,7 +111,8 @@ def main(**kwargs):
     )
     print(f'Output from beclust3d.qc.hypothesis_tests is saved in the following directory: {output_dir}hypothesis_qc/')
 
-    print("Step 1 complete: sequence/structural features computed and hypothesis tests conducted")
+    print("BE-QA complete: sequence/structural features and hypothesis tests")
+
 
 if __name__ == '__main__':
     config_yaml = sys.argv[1]
@@ -159,10 +159,10 @@ if __name__ == '__main__':
     user_fasta              = get_optional(config, 'user_fasta',              (str, type(None)), None)
     user_pdb                = get_optional(config, 'user_pdb',                (str, type(None)), None)
     user_dssp               = get_optional(config, 'user_dssp',               (str, type(None)), None)
-    structure_radius        = get_optional(config, 'structure_radius',        (int, float, type(None)), None)
+    structure_radius        = get_optional(config, 'structure_radius',        (int, float, type(None)), 6.0)
     priority_on_alternative = get_optional(config, 'priority_on_alternative', bool, False)
     atom_level_naa          = get_optional(config, 'atom_level_naa',          bool, False)
-    muscle_path             = get_optional(config, 'muscle_path',             (str, type(None)), None)
+    muscle_path             = get_optional(config, 'muscle_path',             (str, type(None)), 'muscle')
 
     main(
         input_gene=input_gene, input_uniprot=input_uniprot, input_chain=input_chain,
