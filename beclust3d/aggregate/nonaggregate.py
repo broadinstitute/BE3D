@@ -261,6 +261,8 @@ def znorm_score(
             _temp_pos_pd = df_z[df_z[f'{screen_name}_AVG_{score_type}r_pos'] != '-']
             avgr_neg_list = _temp_neg_pd[f'{screen_name}_AVG_{score_type}r_neg'].to_list()
             avgr_pos_list = _temp_pos_pd[f'{screen_name}_AVG_{score_type}r_pos'].to_list()
+            avgr_neg_list = np.array(avgr_neg_list, dtype=float)
+            avgr_pos_list = np.array(avgr_pos_list, dtype=float)
             neg_mean = np.mean(avgr_neg_list)
             neg_std = np.std(avgr_neg_list)
             pos_mean = np.mean(avgr_pos_list)
