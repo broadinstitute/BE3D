@@ -1,0 +1,53 @@
+beclust3d_path: ../KBTBD4/                                                            # path to the beclust3d package directory
+screen_dir: /content/KBTBD4/                                                          # path to the directory containing input screen data files
+output_dir: /content/KBTBD4/                                                          # path to the top-level output directory; maps to workdir in all pipeline functions
+muscle_path: /content/muscle                                                          # path to the local MUSCLE executable for sequence alignment (used in conservation)
+# input screen file(s) to process; used as screen_names throughout the pipeline
+screens:
+  - YeoNature2025-ABE-Screen-NegCtrl.tsv
+  - YeoNature2025-CBE-Screen-NegCtrl.tsv
+user_fasta: null                                                                      # path to user-supplied FASTA file; if set, skips UniProt sequence query (used in sequence_structural_features)
+user_pdb: /content/KBTBD4/KBTBD4_8voj_single_chain_A.pdb                              # path to user-supplied PDB file; if set, skips AlphaFold structure query (used in sequence_structural_features)
+user_dssp: null                                                                       # path to user-supplied DSSP file; if set, skips running DSSP locally (used in sequence_structural_features)
+input_gene: KBTBD4                                                                    # gene name for this run (used in sequence_structural_features, parse_be_data, calculate_lfc3d, etc.)
+input_uniprot: Q9NVX7                                                                 # UniProt accession ID for input_gene (used in sequence_structural_features, conservation)
+input_chain: A                                                                        # chain ID of input_gene in the PDB structure (used in sequence_structural_features, calculate_lfc3d)
+nRandom: 500                                                                          # number of randomizations to perform (used in randomize_data, randomize_sequence, calculate_lfc3d, average_split_meta)
+database:
+  mut_list_col: Mutation category                                                     # 
+  mut_col: Mutation_type                                                              # mutation category column in input DataFrames (used in parse_be_data, plot_rawdata, hypothesis_test)
+  val_col: lfc_over_unsorted                                                          # numeric measurement / score column in input DataFrames (used in parse_be_data, plot_rawdata, hypothesis_test)
+  gene_col: Gene Symbol                                                               # gene identifier column in input DataFrames (used in parse_be_data, plot_rawdata, hypothesis_test)
+  edits_col: Amino acid edits                                                         # amino acid edits column in input DataFrames, e.g. 'M1V,Q2Q' (used in parse_be_data)
+  mut_delimiter: ;                                                                    # delimiter used within edits_col to separate multiple edits (used in parse_be_data)
+  gRNA_col: null                                                                      # 
+qa:
+  qa_passed_only: false                                                               # if true, retains only samples that pass QA for downstream analysis (used in hypothesis_test)
+  qa_only: false                                                                      # if true, runs QA checks only and halts before main analysis
+  cases: [Nonsense, Splice-donor, Splice-acceptor]                                    # mutation categories treated as the case group in QA hypothesis testing (used in hypothesis_test)
+  controls: [No Mutation]                                                             # mutation categories treated as the control group in QA hypothesis testing (used in hypothesis_test)
+conservation:
+  run: false                                                                          # if true, runs conservation alignment and filters; enables conservation workflow (used in conservation, parse_be_data)
+  v_score_threshold: 3                                                                # minimum conservation score to retain residues (-1, 1, 2, or 3) (used in parse_be_data)
+  alt_gene_name: null                                                                 # alternate gene name for conservation alignment, e.g. mouse ortholog (used in conservation)
+  alt_uniprot_id: null                                                                # UniProt accession ID for the alternate gene (used in conservation)
+  alt_screen_start: null                                                              # 
+mutation_category:
+  missense: [Missense]                                                                # label(s) in mut_col that correspond to missense mutations (used in parse_be_data)
+  silent: [Silent]                                                                    # label(s) in mut_col that correspond to silent/synonymous mutations (used in parse_be_data)
+  nonsense: [Nonsense]                                                                # label(s) in mut_col that correspond to nonsense/stop-gain mutations (used in parse_be_data)
+  no_mutation: [No Mutation]                                                          # label(s) in mut_col that correspond to no-edit control guides (used in parse_be_data)
+  splice: [Splice-donor, Splice-acceptor]                                             # label(s) in mut_col that correspond to splice site mutations (used in parse_be_data)
+  intron: [Intron]                                                                    # label(s) in mut_col that correspond to intronic mutations (used in parse_be_data)
+structure_radius: 6.0                                                                 # neighbor count radius in Angstroms for structural feature calculation (used in sequence_structural_features)
+clustering_radius: 6.0                                                                # clustering radius in Angstroms for spatial agglomerative clustering (used in clustering)
+function_for_lfc: max                                                                 # aggregation function applied per residue for LFC scores (used in prioritize_by_sequence, calculate_lfc3d)
+function_for_lfc3d: mean                                                              # aggregation function for LFC3D neighborhood scores (used in calculate_lfc3d)
+function_for_meta: SUM                                                                # aggregation function for combining scores across screens in meta-analysis (used in average_split_meta, znorm_meta)
+pthr:
+  single_screen: 0.05                                                                 # p-value threshold for significance labeling in single-screen analysis (used in znorm_score, average_split_bin_plots)
+  multi_screen: 0.05                                                                  # p-value threshold for significance labeling in multi-screen / meta-aggregate analysis (used in znorm_meta, average_split_bin_plots)
+priority_on_alternative: false                                                        # 
+ppi_chain_gene_dict: null                                                             # interacting gene to chain ID mapping for protein-protein interface analysis, e.g. {'GENE1': 'B'} (used in calculate_lfc3d)
+ppi_gene_edits_dict: null                                                             # interacting gene to edits dict mapping for PPI analysis (used in calculate_lfc3d)
+atom_level_naa: false                                                                 # if true, counts structural neighbors at atom level rather than residue level (used in sequence_structural_features)
