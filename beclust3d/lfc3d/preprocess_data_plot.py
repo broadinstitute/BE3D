@@ -160,7 +160,7 @@ def violin_by_gene(
     # VIOLIN PLOT SETUP #
     plt.rcParams.update({'font.size': 10})
     fig, axes = plt.subplots(nrows=plot_dim, ncols=plot_dim, sharex=False, sharey=True, 
-                             figsize=(19,17), gridspec_kw={'hspace':0.3, 'wspace':0.1})
+                             figsize=(8, 8), gridspec_kw={'hspace':0.3, 'wspace':0.1})
     if plot_dim == 1: axes = [axes]
     else: axes = axes.flatten()
 
