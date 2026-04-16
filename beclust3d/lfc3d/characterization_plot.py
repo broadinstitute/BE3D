@@ -184,8 +184,8 @@ def lfc_lfc3d_scatter(
     plt.axhline(y_min, color="gray", linestyle="--", linewidth=0.8)
     plt.axvline(x_min, color="gray", linestyle="--", linewidth=0.8)
     plt.title(f"{input_gene} LFC vs LFC3D Scatter Plot")
-    plt.xlabel(f"{screen_name} (LFC)")
-    plt.ylabel(f"{screen_name} (LFC3D)")
+    plt.xlabel(f"{input_gene} (LFC)")
+    plt.ylabel(f"{input_gene} (LFC3D)")
     plt.grid(True, linestyle="--", alpha=0.5)
 
     out_filename = f'characterization/plots/{input_gene}_LFC_LFC3D_scatter.{save_type}'
