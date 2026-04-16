@@ -278,8 +278,8 @@ def pLDDT_RSA_scatter(
         )
 
     legend_elements = [
-        Line2D([0], [0], marker='o', color='w', label='POS', markerfacecolor='darkred', markersize=10),
-        Line2D([0], [0], marker='o', color='w', label='NEG', markerfacecolor='darkblue', markersize=10)
+        Line2D([0], [0], marker='o', color='w', label='POS', markerfacecolor=color_map['POS'], markersize=10),
+        Line2D([0], [0], marker='o', color='w', label='NEG', markerfacecolor=color_map['NEG'], markersize=10)
     ]
 
     sizes = [5, 50, 95]
