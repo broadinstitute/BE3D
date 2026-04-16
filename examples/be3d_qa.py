@@ -111,6 +111,18 @@ def main(**kwargs):
     )
     print(f'Output from beclust3d.qc.hypothesis_tests is saved in the following directory: {output_dir}hypothesis_qc/')
 
+    # Plot raw data
+    plot_rawdata(
+        output_dir,
+        input_dfs,
+        screen_names,
+        mut_col=mut_col,
+        val_col=val_col,
+        gene_col=gene_col,
+        mut_categories=mut_categories,
+        save_type='svg',
+    )
+    
     print("BE-QA complete: sequence/structural features and hypothesis tests")
 
 
@@ -123,6 +135,7 @@ if __name__ == '__main__':
     from beclust3d.lfc3d.structure import sequence_structural_features
     from beclust3d.qc.hypothesis_tests import hypothesis_test
     from beclust3d.lfc3d.conservation import conservation
+    from beclust3d.lfc3d.preprocess_data_plot import plot_rawdata
 
     # REQUIRED
     input_gene    = get_required(config, 'input_gene',    str)
