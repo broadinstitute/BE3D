@@ -116,6 +116,10 @@ def lfc_lfc3d_scatter(
     screen_name, 
     pthr=0.05, 
     save_type='png', 
+    custom_palette = {
+        'not hit': 'grey', 'positive hit': 'blue',
+        'negative hit': 'red', 'pos/neg hit': 'magenta'
+    }, 
 ): 
     """
     Generates a scatter plot of LFC vs LFC3D scores, color-coded by significance.
@@ -173,14 +177,10 @@ def lfc_lfc3d_scatter(
     x_min = df_input['LFC'].min()
     df_input['LFC'] = df_input['LFC'].replace(0.0, x_min-1).astype(float)
 
-    # Hit Type Colors
-    custom_palette = {
-        'not hit': 'grey', 'positive hit': 'blue',
-        'negative hit': 'red', 'pos/neg hit': 'magenta'
-    }
     # Scatter plot
     plt.figure(figsize=(8, 6))
     sns.scatterplot(data=df_input, x='LFC', y='LFC3D', hue="psig_label", palette=custom_palette)
+    plt.legend(loc='lower right')
     plt.axhline(y_min, color="gray", linestyle="--", linewidth=0.8)
     plt.axvline(x_min, color="gray", linestyle="--", linewidth=0.8)
     plt.title(f"{input_gene} LFC vs LFC3D Scatter Plot")
