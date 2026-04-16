@@ -123,18 +123,6 @@ def main(**kwargs):
     )
     print(f'Output from beclust3d.lfc3d.preprocess_data is saved in the following directory: {output_dir}screendata/')
 
-    # Plot raw data
-    plot_rawdata(
-        output_dir,
-        input_dfs,
-        screen_names,
-        mut_col=mut_col,
-        val_col=val_col,
-        gene_col=gene_col,
-        mut_categories=mut_categories,
-        save_type='svg',
-    )
-
     df_missense_list = [
         pd.read_csv(f'{output_dir}/screendata/{gene}_{screen_name}_Missense.tsv', sep='\t')
         for gene, screen_name in zip(gene_list, screen_names)
@@ -292,7 +280,6 @@ if __name__ == '__main__':
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), beclust3d_path)))
 
     from beclust3d.lfc3d.preprocess_data import parse_be_data, sanitary_check
-    from beclust3d.lfc3d.preprocess_data_plot import plot_rawdata
     from beclust3d.lfc3d.randomize_data import randomize_data
     from beclust3d.lfc3d.prioritize_sequence import prioritize_by_sequence
     from beclust3d.lfc3d.prioritize_sequence_plot import plot_screendata_sequence
