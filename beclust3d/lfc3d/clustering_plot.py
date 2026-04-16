@@ -37,8 +37,8 @@ def plot_clustering(
     merge_col=['unipos', 'chain'], 
     clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single"}, 
     horizontal=False, 
-    line_subplots_kwargs={'figsize':(10,7)}, 
-    dendrogram_subplots_kwargs={'figsize':(15, 12)}, 
+    line_subplots_kwargs={'figsize':(6, 5)}, 
+    dendrogram_subplots_kwargs={'figsize':(12, 10)}, 
     save_type='png', 
 ): 
     """
