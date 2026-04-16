@@ -339,8 +339,8 @@ def hits_feature_barplot(
     plot_type : str, optional (default='Count')
         'Count' for raw counts, 'Fraction' for relative proportions.
 
-    colors : list of str, optional
-        Colors for the different hit categories.
+    color_map : dict, optional
+        Dictionary mapping directions to colors.
 
     save_type : str, optional (default='png')
         File format for saved plots (e.g., 'png', 'pdf', 'svg').
