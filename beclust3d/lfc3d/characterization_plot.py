@@ -307,7 +307,7 @@ def hits_feature_barplot(
     values_vals, 
     value_names, 
     plot_type='Count', 
-    colors=['darkred', 'darkblue'], 
+    color_map={'NEG': 'darkred', 'POS': 'darkblue'}, 
     save_type='png', 
 ):
     """
@@ -373,10 +373,8 @@ def hits_feature_barplot(
         counts_df = counts_df.div(counts_df.sum(axis=0), axis=1)
 
     # DRAW PLOT #
-    if colors is None: 
-        colors = plt.cm.get_cmap('tab10').colors[:len(counts_df.columns)] 
-    ax = counts_df.plot(kind='bar', figsize=(6, 4), color=colors, edgecolor='black')
-
+    ax = counts_df.plot(kind='bar', figsize=(6, 4), color=color_map, edgecolor='black')
+    
     # LABELS AND OUTPUT #
     plt.xlabel(category_col)
     plt.xticks(rotation=45)
