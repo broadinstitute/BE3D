@@ -309,7 +309,7 @@ def plot_cluster_distance(
     ax.legend(title='')
     plt.xlabel('Cluster Radius')
     plt.ylabel('Number of Clusters')
-    plt.title(f'Positive vs Negative Clusters {input_gene}')
+    plt.title(f'Positive vs Negative Clusters Count {input_gene}')
     plt.savefig(plot_filename, dpi=100, transparent=False, format=save_type)
     plt.close()
 
