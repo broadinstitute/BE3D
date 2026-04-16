@@ -137,7 +137,7 @@ def main(**kwargs):
                 category_col='Domain',
                 values_cols=colnames, values_vals=[f'p<0.{cutoff_str}', f'p<0.{cutoff_str}'],
                 value_names=['NEG', 'POS'],
-                plot_type='Count', colors=['darkred', 'darkblue'],
+                plot_type='Count', 
             )
             os.rename(f'{output_dir}/characterization/plots/{input_gene}_Count_Domain_barplot.png',
                       f'{output_dir}/characterization/plots/{input_gene}_Count_Domain_barplot_{score_type}_{cutoff_str}.png')
@@ -148,7 +148,7 @@ def main(**kwargs):
                 category_col='pLDDT_dis',
                 values_cols=colnames, values_vals=[f'p<0.{cutoff_str}', f'p<0.{cutoff_str}'],
                 value_names=['NEG', 'POS'],
-                plot_type='Count', colors=['darkred', 'darkblue'],
+                plot_type='Count', 
             )
             os.rename(f'{output_dir}/characterization/plots/{input_gene}_Count_pLDDT_dis_barplot.png',
                       f'{output_dir}/characterization/plots/{input_gene}_Count_pLDDT_dis_barplot_{score_type}_{cutoff_str}.png')
