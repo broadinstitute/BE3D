@@ -89,12 +89,12 @@ def average_split_bin_plots(
 
     # HISTOGRAMS #
     if screen_name == '': 
-        histogram_params = [(f'{func}_{score_type}r_neg', neg_label, 'Negative', f'{score_type}_neg', f'{func}_{score_type}r_neg'), 
-                            (f'{func}_{score_type}r_pos', pos_label, 'Positive', f'{score_type}_pos', f'{func}_{score_type}r_pos'),
+        histogram_params = [(f'{func}_{score_type}r_neg', neg_label, 'Negative {score_type}', f'{func}_{score_type}r_neg', f'{score_type}_neg'), 
+                            (f'{func}_{score_type}r_pos', pos_label, 'Positive {score_type}', f'{func}_{score_type}r_pos', f'{score_type}_pos'),
                            ] # META #
     else: 
-        histogram_params = [(f'{screen_name}_AVG_{score_type}r_neg', neg_label, 'Negative', f'{score_type}_neg', f'AVG_{score_type}r_neg'), 
-                            (f'{screen_name}_AVG_{score_type}r_pos', pos_label, 'Positive', f'{score_type}_pos', f'AVG_{score_type}r_pos'),
+        histogram_params = [(f'{screen_name}_AVG_{score_type}r_neg', neg_label, 'Negative {score_type}', f'AVG_{score_type}r_neg', f'{score_type}_neg'), 
+                            (f'{screen_name}_AVG_{score_type}r_pos', pos_label, 'Positive {score_type}', f'AVG_{score_type}r_pos', f'{score_type}_pos'),
                            ] # NON AGGR #
     
     histogram_filename = f"{output_prefix}_signal_vs_background.{save_type}"
