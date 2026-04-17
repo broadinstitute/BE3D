@@ -110,10 +110,11 @@ def average_split_bin_plots(
     df_z = binning_lfc3d(df_z, neg_label, pos_label)
 
     # HISPLOTS #
-    hisplots_params = [(f'{neg_label}_dis', neg_label, f'{neg_label}_{pthr_str}_psig', 'Negative P-Value'), 
-                       (f'{neg_label}_dis', neg_label, f'{neg_label}_dis', 'Negative P-Value'), 
-                       (f'{pos_label}_dis', pos_label, f'{pos_label}_{pthr_str}_psig', 'Positive P-Value'), 
-                       (f'{pos_label}_dis', pos_label, f'{pos_label}_dis', 'Positive P-Value') ]
+    hisplots_params = [(f'{neg_label}_dis', neg_label, f'{neg_label}_{pthr_str}_psig', f'Negative {score_type} P-Value', f'Negative {score_type}'), 
+                       (f'{neg_label}_dis', neg_label, f'{neg_label}_dis', f'Negative {score_type} P-Value', f'Negative {score_type}'), 
+                       (f'{pos_label}_dis', pos_label, f'{pos_label}_{pthr_str}_psig', f'Positive {score_type} P-Value', f'Positive {score_type}'), 
+                       (f'{pos_label}_dis', pos_label, f'{pos_label}_dis', f'Positive {score_type} P-Value', f'Positive {score_type}'),
+                      ]
     
     histplot_filename = f"{output_prefix}_histplot.{save_type}"
     histplot_filename = histplot_filename.replace('__','_')
@@ -222,15 +223,16 @@ def metaaggregation_hisplot(
     Description
         Helper function to plot the distributions for the top 10 and bottom 10 % of points
     """
-    fig, ax = plt.subplots(1, len(params), figsize=(24, 5), dpi=100)
+    fig, ax = plt.subplots(1, len(params), figsize=(20, 5), dpi=100)
 
-    for i, (dis, x, hue, name) in enumerate(params): 
+    for i, (dis, x, hue, name, label) in enumerate(params): 
     
         df_clean = df_input.loc[df_input[dis] != '-', ].reset_index(drop=True)
         df_clean[x] = df_clean[x].astype(float)
         plot = sns.histplot(df_clean, x=x, hue=hue, bins=50, palette='tab10', ax=ax[i])
         plot.legend_.set_title(None)
         ax[i].set_title(name)
+        ax[i].set_xlabel(label)
 
         # SET BACKGROUND #
         ax[i].set_facecolor('#EBEBEB')
