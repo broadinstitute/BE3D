@@ -89,11 +89,13 @@ def average_split_bin_plots(
 
     # HISTOGRAMS #
     if screen_name == '': 
-        histogram_params = [(f'{func}_{score_type}r_neg', neg_label, 'Negative'), 
-                            (f'{func}_{score_type}r_pos', pos_label, 'Positive') ] # META #
+        histogram_params = [(f'{func}_{score_type}r_neg', neg_label, 'Negative', f'{score_type}_neg', f'{func}_{score_type}r_neg'), 
+                            (f'{func}_{score_type}r_pos', pos_label, 'Positive', f'{score_type}_pos', f'{func}_{score_type}r_pos'),
+                           ] # META #
     else: 
-        histogram_params = [(f'{screen_name}_AVG_{score_type}r_neg', neg_label, 'Negative'), 
-                            (f'{screen_name}_AVG_{score_type}r_pos', pos_label, 'Positive') ] # NON AGGR #
+        histogram_params = [(f'{screen_name}_AVG_{score_type}r_neg', neg_label, 'Negative', f'{score_type}_neg', f'AVG_{score_type}r_neg'), 
+                            (f'{screen_name}_AVG_{score_type}r_pos', pos_label, 'Positive', f'{score_type}_pos', f'AVG_{score_type}r_pos'),
+                           ] # NON AGGR #
     
     histogram_filename = f"{output_prefix}_signal_vs_background.{save_type}"
     histogram_filename = histogram_filename.replace('__','_')
@@ -157,7 +159,7 @@ def metaaggregation_histogram(
     fig, ax = plt.subplots(1, len(params), figsize=(12, 5), dpi=100)
     results_list = []
 
-    for i, (avg, sum, out) in enumerate(params): 
+    for i, (avg, sum, out, avg_label, sum_label) in enumerate(params): 
         res = {}
         # PICK OUT DATA FOR PLOTTING #
         df_plot = pd.DataFrame()
