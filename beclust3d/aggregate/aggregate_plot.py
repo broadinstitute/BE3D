@@ -192,7 +192,8 @@ def metaaggregation_histogram(
         res['avg med'], res['avg std'] = df_plot[avg].median(), df_plot[avg].std()
 
         # PLOT #
-        plot = df_plot.plot.area(x='unipos', alpha=0.5, stacked = False, ax=ax[i])
+        df_plot_renamed = df_plot.rename(columns={sum: sum_label, avg: avg_label})
+        plot = df_plot_renamed.plot.area(x='unipos', alpha=0.5, stacked=False, ax=ax[i])
         plot.legend_.set_title(None)
         ax[i].axhline(y = res['sum mean'], color = 'r', linestyle = '-')
         ax[i].axhline(y = res['sum mean']-res['sum std'], color = 'r', linestyle = '--')
@@ -205,7 +206,7 @@ def metaaggregation_histogram(
         ax[i].grid(which='major', color='white', linewidth=0.5)
         ax[i].set_axisbelow(True)
 
-        del df_plot, df_filtered
+        del df_plot, df_filtered, df_plot_renamed
         results_list.append(res)
     
     plt.subplots_adjust(wspace=0.15)
