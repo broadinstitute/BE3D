@@ -264,9 +264,10 @@ def metaaggregation_scatterplot(
     fig, ax = plt.subplots(1, 2, figsize=(12, 6), dpi=300)
 
     for i, (dis, pval, y, out, new_dis, new_pval, new_y) in enumerate(params):
-        df_meta = df_meta.rename({dis:new_dis, pval:new_pval, y:new_y})
+        df_meta = df_meta.rename(columns={dis:new_dis, pval:new_pval, y:new_y})
     
         df_combined_clean = df_meta.loc[df_meta[new_dis] != '-', ]
+        df_combined_clean = df_combined_clean.copy()
         df_combined_clean[new_y] = df_combined_clean[new_y].astype(float)
         df_combined_clean = df_combined_clean.sort_values(by=new_pval, ascending=False) ### consistent coloring hits nonhits
         # MULTIPLE COLORS #
