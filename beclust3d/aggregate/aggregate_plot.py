@@ -112,10 +112,14 @@ def average_split_bin_plots(
     df_z = binning_lfc3d(df_z, neg_label, pos_label)
 
     # HISPLOTS #
-    hisplots_params = [(f'{neg_label}_dis', neg_label, f'{neg_label}_{pthr_str}_psig', f'Negative {score_type} P-Value', f'Negative {score_type}'), 
-                       (f'{neg_label}_dis', neg_label, f'{neg_label}_dis', f'Negative {score_type} P-Value', f'Negative {score_type}'), 
-                       (f'{pos_label}_dis', pos_label, f'{pos_label}_{pthr_str}_psig', f'Positive {score_type} P-Value', f'Positive {score_type}'), 
-                       (f'{pos_label}_dis', pos_label, f'{pos_label}_dis', f'Positive {score_type} P-Value', f'Positive {score_type}'),
+    hisplots_params = [(f'{neg_label}_dis', neg_label, f'{neg_label}_{pthr_str}_psig', 
+                        f'Negative {score_type} P-Value', f'Negative {score_type}'), 
+                       (f'{neg_label}_dis', neg_label, f'{neg_label}_dis', 
+                        f'Negative {score_type} P-Value', f'Negative {score_type}'), 
+                       (f'{pos_label}_dis', pos_label, f'{pos_label}_{pthr_str}_psig', 
+                        f'Positive {score_type} P-Value', f'Positive {score_type}'), 
+                       (f'{pos_label}_dis', pos_label, f'{pos_label}_dis', 
+                        f'Positive {score_type} P-Value', f'Positive {score_type}'),
                       ]
     
     histplot_filename = f"{output_prefix}_histplot.{save_type}"
@@ -125,8 +129,10 @@ def average_split_bin_plots(
         working_filedir / f"{aggregate_dir}/plots/{histplot_filename}", save_type)
 
     # SCATTERPLOT #
-    scatterplot_params = [(neg_label, f'{neg_label}_{pthr_str}_psig', neg_label, 'Negative', f'{score_type} neg', f'{score_type} psig', f'{score_type} neg'), 
-                          (pos_label, f'{pos_label}_{pthr_str}_psig', pos_label, 'Positive', f'{score_type} neg', f'{score_type} psig', f'{score_type} neg')]
+    scatterplot_params = [(neg_label, f'{neg_label}_{pthr_str}_psig', neg_label, 'Negative', 
+                           f'{score_type} neg', f'{score_type} neg psig', f'{score_type} neg'), 
+                          (pos_label, f'{pos_label}_{pthr_str}_psig', pos_label, 'Positive', 
+                           f'{score_type} pos', f'{score_type} pos psig', f'{score_type} pos')]
     
     scatterplot_filename = f"{output_prefix}_scatter_cutoff.{save_type}"
     scatterplot_filename = scatterplot_filename.replace('__','_')
@@ -135,8 +141,10 @@ def average_split_bin_plots(
         working_filedir / f"{aggregate_dir}/plots/{scatterplot_filename}", save_type, colors=False)
     
     # Z SCORE SCATTERPLOT #
-    scatterplot_params = [(f'{neg_label}_dis', f'{neg_label}_dis', f'{neg_label}_{pthr_str}_z', 'Negative', f'{score_type} neg dis', f'{score_type} neg dis', f'{score_type} neg z'), 
-                          (f'{pos_label}_dis', f'{pos_label}_dis', f'{pos_label}_{pthr_str}_z', 'Positive', f'{score_type} pos dis', f'{score_type} pos dis', f'{score_type} pos z')]
+    scatterplot_params = [(f'{neg_label}_dis', f'{neg_label}_dis', f'{neg_label}_{pthr_str}_z', 'Negative', 
+                           f'{score_type} neg dis', f'{score_type} neg dis', f'{score_type} neg z'), 
+                          (f'{pos_label}_dis', f'{pos_label}_dis', f'{pos_label}_{pthr_str}_z', 'Positive', 
+                           f'{score_type} pos dis', f'{score_type} pos dis', f'{score_type} pos z')]
     
     scatterplot_filename = f"{output_prefix}_scatter_colored.{save_type}"
     scatterplot_filename = scatterplot_filename.replace('__','_')
