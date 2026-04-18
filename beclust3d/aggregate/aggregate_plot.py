@@ -266,29 +266,29 @@ def metaaggregation_scatterplot(
     for i, (dis, pval, y, out, new_dis, new_pval, new_y) in enumerate(params):
         df_meta = df_meta.rename({dis:new_dis, pval:new_pval, y:new_y})
     
-        df_combined_clean = df_meta.loc[df_meta[dis] != '-', ]
-        df_combined_clean[y] = df_combined_clean[y].astype(float)
-        df_combined_clean = df_combined_clean.sort_values(by=pval, ascending=False) ### consistent coloring hits nonhits
+        df_combined_clean = df_meta.loc[df_meta[new_dis] != '-', ]
+        df_combined_clean[new_y] = df_combined_clean[new_y].astype(float)
+        df_combined_clean = df_combined_clean.sort_values(by=new_pval, ascending=False) ### consistent coloring hits nonhits
         # MULTIPLE COLORS #
         if colors: 
-            if 'pos' in dis: factor=1
-            if 'neg' in dis: factor=-1
+            if 'pos' in new_dis: factor=1
+            if 'neg' in new_dis: factor=-1
             ax[i].axhline(y = factor*1.65, color = 'r', linestyle = '--')
             ax[i].axhline(y = factor*1.96, color = 'r', linestyle = '--')
             ax[i].axhline(y = factor*2.58, color = 'r', linestyle = '--')
 
-            plot = sns.scatterplot(data=df_combined_clean, x="unipos", y=y, 
-                                   hue=pval, palette='tab10', ax=ax[i])
+            plot = sns.scatterplot(data=df_combined_clean, x="unipos", y=new_y, 
+                                   hue=new_pval, palette='tab10', ax=ax[i])
 
         # ABOVE AND BELOW THRESHOLD #
         else: 
-            df_combined_psig = df_meta.loc[df_meta[pval] == 'p>='+str(pthr), ]
-            line_list = df_combined_psig[y][df_combined_psig[y] != '-'].astype(float)
-            if 'pos' in dis: line_val = line_list.max()
-            if 'neg' in dis: line_val = line_list.min()
+            df_combined_psig = df_meta.loc[df_meta[new_pval] == 'p>='+str(pthr), ]
+            line_list = df_combined_psig[new_y][df_combined_psig[new_y] != '-'].astype(float)
+            if 'pos' in new_dis: line_val = line_list.max()
+            if 'neg' in new_dis: line_val = line_list.min()
             ax[i].axhline(y = line_val, color = 'r', linestyle = '--')
-            plot = sns.scatterplot(data=df_combined_clean, x="unipos", y=y, 
-                                   hue=pval, palette='tab10', ax=ax[i])
+            plot = sns.scatterplot(data=df_combined_clean, x="unipos", y=new_y, 
+                                   hue=new_pval, palette='tab10', ax=ax[i])
             
         # plot.legend_.set_title(None)
         ax[i].set_xticks(np.arange(0, len(df_meta), 100))
