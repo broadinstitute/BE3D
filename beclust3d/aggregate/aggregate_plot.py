@@ -125,8 +125,8 @@ def average_split_bin_plots(
         working_filedir / f"{aggregate_dir}/plots/{histplot_filename}", save_type)
 
     # SCATTERPLOT #
-    scatterplot_params = [(f'{neg_label}', f'{neg_label}_{pthr_str}_psig', neg_label, 'Negative'), 
-                          (f'{pos_label}', f'{pos_label}_{pthr_str}_psig', pos_label, 'Positive')]
+    scatterplot_params = [(neg_label, f'{neg_label}_{pthr_str}_psig', neg_label, 'Negative', f'{score_type} neg', f'{score_type} psig', f'{score_type} neg'), 
+                          (pos_label, f'{pos_label}_{pthr_str}_psig', pos_label, 'Positive', f'{score_type} neg', f'{score_type} psig', f'{score_type} neg')]
     
     scatterplot_filename = f"{output_prefix}_scatter_cutoff.{save_type}"
     scatterplot_filename = scatterplot_filename.replace('__','_')
@@ -135,8 +135,8 @@ def average_split_bin_plots(
         working_filedir / f"{aggregate_dir}/plots/{scatterplot_filename}", save_type, colors=False)
     
     # Z SCORE SCATTERPLOT #
-    scatterplot_params = [(f'{neg_label}_dis', f'{neg_label}_dis', f'{neg_label}_{pthr_str}_z', 'Negative'), 
-                          (f'{pos_label}_dis', f'{pos_label}_dis', f'{pos_label}_{pthr_str}_z', 'Positive')]
+    scatterplot_params = [(f'{neg_label}_dis', f'{neg_label}_dis', f'{neg_label}_{pthr_str}_z', 'Negative', f'{score_type} neg dis', f'{score_type} neg dis', f'{score_type} neg z'), 
+                          (f'{pos_label}_dis', f'{pos_label}_dis', f'{pos_label}_{pthr_str}_z', 'Positive', f'{score_type} pos dis', f'{score_type} pos dis', f'{score_type} pos z')]
     
     scatterplot_filename = f"{output_prefix}_scatter_colored.{save_type}"
     scatterplot_filename = scatterplot_filename.replace('__','_')
@@ -263,8 +263,9 @@ def metaaggregation_scatterplot(
     """
     fig, ax = plt.subplots(1, 2, figsize=(12, 6), dpi=300)
 
-    for i, (dis, pval, y, out) in enumerate(params): 
-
+    for i, (dis, pval, y, out, new_dis, new_pval, new_y) in enumerate(params):
+        df_meta = df_meta.rename({dis:new_dis, pval:new_pval, y:new_y})
+    
         df_combined_clean = df_meta.loc[df_meta[dis] != '-', ]
         df_combined_clean[y] = df_combined_clean[y].astype(float)
         df_combined_clean = df_combined_clean.sort_values(by=pval, ascending=False) ### consistent coloring hits nonhits
