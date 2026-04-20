@@ -130,9 +130,9 @@ def average_split_bin_plots(
 
     # SCATTERPLOT #
     scatterplot_params = [(neg_label, f'{neg_label}_{pthr_str}_psig', neg_label, 'Negative', 
-                           f'{score_type} neg', f'{score_type} neg psig', f'{score_type} neg'), 
+                           f'{score_type} neg', f'{score_type} neg p-sig', f'{score_type} neg'), 
                           (pos_label, f'{pos_label}_{pthr_str}_psig', pos_label, 'Positive', 
-                           f'{score_type} pos', f'{score_type} pos psig', f'{score_type} pos')]
+                           f'{score_type} pos', f'{score_type} pos p-sig', f'{score_type} pos')]
     
     scatterplot_filename = f"{output_prefix}_scatter_cutoff.{save_type}"
     scatterplot_filename = scatterplot_filename.replace('__','_')
@@ -142,9 +142,9 @@ def average_split_bin_plots(
     
     # Z SCORE SCATTERPLOT #
     scatterplot_params = [(f'{neg_label}_dis', f'{neg_label}_dis', f'{neg_label}_{pthr_str}_z', 'Negative', 
-                           f'{score_type} neg dis', f'{score_type} neg dis', f'{score_type} neg z'), 
+                           f'{score_type} neg Percentile', f'{score_type} neg Percentile', f'{score_type} neg Z-score'), 
                           (f'{pos_label}_dis', f'{pos_label}_dis', f'{pos_label}_{pthr_str}_z', 'Positive', 
-                           f'{score_type} pos dis', f'{score_type} pos dis', f'{score_type} pos z')]
+                           f'{score_type} pos Percentile', f'{score_type} pos Percentile', f'{score_type} pos Z-score')]
     
     scatterplot_filename = f"{output_prefix}_scatter_colored.{save_type}"
     scatterplot_filename = scatterplot_filename.replace('__','_')
