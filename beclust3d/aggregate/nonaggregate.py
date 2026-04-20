@@ -100,7 +100,7 @@ def bin_score(
     score_type='LFC3D',
     gene_type='Human',
     # quantiles = {'NEG_10p_v':0.1, 'POS_90p_v':0.9, 'NEG_05p_v':0.05, 'POS_95p_v':0.95}
-    quantiles = {'NEG 10th Percentile v':0.1, 'POS 90th Percentile v':0.9, 'NEG 5th Percentile v':0.05, 'POS 95th Percentile v':0.95}, 
+    quantiles = {'NEG 10th v':0.1, 'POS 90th v':0.9, 'NEG 5th v':0.05, 'POS 95th v':0.95}, 
 ): 
     """
     Bins positive and negative LFC or LFC3D scores into percentile thresholds per screen.
