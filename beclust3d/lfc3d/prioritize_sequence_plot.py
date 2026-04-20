@@ -142,7 +142,7 @@ def counts_by_residue(
     counts[df_struc_consvr[f'all_{muttype}_edits'] == '-'] = 0
 
     # PLOT #
-    fig, ax = plt.subplots(figsize=(8, 4))
+    fig, ax = plt.subplots(figsize=(8, 3))
     ax.set_facecolor('#EBEBEB')
     [ax.spines[side].set_visible(False) for side in ax.spines]
     ax.grid(which='major', color='white', linewidth=0.5)
@@ -181,7 +181,7 @@ def stdev_by_residue(
     stdevs_filtered = stdevs[stdevs != 0]
 
     # PLOT #
-    fig, ax = plt.subplots(figsize=(8, 4))
+    fig, ax = plt.subplots(figsize=(8, 3))
     ax.set_facecolor('#EBEBEB')
     [ax.spines[side].set_visible(False) for side in ax.spines]
     ax.grid(which='major', color='white', linewidth=0.5)
@@ -216,7 +216,7 @@ def scatterplot_by_residue(
     y_vals = [float(y) for y in y_list if y!='-']
 
     # PLOT #
-    fig, ax = plt.subplots(figsize=(8, 4))
+    fig, ax = plt.subplots(figsize=(8, 3))
     ax.set_facecolor('#EBEBEB')
     [ax.spines[side].set_visible(False) for side in ax.spines]
     ax.grid(which='major', color='white', linewidth=0.5)
@@ -251,7 +251,7 @@ def dual_scatterplot_by_residue(
     df_struc_consvr_pos = df_struc_consvr[df_struc_consvr[colname] > 0.0]
     df_struc_consvr_neg = df_struc_consvr[df_struc_consvr[colname] < 0.0]
 
-    fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(10, 6))
+    fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(10, 4))
     for ax in axs: 
         ax.set_facecolor('#EBEBEB')
         [ax.spines[side].set_visible(False) for side in ax.spines]
@@ -291,7 +291,7 @@ def dual_histogram_by_residue(
     colname_plab, 
     save_type, 
 ):  
-    fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(10, 6))
+    fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(10, 4))
     for ax in axs: 
         ax.set_facecolor('#EBEBEB')
         [ax.spines[side].set_visible(False) for side in ax.spines]
