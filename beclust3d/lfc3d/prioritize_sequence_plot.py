@@ -127,6 +127,7 @@ def plot_screendata_sequence(
 
     return None
 
+# SPECIFIC PLOTTING FUNCTIONS #
 
 def counts_by_residue(
     df_struc_consvr, 
@@ -141,7 +142,7 @@ def counts_by_residue(
     counts[df_struc_consvr[f'all_{muttype}_edits'] == '-'] = 0
 
     # PLOT #
-    fig, ax = plt.subplots(figsize=(10, 4))
+    fig, ax = plt.subplots(figsize=(8, 4))
     ax.set_facecolor('#EBEBEB')
     [ax.spines[side].set_visible(False) for side in ax.spines]
     ax.grid(which='major', color='white', linewidth=0.5)
@@ -151,7 +152,7 @@ def counts_by_residue(
                      color='steelblue', edgecolor='steelblue')
     ax.set_ylabel(f"Count of {muttype} Mutations")
     ax.set_xlabel(f"unipos")
-    ax.set_title(f"{input_gene} Count of {muttype} Mutations {screen_name}")
+    ax.set_title(f"{input_gene} Count of {muttype} Mutations")
     ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
     plt.xticks(np.arange(0, len(df_struc_consvr), 50), rotation = 90)
 
@@ -180,7 +181,7 @@ def stdev_by_residue(
     stdevs_filtered = stdevs[stdevs != 0]
 
     # PLOT #
-    fig, ax = plt.subplots(figsize=(10, 4))
+    fig, ax = plt.subplots(figsize=(8, 4))
     ax.set_facecolor('#EBEBEB')
     [ax.spines[side].set_visible(False) for side in ax.spines]
     ax.grid(which='major', color='white', linewidth=0.5)
@@ -191,7 +192,7 @@ def stdev_by_residue(
                 )
     ax.set_ylabel(f"Standard Deviations of {muttype} Mutations")
     ax.set_xlabel(f"unipos")
-    ax.set_title(f"{input_gene} Standard Dev of {muttype} Mutations {screen_name}")
+    ax.set_title(f"{input_gene} Standard Dev of {muttype} Mutations")
     ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
     plt.xticks(np.arange(0, len(df_struc_consvr), 50), rotation = 90)
 
@@ -215,7 +216,7 @@ def scatterplot_by_residue(
     y_vals = [float(y) for y in y_list if y!='-']
 
     # PLOT #
-    fig, ax = plt.subplots(figsize=(10, 4))
+    fig, ax = plt.subplots(figsize=(8, 4))
     ax.set_facecolor('#EBEBEB')
     [ax.spines[side].set_visible(False) for side in ax.spines]
     ax.grid(which='major', color='white', linewidth=0.5)
@@ -227,7 +228,7 @@ def scatterplot_by_residue(
     sns.scatterplot(ax=ax, x=x_vals, y=y_vals, color='steelblue', edgecolor='steelblue')
     ax.set_ylabel(f"{muttype} LFC Score")
     ax.set_xlabel(f"unipos")
-    ax.set_title(f'{input_gene} {muttype} LFC Score By Residue {screen_name}')
+    ax.set_title(f'{input_gene} {muttype} LFC Score By Residue')
     plt.xticks(np.arange(0, len(df_struc_consvr), 50), rotation = 90)
 
     scatter_filename = f"screendata_sequence/plots/{input_gene}_{screen_name}_{colname}_score_by_res.{save_type}"
@@ -250,7 +251,7 @@ def dual_scatterplot_by_residue(
     df_struc_consvr_pos = df_struc_consvr[df_struc_consvr[colname] > 0.0]
     df_struc_consvr_neg = df_struc_consvr[df_struc_consvr[colname] < 0.0]
 
-    fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(12, 6))
+    fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(10, 6))
     for ax in axs: 
         ax.set_facecolor('#EBEBEB')
         [ax.spines[side].set_visible(False) for side in ax.spines]
@@ -274,7 +275,7 @@ def dual_scatterplot_by_residue(
     axs[1].set_title(f'Negative LFC Values')
 
     plt.subplots_adjust(wspace=0.3)
-    plt.suptitle(f'{input_gene} LFC_Z Score {screen_name}')
+    plt.suptitle(f'{input_gene} LFC_Z Score')
 
     scatter_filename = f"screendata_sequence/plots/{input_gene}_{screen_name}_{muttype}_lfcz_scatter_by_bin_posneg.{save_type}"
     plt.savefig(working_filedir / scatter_filename, dpi=100, transparent=False, format=save_type)
@@ -290,7 +291,7 @@ def dual_histogram_by_residue(
     colname_plab, 
     save_type, 
 ):  
-    fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(12, 6))
+    fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True, figsize=(10, 6))
     for ax in axs: 
         ax.set_facecolor('#EBEBEB')
         [ax.spines[side].set_visible(False) for side in ax.spines]
@@ -307,7 +308,7 @@ def dual_histogram_by_residue(
     # give corresponding titles
     plot1.set_title(f'Positive LFC Counts')
     plot2.set_title(f'Negative LFC Counts')
-    plt.suptitle(f'{input_gene} Mean Missense LFC Counts {screen_name}')
+    plt.suptitle(f'{input_gene} Mean Missense LFC Counts')
     plt.subplots_adjust(wspace=0.1)
 
     hist_filename = f"screendata_sequence/plots/{input_gene}_{screen_name}_{muttype}_lfc_hist_by_bin_posneg.{save_type}"
