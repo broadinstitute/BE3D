@@ -291,9 +291,9 @@ if __name__ == '__main__':
     input_gene    = get_required(config, 'input_gene',    str)
     input_uniprot = get_required(config, 'input_uniprot', str)
     input_chain   = get_required(config, 'input_chain',   str)
-    screen_dir    = get_required(config, 'screen_dir',    str)
+    screen_dir    = get_optional(config, 'screen_dir',    (str, type(None)), './')
     screens       = get_required(config, 'screens',       (str, list))
-    output_dir    = get_required(config, 'output_dir',    str)
+    output_dir    = get_optional(config, 'output_dir',    (str, type(None)), './')
 
     conservation_run  = get_required(config, 'conservation.run',               bool)
     v_score_threshold = get_required(config, 'conservation.v_score_threshold', (int, float))
