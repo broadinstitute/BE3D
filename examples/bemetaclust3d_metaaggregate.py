@@ -10,16 +10,7 @@ import os
 import sys
 import pandas as pd
 
-from be3d_helper import get_required, get_optional, load_config
-
-
-def find_union(input, pthr_str):
-    if input[0] == f'p<{pthr_str}' or input[1] == f'p<{pthr_str}':
-        return f'p<{pthr_str}'
-    elif input[0] == f'p>={pthr_str}' or input[1] == f'p>={pthr_str}':
-        return f'p>={pthr_str}'
-    else:
-        return '-'
+from be3d_helper import get_required, get_optional, load_config, find_union
 
 
 def main(**kwargs):
