@@ -93,12 +93,14 @@ def average_split_score(
     return df_bidir
 
 def bin_score(
-        df_bidir, 
-        workdir, 
-        input_gene, 
-        screen_names, 
-        score_type='LFC3D',
-        gene_type='Human'
+    df_bidir, 
+    workdir, 
+    input_gene, 
+    screen_names, 
+    score_type='LFC3D',
+    gene_type='Human',
+    # quantiles = {'NEG_10p_v':0.1, 'POS_90p_v':0.9, 'NEG_05p_v':0.05, 'POS_95p_v':0.95}
+    quantiles = {'NEG 10th Percentile v':0.1, 'POS 90th Percentile v':0.9, 'NEG 5th Percentile v':0.05, 'POS 95th Percentile v':0.95}, 
 ): 
     """
     Bins positive and negative LFC or LFC3D scores into percentile thresholds per screen.
@@ -140,8 +142,6 @@ def bin_score(
         os.mkdir(working_filedir / score_type)
 
     # SETUP PARAMS #
-    # quantiles = {'NEG_10p_v':0.1, 'POS_90p_v':0.9, 'NEG_05p_v':0.05, 'POS_95p_v':0.95}
-    quantiles = {'NEG 10th Percentile v':0.1, 'POS 90th Percentile v':0.9, 'NEG 5th Percentile v':0.05, 'POS 95th Percentile v':0.95}
     headers_LFC3D = [f"{screen_name}_{score_type}" for screen_name in screen_names]
     df_neg_stats_list, df_pos_stats_list = [], []
     
