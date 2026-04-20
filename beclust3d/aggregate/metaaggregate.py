@@ -152,7 +152,8 @@ def bin_meta(
     input_gene, 
     score_type='LFC3D', 
     aggr_func_name='SUM', 
-    quantiles={'NEG_10p_v':0.1, 'POS_90p_v':0.9, 'NEG_05p_v':0.05, 'POS_95p_v':0.95}, 
+    # quantiles = {'NEG_10p_v':0.1, 'POS_90p_v':0.9, 'NEG_05p_v':0.05, 'POS_95p_v':0.95}
+    quantiles = {'NEG 10th Percentile v':0.1, 'POS 90th Percentile v':0.9, 'NEG 5th Percentile v':0.05, 'POS 95th Percentile v':0.95}, 
 ): 
     """
     Bins positive and negative meta-aggregated LFC or LFC3D scores into percentile thresholds.
