@@ -218,7 +218,7 @@ if __name__ == '__main__':
     input_gene    = get_required(config, 'input_gene',    str)
     input_uniprot = get_required(config, 'input_uniprot', str)
     screens       = get_required(config, 'screens',       (str, list))
-    output_dir    = get_required(config, 'output_dir',    str)
+    output_dir    = get_optional(config, 'output_dir',    (str, type(None)), './')
 
     conservation_run  = get_required(config, 'conservation.run',               bool)
     alt_gene_name     = get_required(config, 'conservation.alt_gene_name',     (str, type(None)))
