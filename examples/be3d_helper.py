@@ -63,3 +63,12 @@ def load_config(config_yaml):
     with open(config_yaml, "r") as file:
         config = yaml.safe_load(file)
     return config
+
+def find_union(input, pthr_str):
+    if input[0] == f'p<{pthr_str}' or input[1] == f'p<{pthr_str}':
+        return f'p<{pthr_str}'
+    elif input[0] == f'p>={pthr_str}' or input[1] == f'p>={pthr_str}':
+        return f'p>={pthr_str}'
+    else:
+        return '-'
+        
