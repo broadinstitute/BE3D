@@ -118,7 +118,7 @@ def lfc_lfc3d_scatter(
     save_type='png', 
     custom_palette = {
         'Not LFC3D Hit': 'grey', 'LFC3D Pos Hit': 'blue',
-        'LFC3D Neg hit': 'red', 'LFC3D Pos/Neg Hit': 'magenta'
+        'LFC3D Neg Hit': 'red', 'LFC3D Pos/Neg Hit': 'magenta'
     }, 
 ): 
     """
