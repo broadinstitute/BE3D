@@ -14,6 +14,8 @@ import numpy as np
 from scipy.stats import mannwhitneyu
 from scipy.stats import ks_2samp
 
+from matplotlib.lines import Line2D
+
 # HYPOTHESIS 1: There is a significant difference in the signal (LFC) #
 # between knockout (nonsense/splice) mutations and none (silent/no mutations) per screen, per gene #
 
