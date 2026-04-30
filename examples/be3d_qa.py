@@ -109,7 +109,7 @@ def main(**kwargs):
         gene_col=gene_col,
         save_type='svg', 
     )
-    print(f'Output from beclust3d.qc.hypothesis_tests is saved in the following directory: {output_dir}hypothesis_qa/')
+    print(f'Output from beclust3d.qa.hypothesis_tests is saved in the following directory: {output_dir}hypothesis_qa/')
 
     # Plot raw data
     plot_rawdata(
@@ -133,7 +133,7 @@ if __name__ == '__main__':
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), beclust3d_path)))
 
     from beclust3d.lfc3d.structure import sequence_structural_features
-    from beclust3d.qc.hypothesis_tests import hypothesis_test
+    from beclust3d.qa.hypothesis_tests import hypothesis_test
     from beclust3d.lfc3d.conservation import conservation
     from beclust3d.lfc3d.preprocess_data_plot import plot_rawdata
 
