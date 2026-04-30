@@ -109,7 +109,7 @@ def main(**kwargs):
         gene_col=gene_col,
         save_type='svg', 
     )
-    print(f'Output from beclust3d.qc.hypothesis_tests is saved in the following directory: {output_dir}hypothesis_qc/')
+    print(f'Output from beclust3d.qc.hypothesis_tests is saved in the following directory: {output_dir}hypothesis_qa/')
 
     # Plot raw data
     plot_rawdata(
