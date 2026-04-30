@@ -135,6 +135,7 @@ def main(**kwargs):
             hits_feature_barplot(
                 input_df2, workdir=output_dir, input_gene=input_gene,
                 category_col='Domain',
+                score_type=score_type, 
                 values_cols=colnames, values_vals=[f'p<0.{cutoff_str}', f'p<0.{cutoff_str}'],
                 value_names=['NEG', 'POS'],
                 plot_type='Count', 
@@ -146,6 +147,7 @@ def main(**kwargs):
             hits_feature_barplot(
                 input_df2, workdir=output_dir, input_gene=input_gene,
                 category_col='pLDDT_dis',
+                score_type=score_type, 
                 values_cols=colnames, values_vals=[f'p<0.{cutoff_str}', f'p<0.{cutoff_str}'],
                 value_names=['NEG', 'POS'],
                 plot_type='Count', 
