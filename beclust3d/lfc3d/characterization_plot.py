@@ -285,7 +285,7 @@ def pLDDT_RSA_scatter(
     sizes = [5, 50, 95]
     for size in sizes:
         legend_elements.append(
-            Line2D([0], [0], marker='o', color='w', label=f'Size {size}',
+            Line2D([0], [0], marker='o', color='w', label=f'{size}% max score',
                    markerfacecolor='gray', markersize=np.sqrt(size)) )
 
     plt.legend(handles=legend_elements, title="Legend")
