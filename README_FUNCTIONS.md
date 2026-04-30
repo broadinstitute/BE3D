@@ -29,7 +29,7 @@ hypothesis_test(
 )
 ```
 
-Files are output to ```'[workdir]/hypothesis_qc'```
+Files are output to ```'[workdir]/hypothesis_qa'```
 
 ---
 
