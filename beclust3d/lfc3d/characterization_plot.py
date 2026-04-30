@@ -303,6 +303,7 @@ def hits_feature_barplot(
     workdir, 
     input_gene, 
     category_col,
+    score_type, 
     values_cols, 
     values_vals, 
     value_names, 
@@ -379,7 +380,7 @@ def hits_feature_barplot(
     plt.xlabel(category_col)
     plt.xticks(rotation=45)
     plt.ylabel(f'{plot_type} of Hits')
-    plt.title(f"{input_gene} {category_col} Hit Barplot")
+    plt.title(f"{input_gene} {category_col} {score_type} Hit Barplot")
     plt.legend(title='Direction')
 
     out_filename = working_filedir / f"characterization/plots/{input_gene}_{plot_type}_{category_col}_barplot.{save_type}"
