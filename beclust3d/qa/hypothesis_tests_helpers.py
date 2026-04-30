@@ -161,7 +161,7 @@ def hypothesis_plot(
 ): 
 
     # SETUP PLOT BY NAME (SCREEN or GENE) #
-    plt.rcParams.update({'font.size': 6})
+    plt.rcParams.update({'font.size': 8})
     fig, axes = plt.subplots(nrows=len(category_names), ncols=2, sharey=True, 
                              figsize=(12, 5*len(category_names)))
 
