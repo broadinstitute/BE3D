@@ -72,7 +72,7 @@ def main(**kwargs):
             gene_list.append(input_gene)
 
     if qa_passed_only:
-        h2_ks_test_pd = pd.read_csv(f'{output_dir}/hypothesis_qc/KolmogorovSmirnov_hypothesis2.tsv', sep='\t')
+        h2_ks_test_pd = pd.read_csv(f'{output_dir}/hypothesis_qa/KolmogorovSmirnov_hypothesis2.tsv', sep='\t')
         h2_ks_test_pd = h2_ks_test_pd.replace(-999, None)
         white_screen_list = h2_ks_test_pd[
             (h2_ks_test_pd[f"p_{'_'.join(qa_cases)}_vs_{'_'.join(qa_controls)}"] < 0.05) &
