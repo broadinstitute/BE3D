@@ -241,11 +241,16 @@ def hypothesis_plot(
     plot_filename = f"hypothesis_qa/hypothesis{hypothesis}_scatterplot_by_{hue_colname}.{save_type}"
     plt.savefig(working_filedir / plot_filename, dpi=100, transparent=False, format=save_type)
     plt.close()
+    
+    # Create p=0.05 legend entry
+    pval_handle = Line2D([0], [0], color='red', linestyle='--', linewidth=2, label='p=0.05')
+    all_handles.append(pval_handle)
+    all_labels.append('p=0.05')
 
     # CREATE SEPARATE LEGEND PLOT #
-    legend_fig, legend_ax = plt.subplots(figsize=(4, len(all_handles) * 0.3))
+    legend_fig, legend_ax = plt.subplots(figsize=(4, len(all_handles) * 0.6))
     legend_ax.axis('off')
-    legend_ax.legend(all_handles, all_labels, title=hue_colname, loc='center', fontsize='small', frameon=False)
+    legend_ax.legend(all_handles, all_labels, title=hue_colname, loc='center', fontsize='medium', frameon=False)
 
     # SAVE LEGEND SEPARATELY #
     legend_filename = f"hypothesis_qa/hypothesis{hypothesis}_legend_by_{hue_colname}.{save_type}"
