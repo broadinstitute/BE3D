@@ -117,8 +117,8 @@ def lfc_lfc3d_scatter(
     pthr=0.05, 
     save_type='png', 
     custom_palette = {
-        'not hit': 'grey', 'positive hit': 'blue',
-        'negative hit': 'red', 'pos/neg hit': 'magenta'
+        'Not LFC3D Hit': 'grey', 'LFC3D Pos Hit': 'blue',
+        'LFC3D Neg hit': 'red', 'LFC3D Pos/Neg Hit': 'magenta'
     }, 
 ): 
     """
@@ -202,13 +202,13 @@ def assign_psig_label(
     neg_str, pos_str = row['LFC3D_neg_psig'], row['LFC3D_pos_psig']
 
     if (neg_str == psig_dict['above'] or neg_str == '-') and (pos_str == psig_dict['above'] or pos_str == '-'):
-        return 'not hit'
+        return 'Not LFC3D Hit'
     elif (neg_str == psig_dict['above'] or neg_str == '-') and pos_str == psig_dict['below']:
-        return 'positive hit'
+        return 'LFC3D Pos Hit'
     elif neg_str == psig_dict['below'] and (pos_str == psig_dict['above'] or pos_str == '-'):
-        return 'negative hit'
+        return 'LFC3D Neg Hit'
     elif neg_str == psig_dict['below'] and pos_str == psig_dict['below']:
-        return 'pos/neg hit'
+        return 'LFC3D Pos/Neg Hit'
     return None
 
 def pLDDT_RSA_scatter(
