@@ -179,7 +179,7 @@ def main(**kwargs):
 
         df_input = pd.concat([df_struc, df_wght], axis=1)
         df_input = df_input[df_input[f'{screen_name}_{score_type}'] != '-']
-        df_input[f'{score_type}_wght'] = df_input[f'{screen_name}_{score_type}'].astype(float).abs() * 100
+        df_input[f'{score_type}_wght'] = df_input[f'{screen_name}_{score_type}_wght'].astype(float).abs() * 100
         df_input['direction'] = np.where(
             df_input[f'{screen_name}_{score_type}'].astype(float) > 0, 'POS',
             np.where(df_input[f'{screen_name}_{score_type}'].astype(float) < 0, 'NEG', 'ZERO')
