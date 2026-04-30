@@ -844,7 +844,7 @@ if __name__ == '__main__':
     from beclust3d.lfc3d.structure import sequence_structural_features
     from beclust3d.lfc3d.preprocess_data import parse_be_data, sanitary_check
     from beclust3d.lfc3d.preprocess_data_plot import plot_rawdata
-    from beclust3d.qc.hypothesis_tests import hypothesis_test
+    from beclust3d.qa.hypothesis_tests import hypothesis_test
     from beclust3d.lfc3d.randomize_data import randomize_data
     from beclust3d.lfc3d.prioritize_sequence import prioritize_by_sequence
     from beclust3d.lfc3d.prioritize_sequence_plot import plot_screendata_sequence
