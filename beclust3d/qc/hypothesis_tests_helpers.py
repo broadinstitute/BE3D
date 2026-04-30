@@ -59,7 +59,7 @@ def hypothesis_one(
             del new_row, df_case, df_control
 
     # SAVE FILE #
-    qc_filename = f"hypothesis_qc/{testtype}_hypothesis1.tsv"
+    qc_filename = f"hypothesis_qa/{testtype}_hypothesis1.tsv"
     df_output.to_csv(working_filedir / qc_filename, sep = '\t', index=False)
 
     return df_output
@@ -124,7 +124,7 @@ def hypothesis_two(
     del df_control
 
     # SAVE FILE #
-    qc_filename = f"hypothesis_qc/{testtype}_hypothesis2.tsv"
+    qc_filename = f"hypothesis_qa/{testtype}_hypothesis2.tsv"
     df_output.to_csv(working_filedir / qc_filename, sep = '\t', index=False)
 
     return df_output
@@ -240,7 +240,7 @@ def hypothesis_plot(
 
     # SAVE PLOT #
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
-    plot_filename = f"hypothesis_qc/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.{save_type}"
+    plot_filename = f"hypothesis_qa/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.{save_type}"
     plt.savefig(working_filedir / plot_filename, dpi=100, transparent=False, format=save_type)
     plt.close()
 
@@ -250,7 +250,7 @@ def hypothesis_plot(
     legend_ax.legend(all_handles, all_labels, title=hue_colname, loc='center', fontsize='small', frameon=False)
 
     # SAVE LEGEND SEPARATELY #
-    legend_filename = f"hypothesis_qc/hypothesis{hypothesis}_legend_by_{cat_colname}.{save_type}"
+    legend_filename = f"hypothesis_qa/hypothesis{hypothesis}_legend_by_{cat_colname}.{save_type}"
     legend_fig.savefig(working_filedir / legend_filename, dpi=100, transparent=False, format=save_type)
     plt.close()
 
