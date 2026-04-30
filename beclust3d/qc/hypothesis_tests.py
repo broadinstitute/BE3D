@@ -82,8 +82,8 @@ def hypothesis_test(
     working_filedir = Path(workdir)
     if not os.path.exists(working_filedir): 
         os.mkdir(working_filedir)
-    if not os.path.exists(working_filedir / 'hypothesis_qc'):
-        os.mkdir(working_filedir / 'hypothesis_qc')
+    if not os.path.exists(working_filedir / 'hypothesis_qa'):
+        os.mkdir(working_filedir / 'hypothesis_qa')
 
     # CHECK INPUTS ARE SELF CONSISTENT #
     for df in input_dfs: 
