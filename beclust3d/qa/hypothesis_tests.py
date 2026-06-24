@@ -8,6 +8,7 @@ Description:
 """
 
 import os
+import warnings
 from pathlib import Path
 
 from .hypothesis_tests_helpers import *
@@ -101,8 +102,11 @@ def hypothesis_test(
         unique = df[mut_col].unique().tolist()
         unique_mutations = list(set(unique_mutations+unique))
 
-    for c in cases+controls: 
-        assert c in unique_mutations, f'{c} not found in mutation types'
+    missing = [c for c in cases + controls if c not in unique_mutations]
+    if missing:
+        warnings.warn(f'The following mutation types were not found in the data and will be skipped: {missing}')
+    cases    = [c for c in cases    if c in unique_mutations]
+    controls = [c for c in controls if c in unique_mutations]
 
     assert len(input_dfs) == len(screen_names), 'Lengths of [input_dfs] and [screen_names] must match'
 
@@ -110,25 +114,25 @@ def hypothesis_test(
 
     # MW AND KS TESTS HYPOTHESIS 1 #
     df_MW1_input = hypothesis_one(
-        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name, 
+        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name,
         gene_col, mut_col, val_col, testtype='MannWhitney', col_names = ['screenid','gene_name'])
     df_KS1_input = hypothesis_one(
-        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name, 
+        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name,
         gene_col, mut_col, val_col, testtype='KolmogorovSmirnov', col_names = ['screenid','gene_name'])
-    
+
     hypothesis_plot(
-        working_filedir, df_MW1_input.copy(), df_KS1_input.copy(), screen_names, 'screenid', 'gene_name', 
+        working_filedir, df_MW1_input.copy(), df_KS1_input.copy(), screen_names, 'screenid', 'gene_name',
         hypothesis='1', header=comp_name, save_type=save_type)
     hypothesis_plot(
-        working_filedir, df_MW1_input.copy(), df_KS1_input.copy(), unique_genes, 'gene_name', 'screenid', 
+        working_filedir, df_MW1_input.copy(), df_KS1_input.copy(), unique_genes, 'gene_name', 'screenid',
         hypothesis='1', header=comp_name, save_type=save_type)
 
     # MW AND KS TESTS HYPOTHESIS 2 #
     df_MW2_input = hypothesis_two(
-        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name, 
+        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name,
         gene_col, mut_col, val_col, testtype='MannWhitney', col_names = ['screenid','gene_name'])
     df_KS2_input = hypothesis_two(
-        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name, 
+        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name,
         gene_col, mut_col, val_col, testtype='KolmogorovSmirnov', col_names = ['screenid','gene_name'])
     
     hypothesis_plot(
