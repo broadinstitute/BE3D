@@ -27,7 +27,8 @@ def plot_enrichment_test(
     hit_value, 
     feature_values, 
     padding=0.5, 
-    save_type='png', 
+    save_type='png',
+    log2=False,
 ):
     """
     Description
@@ -56,6 +57,9 @@ def plot_enrichment_test(
     save_type : str, optional (default='png')
         Format for saving output plots (e.g., 'png', 'pdf').
 
+    log2 : bool, optional (default=False)
+        Whether to plot odds ratios and confidence intervals on the log2 scale.
+
     Returns
     -------
     None
@@ -68,13 +72,23 @@ def plot_enrichment_test(
         os.mkdir(working_filedir / 'characterization/plots')
 
     fig, ax = plt.subplots(figsize=(8, len(feature_values)))
-    y_positions = [int(i)+1 for i in range(len(feature_values))]
+    y_positions = [int(i) + 1 for i in range(len(feature_values))]
 
     for i, result in enumerate(enrichment_results):
         odds_ratio = result['odds_ratio']
         ci = result['ci']
         y = y_positions[i]
-        color = 'red' if i % 2 == 0 else 'blue'
+        color ='black'
+
+        # Support both tuple CI and object CI with .low/.high
+        ci_low = ci[0] if isinstance(ci, tuple) else ci.low
+        ci_high = ci[1] if isinstance(ci, tuple) else ci.high
+
+        if log2:
+            odds_ratio = np.log2(odds_ratio)
+            ci_low = np.log2(ci_low)
+            ci_high = np.log2(ci_high)
+
         if np.isnan(odds_ratio) or np.isinf(odds_ratio):
             x_min, x_max = ax.get_xlim()
             x_mid = (x_min + x_max) / 2
@@ -88,11 +102,13 @@ def plot_enrichment_test(
         line_style = '-' if is_significant else ':'
 
         # Error bars for valid odds ratios
-        error = [[odds_ratio - ci.low], [ci.high - odds_ratio]]
+        error = [[abs(odds_ratio - ci_low)], [abs(ci_high - odds_ratio)]]
+
         ax.errorbar(
             x=[odds_ratio], y=[y],
             xerr=error, fmt=marker_style,
-            color=color, linestyle=line_style,
+            color=color, 
+            linestyle=line_style,
             markerfacecolor=marker_fill
         )
 
@@ -100,8 +116,8 @@ def plot_enrichment_test(
     ax.set_yticks(y_positions)
     ax.set_yticklabels(feature_values)
     ax.set_ylim(min(y_positions) - padding, max(y_positions) + padding)
-    ax.set_xlabel('Odds Ratio')
-    ax.set_title(f'{input_gene} Enrichment Test Odds Ratios')
+    ax.set_xlabel('log2(Odds Ratio)' if log2 else 'Odds Ratio')
+    ax.set_title(f'{input_gene} Enrichment Test Odds Ratios' + (' (log2)' if log2 else ''))
     
     out_filename = working_filedir / f"characterization/plots/{input_gene}_enrichment_test.{save_type}"
     plt.savefig(out_filename, dpi=100, transparent=False, format=save_type)

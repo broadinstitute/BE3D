@@ -140,4 +140,8 @@ def category_test(
     ftest = fisher_exact(table, alternative='two-sided')
     odds_ratio = stats.contingency.odds_ratio(table)
     ci = odds_ratio.confidence_interval(confidence_level=confidence_level)
-    return ftest, odds_ratio, ci
+
+    log2_or = np.log2(odds_ratio.statistic)
+    ci = odds_ratio.confidence_interval(confidence_level=confidence_level)
+    ci = type(ci)(np.log2(ci.low), np.log2(ci.high))
+    return ftest, log2_or, ci
