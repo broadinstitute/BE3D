@@ -14,6 +14,8 @@ import numpy as np
 from scipy.stats import mannwhitneyu
 from scipy.stats import ks_2samp
 
+from matplotlib.lines import Line2D
+
 # HYPOTHESIS 1: There is a significant difference in the signal (LFC) #
 # between knockout (nonsense/splice) mutations and none (silent/no mutations) per screen, per gene #
 
@@ -59,7 +61,7 @@ def hypothesis_one(
             del new_row, df_case, df_control
 
     # SAVE FILE #
-    qc_filename = f"hypothesis_qc/{testtype}_hypothesis1.tsv"
+    qc_filename = f"hypothesis_qa/{testtype}_hypothesis1.tsv"
     df_output.to_csv(working_filedir / qc_filename, sep = '\t', index=False)
 
     return df_output
@@ -124,7 +126,7 @@ def hypothesis_two(
     del df_control
 
     # SAVE FILE #
-    qc_filename = f"hypothesis_qc/{testtype}_hypothesis2.tsv"
+    qc_filename = f"hypothesis_qa/{testtype}_hypothesis2.tsv"
     df_output.to_csv(working_filedir / qc_filename, sep = '\t', index=False)
 
     return df_output
@@ -159,7 +161,7 @@ def hypothesis_plot(
 ): 
 
     # SETUP PLOT BY NAME (SCREEN or GENE) #
-    plt.rcParams.update({'font.size': 6})
+    plt.rcParams.update({'font.size': 8})
     fig, axes = plt.subplots(nrows=len(category_names), ncols=2, sharey=True, 
                              figsize=(12, 5*len(category_names)))
 
@@ -191,7 +193,6 @@ def hypothesis_plot(
             x=f"U_{header}", y=f"p_{header}", 
             hue=hue_colname, palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False)
         ax.axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p=0.05 (-log10 ≈ 1.3)')
-        ax.axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p=0.1 (-log10 ≈ 1.0)')
 
         # REMOVE LEGEND #
         if handles is None and labels is None: handles, labels = plot1.get_legend_handles_labels()
@@ -223,7 +224,6 @@ def hypothesis_plot(
             x=f"D_{header}", y=f"p_{header}", 
             hue=hue_colname, palette='tab20', s=100, alpha=0.7, edgecolor='k', legend=False)
         ax.axhline(y=-np.log10(0.05), color='red', linestyle='--', label='p=0.05 (-log10 ≈ 1.3)')
-        ax.axhline(y=-np.log10(0.1), color='blue', linestyle='--', label='p=0.1 (-log10 ≈ 1.0)')
         
         # TITLE AND Y AXIS #
         ax.set_title(f'Hypothesis {hypothesis}: KS {name}')
@@ -240,17 +240,22 @@ def hypothesis_plot(
 
     # SAVE PLOT #
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
-    plot_filename = f"hypothesis_qc/hypothesis{hypothesis}_scatterplot_by_{cat_colname}.{save_type}"
+    plot_filename = f"hypothesis_qa/hypothesis{hypothesis}_scatterplot_by_{hue_colname}.{save_type}"
     plt.savefig(working_filedir / plot_filename, dpi=100, transparent=False, format=save_type)
     plt.close()
+    
+    # Create p=0.05 legend entry
+    pval_handle = Line2D([0], [0], color='red', linestyle='--', linewidth=2, label='p=0.05')
+    all_handles.append(pval_handle)
+    all_labels.append('p=0.05')
 
     # CREATE SEPARATE LEGEND PLOT #
-    legend_fig, legend_ax = plt.subplots(figsize=(4, len(all_handles) * 0.3))
+    legend_fig, legend_ax = plt.subplots(figsize=(4, len(all_handles) * 0.6))
     legend_ax.axis('off')
-    legend_ax.legend(all_handles, all_labels, title=hue_colname, loc='center', fontsize='small', frameon=False)
+    legend_ax.legend(all_handles, all_labels, title=hue_colname, loc='center', fontsize='medium', frameon=False)
 
     # SAVE LEGEND SEPARATELY #
-    legend_filename = f"hypothesis_qc/hypothesis{hypothesis}_legend_by_{cat_colname}.{save_type}"
+    legend_filename = f"hypothesis_qa/hypothesis{hypothesis}_legend_by_{hue_colname}.{save_type}"
     legend_fig.savefig(working_filedir / legend_filename, dpi=100, transparent=False, format=save_type)
     plt.close()
 

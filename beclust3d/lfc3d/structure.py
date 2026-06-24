@@ -1,8 +1,9 @@
 """
-File: af_structural_features.py
+File: structure.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: Queries UniProt, AlphaFold, DSSP, and domain features. Generates a combined sequence-structure feature table.
+Description: 
+    Queries UniProt, AlphaFold, and DSSP to generate a combined sequence-structure feature table.
 """
 
 import os
@@ -23,11 +24,9 @@ def sequence_structural_features(
     user_dssp=None, 
     domains_dict=None,
     atom_level_naa=False
-    # CHAINS REFERS TO CHAIN OF THE TARGET PROTEIN #
 ): 
     """
-    Queries Uniprot, AlphaFold, DSSP, and domain features 
-    Generate a combined sequence-structure feature table.
+    Queries UniProt, AlphaFold, and DSSP to generate a combined sequence-structure feature table.
 
     Parameters
     ----------
@@ -35,32 +34,35 @@ def sequence_structural_features(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     input_uniprot : str
-        Uniprot of the gene being processed. 
-
+        Uniprot of the gene being processed (e.g., 'Q12345').. 
+        
     structureid : str
         Identifier for the protein structure (used for naming processed files).
 
     target_chainid : str 
-        Only residues from a target chain are included in downstream structural analyses.
+        Chain ID of input_gene in the PDB structure. Only residues from this chain are included in downstream structural analyses.
 
     radius : float, optional (default=6.0)
         Radius in Angstroms used when counting neighboring amino acids.
 
     user_fasta : str or None, optional
-        Path to a user-supplied UniProt FASTA file. If provided, bypasses querying UniProt online.
+        Path to a user-supplied UniProt FASTA file. If provided, skips querying UniProt online.
 
     user_pdb : str or None, optional
-        Path to a user-supplied AlphaFold PDB file. If provided, bypasses querying AlphaFold online.
+        Path to a user-supplied AlphaFold PDB file. If provided, skips querying AlphaFold online.
 
     user_dssp : str or None, optional
-        Path to a user-supplied DSSP secondary structure file. If provided, bypasses running DSSP locally.
+        Path to a user-supplied DSSP secondary structure file. If provided, skips running DSSP locally.
 
     domains_dict : dict or None, optional
         Dictionary specifying domain annotations (e.g., Pfam, InterPro) for the protein.
-        If None, domain information will be queried automatically from UniProt or another source.
+        If None, domain information will be queried automatically from UniProt.
+        
+    atom_level_naa : bool, optional (default=False)
+        If True, counts neighboring amino acids at the atom level rather than residue level.
 
     Returns
     -------

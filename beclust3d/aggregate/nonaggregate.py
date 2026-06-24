@@ -3,9 +3,9 @@ File: nonaggregate.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
 Description: 
-    Splits LFC/LFC3D scores into positive and negative components and aggregates randomized scores.
-    Bins positive and negative LFC3D scores into percentile thresholds.
-    Z-normalizes scores against randomized controls and labels significance.
+    Splits LFC or LFC3D scores into positive and negative components and aggregates randomized scores per screen.
+    Bins positive and negative LFC or LFC3D scores into percentile thresholds per screen.
+    Z-normalizes LFC or LFC3D scores against randomized control distributions and assigns significance labels at multiple p-value thresholds.
 """
 
 import os
@@ -26,7 +26,7 @@ def average_split_score(
     gene_type='Human'
 ): 
     """
-    Splits LFC or LFC3D scores into positive and negative components and aggregates randomized scores.
+    Splits LFC or LFC3D scores into positive and negative components and aggregates randomized scores per screen.
 
     Parameters
     ----------
@@ -37,20 +37,19 @@ def average_split_score(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     screen_names : list of str
-        Names of the different screens corresponding to each DataFrame in df_edits_list and df_rand_list.
+        Names of the different screens corresponding to each DataFrame in input_dfs, used in plot labels and output filenames.
 
     score_type : str, optional (default='LFC3D')
-        Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
+        Label for the type of mutation score analyzed. Either 'LFC' or 'LFC3D'.
 
     Returns
     -------
     df_bidir : pd.DataFrame
-        DataFrame containing split positive/negative scores and randomized averages for each screen.
+        DataFrame containing split positive/negative scores and randomized averages per screen.
     """
-
     # MKDIR #
     working_filedir = Path(workdir)
     if not os.path.exists(working_filedir): 
@@ -94,43 +93,45 @@ def average_split_score(
     return df_bidir
 
 def bin_score(
-        df_bidir, 
-        workdir, 
-        input_gene, 
-        screen_names, 
-        score_type='LFC3D',
-        gene_type='Human'
+    df_bidir, 
+    workdir, 
+    input_gene, 
+    screen_names, 
+    score_type='LFC3D',
+    gene_type='Human',
+    # quantiles = {'NEG_10p_v':0.1, 'POS_90p_v':0.9, 'NEG_05p_v':0.05, 'POS_95p_v':0.95}
+    quantiles = {'NEG 10th v':0.1, 'POS 90th v':0.9, 'NEG 5th v':0.05, 'POS 95th v':0.95}, 
 ): 
     """
-    Bins positive and negative LFC or LFC3D scores into percentile thresholds.
+    Bins positive and negative LFC or LFC3D scores into percentile thresholds per screen.
 
     Parameters
     ----------
     df_bidir : pd.DataFrame
-        DataFrame containing split positive/negative scores and randomized averages for each screen.
+        DataFrame containing split positive/negative scores and randomized averages per screen.
 
     workdir : str
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     screen_names : list of str
-        Names of the different screens corresponding to each DataFrame in df_edits_list and df_rand_list.
+        Names of the different screens corresponding to each DataFrame in input_dfs, used in plot labels and output filenames.
 
     score_type : str, optional (default='LFC3D')
-        Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
+        Label for the type of mutation score analyzed. Either 'LFC' or 'LFC3D'.
 
     Returns
     -------
     df_dis : pd.DataFrame
-        DataFrame containing percentile bins and weighted scores for each residue and screen.
-
+        DataFrame containing percentile bins and weighted scores per residue and screen.
+        
     df_neg_stats_list : list of pd.Series
-        List containing descriptive statistics for negative scores in each screen.
-
+        Descriptive statistics for negative scores in each screen.
+        
     df_pos_stats_list : list of pd.Series
-        List containing descriptive statistics for positive scores in each screen.
+        Descriptive statistics for positive scores in each screen.
     """
     
     # MKDIR #
@@ -141,7 +142,6 @@ def bin_score(
         os.mkdir(working_filedir / score_type)
 
     # SETUP PARAMS #
-    quantiles = {'NEG_10p_v':0.1, 'POS_90p_v':0.9, 'NEG_05p_v':0.05, 'POS_95p_v':0.95}
     headers_LFC3D = [f"{screen_name}_{score_type}" for screen_name in screen_names]
     df_neg_stats_list, df_pos_stats_list = [], []
     
@@ -187,24 +187,24 @@ def znorm_score(
         gene_type = 'Human'
 ): 
     """
-    Z-normalizes scores against randomized control distributions and assigns significance labels.
+    Z-normalizes LFC or LFC3D scores against randomized control distributions and assigns significance labels at multiple p-value thresholds.
 
     Parameters
     ----------
     df_bidir : pd.DataFrame
-        DataFrame containing percentile bins and weighted scores for each residue and screen.
+        DataFrame containing split positive/negative scores and randomized averages per screen.
 
     workdir : str
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     screen_names : list of str
-        Names of the different screens corresponding to each DataFrame in df_edits_list and df_rand_list.
+        Names of the different screens corresponding to each DataFrame in input_dfs, used in plot labels and output filenames.
 
     score_type : str, optional (default='LFC3D')
-        Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
+        Label for the type of mutation score analyzed. Either 'LFC' or 'LFC3D'.
 
     pthrs : list of float, optional
         List of p-value thresholds used to define significance (default [0.05, 0.01, 0.001]).
@@ -212,7 +212,7 @@ def znorm_score(
     Returns
     -------
     df_z : pd.DataFrame
-        DataFrame containing z-scores, p-values, and significance labels for scores at multiple thresholds.
+        DataFrame containing z-scores, p-values, and significance labels per residue at each threshold in pthrs.
     """
     # EACH SCREEN IS Z SCORED TO ITS OWN SET OF RANDOMIZED CONTROLS #
     # ASSUMED NEG AND POS FOR EACH #
@@ -262,6 +262,8 @@ def znorm_score(
             _temp_pos_pd = df_z[df_z[f'{screen_name}_AVG_{score_type}r_pos'] != '-']
             avgr_neg_list = _temp_neg_pd[f'{screen_name}_AVG_{score_type}r_neg'].to_list()
             avgr_pos_list = _temp_pos_pd[f'{screen_name}_AVG_{score_type}r_pos'].to_list()
+            avgr_neg_list = np.array(avgr_neg_list, dtype=float)
+            avgr_pos_list = np.array(avgr_pos_list, dtype=float)
             neg_mean = np.mean(avgr_neg_list)
             neg_std = np.std(avgr_neg_list)
             pos_mean = np.mean(avgr_pos_list)

@@ -4,9 +4,9 @@ Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2025-02-04
 Description: 
     Plots enrichment test results as odds ratios with confidence intervals.
-    Generates LFC vs LFC3D scatter plots colored by hit significance.
-    Generates scatter plot of RSA vs pLDDT scores, scaled by mutation weight.
-    Generates bar plots of hit counts (or fractions) across different structural categories.
+    Generates a scatter plot of LFC vs LFC3D scores, color-coded by significance.
+    Generates a scatter plot of RSA vs pLDDT scores, scaled by mutation effect weight.
+    Generates bar plots of hit counts or fractions across structural feature categories.
 """
 
 import os
@@ -31,8 +31,7 @@ def plot_enrichment_test(
     log2=False,
 ):
     """
-    Description
-        Plot enrichment test results as odds ratio.
+    Plots enrichment test results as odds ratios with confidence intervals.
 
     Parameters
     ----------
@@ -43,7 +42,7 @@ def plot_enrichment_test(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Gene name being processed (e.g., 'DNMT3A', 'MEN1').
 
     hit_value : float
         Significance threshold for highlighting significant odds ratios.
@@ -55,7 +54,7 @@ def plot_enrichment_test(
         Extra space to pad on the Y-axis above and below plotted points.
 
     save_type : str, optional (default='png')
-        Format for saving output plots (e.g., 'png', 'pdf').
+        File format for saved plots (e.g., 'png', 'pdf', 'svg').
 
     log2 : bool, optional (default=False)
         Whether to plot odds ratios and confidence intervals on the log2 scale.
@@ -133,9 +132,13 @@ def lfc_lfc3d_scatter(
     screen_name, 
     pthr=0.05, 
     save_type='png', 
+    custom_palette = {
+        'Not LFC3D Hit': 'grey', 'LFC3D Pos Hit': 'blue',
+        'LFC3D Neg Hit': 'red', 'LFC3D Pos/Neg Hit': 'magenta'
+    }, 
 ): 
     """
-    Generate LFC vs LFC3D scatter plot, color-coded by significance categories.
+    Generates a scatter plot of LFC vs LFC3D scores, color-coded by significance.
 
     Parameters
     ----------
@@ -146,7 +149,7 @@ def lfc_lfc3d_scatter(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Gene name being processed (e.g., 'DNMT3A', 'MEN1').
 
     screen_name : list of str
         Name of a screen corresponding to df_input.
@@ -155,7 +158,7 @@ def lfc_lfc3d_scatter(
         Threshold used to determine significance coloring.
 
     save_type : str, optional (default='png')
-        Format for saving output plots (e.g., 'png', 'pdf').
+        File format for saved plots (e.g., 'png', 'pdf', 'svg').
 
     Returns
     -------
@@ -190,19 +193,15 @@ def lfc_lfc3d_scatter(
     x_min = df_input['LFC'].min()
     df_input['LFC'] = df_input['LFC'].replace(0.0, x_min-1).astype(float)
 
-    # Hit Type Colors
-    custom_palette = {
-        'not hit': 'grey', 'positive hit': 'blue',
-        'negative hit': 'red', 'pos/neg hit': 'magenta'
-    }
     # Scatter plot
     plt.figure(figsize=(8, 6))
     sns.scatterplot(data=df_input, x='LFC', y='LFC3D', hue="psig_label", palette=custom_palette)
+    plt.legend(loc='lower right')
     plt.axhline(y_min, color="gray", linestyle="--", linewidth=0.8)
     plt.axvline(x_min, color="gray", linestyle="--", linewidth=0.8)
     plt.title(f"{input_gene} LFC vs LFC3D Scatter Plot")
-    plt.xlabel(f"{screen_name} (LFC)")
-    plt.ylabel(f"{screen_name} (LFC3D)")
+    plt.xlabel(f"{input_gene} (LFC)")
+    plt.ylabel(f"{input_gene} (LFC3D)")
     plt.grid(True, linestyle="--", alpha=0.5)
 
     out_filename = f'characterization/plots/{input_gene}_LFC_LFC3D_scatter.{save_type}'
@@ -219,13 +218,13 @@ def assign_psig_label(
     neg_str, pos_str = row['LFC3D_neg_psig'], row['LFC3D_pos_psig']
 
     if (neg_str == psig_dict['above'] or neg_str == '-') and (pos_str == psig_dict['above'] or pos_str == '-'):
-        return 'not hit'
+        return 'Not LFC3D Hit'
     elif (neg_str == psig_dict['above'] or neg_str == '-') and pos_str == psig_dict['below']:
-        return 'positive hit'
+        return 'LFC3D Pos Hit'
     elif neg_str == psig_dict['below'] and (pos_str == psig_dict['above'] or pos_str == '-'):
-        return 'negative hit'
+        return 'LFC3D Neg Hit'
     elif neg_str == psig_dict['below'] and pos_str == psig_dict['below']:
-        return 'pos/neg hit'
+        return 'LFC3D Pos/Neg Hit'
     return None
 
 def pLDDT_RSA_scatter(
@@ -240,7 +239,7 @@ def pLDDT_RSA_scatter(
     save_type='png', 
 ):
     """
-    Generates a scatter plot of RSA vs pLDDT scores.
+    Generates a scatter plot of RSA vs pLDDT scores, scaled by mutation effect weight.
 
     Parameters
     ----------
@@ -251,7 +250,7 @@ def pLDDT_RSA_scatter(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Gene name being processed (e.g., 'DNMT3A', 'MEN1').
 
     pLDDT_col : str, optional (default='bfactor_pLDDT')
         Column name for per-residue pLDDT confidence scores.
@@ -269,7 +268,7 @@ def pLDDT_RSA_scatter(
         Dictionary mapping directions to colors.
 
     save_type : str, optional (default='png')
-        Format for saving output plots (e.g., 'png', 'pdf').
+        File format for saved plots (e.g., 'png', 'pdf', 'svg').
         
     Returns
     -------
@@ -295,14 +294,14 @@ def pLDDT_RSA_scatter(
         )
 
     legend_elements = [
-        Line2D([0], [0], marker='o', color='w', label='POS', markerfacecolor='darkred', markersize=10),
-        Line2D([0], [0], marker='o', color='w', label='NEG', markerfacecolor='darkblue', markersize=10)
+        Line2D([0], [0], marker='o', color='w', label='POS', markerfacecolor=color_map['POS'], markersize=10),
+        Line2D([0], [0], marker='o', color='w', label='NEG', markerfacecolor=color_map['NEG'], markersize=10)
     ]
 
     sizes = [5, 50, 95]
     for size in sizes:
         legend_elements.append(
-            Line2D([0], [0], marker='o', color='w', label=f'Size {size}',
+            Line2D([0], [0], marker='o', color='w', label=f'{size}% max score',
                    markerfacecolor='gray', markersize=np.sqrt(size)) )
 
     plt.legend(handles=legend_elements, title="Legend")
@@ -320,15 +319,16 @@ def hits_feature_barplot(
     workdir, 
     input_gene, 
     category_col,
+    score_type, 
     values_cols, 
     values_vals, 
     value_names, 
     plot_type='Count', 
-    colors=['darkred', 'darkblue'], 
+    color_map={'NEG': 'darkred', 'POS': 'darkblue'}, 
     save_type='png', 
 ):
     """
-    Generates a barplot of hit counts (or fractions) across categories (e.g., domains, RSA bins).
+    Generates bar plots of hit counts or fractions across structural feature categories.
 
     Parameters
     ----------
@@ -339,7 +339,7 @@ def hits_feature_barplot(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Gene name being processed (e.g., 'DNMT3A', 'MEN1').
 
     category_col : str
         Column name representing the feature category (e.g., domain, pLDDT bin).
@@ -356,11 +356,11 @@ def hits_feature_barplot(
     plot_type : str, optional (default='Count')
         'Count' for raw counts, 'Fraction' for relative proportions.
 
-    colors : list of str, optional
-        Colors for the different hit categories.
+    color_map : dict, optional
+        Dictionary mapping directions to colors.
 
     save_type : str, optional (default='png')
-        Format for saving output plots (e.g., 'png', 'pdf').
+        File format for saved plots (e.g., 'png', 'pdf', 'svg').
         
     Returns
     -------
@@ -390,15 +390,13 @@ def hits_feature_barplot(
         counts_df = counts_df.div(counts_df.sum(axis=0), axis=1)
 
     # DRAW PLOT #
-    if colors is None: 
-        colors = plt.cm.get_cmap('tab10').colors[:len(counts_df.columns)] 
-    ax = counts_df.plot(kind='bar', figsize=(6, 4), color=colors, edgecolor='black')
-
+    ax = counts_df.plot(kind='bar', figsize=(6, 4), color=color_map, edgecolor='black')
+    
     # LABELS AND OUTPUT #
     plt.xlabel(category_col)
     plt.xticks(rotation=45)
     plt.ylabel(f'{plot_type} of Hits')
-    plt.title(f"{input_gene} {category_col} Hit Barplot")
+    plt.title(f"{input_gene} {category_col} {score_type} Hit Barplot")
     plt.legend(title='Direction')
 
     out_filename = working_filedir / f"characterization/plots/{input_gene}_{plot_type}_{category_col}_barplot.{save_type}"

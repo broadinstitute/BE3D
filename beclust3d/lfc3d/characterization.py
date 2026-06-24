@@ -2,7 +2,8 @@
 File: characterization.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2025-02-23
-Description: Performs enrichment tests (e.g., Fisher's exact test) for structural features.
+Description: 
+    Performs Fisher's exact test to assess enrichment of structural features among significant residues, and plots the results.
 """
 
 import os
@@ -30,8 +31,7 @@ def enrichment_test(
     confidence_level=0.95, 
 ): 
     """
-    Description
-        Perform enrichment tests (e.g., Fisher's exact test) for structural features and plots the results
+    Perform enrichment tests (e.g., Fisher's exact test) for structural features and plots the results
 
     Parameters
     ----------

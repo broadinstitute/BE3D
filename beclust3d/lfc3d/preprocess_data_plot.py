@@ -2,8 +2,8 @@
 File: preprocess_data_plot.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: Parses raw screen data and generates summary plots per mutation category.
-             Translated from Notebook 3.1
+Description: 
+    Parses raw screen data and generates summary plots per mutation category for each screen.
 """
 
 import os
@@ -28,7 +28,7 @@ def plot_rawdata(
     save_type='png', 
 ): 
     """
-    Parse raw data and create plots for each input screen.
+    Parses raw screen data and generates summary plots per mutation category for each screen.
 
     Parameters
     ----------
@@ -36,7 +36,7 @@ def plot_rawdata(
         Path to the working directory where output files and results will be saved.
 
     input_dfs : list of pd.DataFrame
-        List of input dataframes, one for each screen.
+        List of input dataframes, one for each screen, each containing mutation category, gene, and value columns.
 
     screen_names : list of str
         Names of the different screens corresponding to each DataFrame in input_dfs.
@@ -55,7 +55,7 @@ def plot_rawdata(
         Default includes ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"].
         
     save_type : str, optional (default='png')
-        Format for saving output plots (e.g., 'png', 'pdf').
+        Format for saving output plots (e.g., 'png', 'pdf', 'svg').
         
     Returns
     -------
@@ -160,7 +160,7 @@ def violin_by_gene(
     # VIOLIN PLOT SETUP #
     plt.rcParams.update({'font.size': 10})
     fig, axes = plt.subplots(nrows=plot_dim, ncols=plot_dim, sharex=False, sharey=True, 
-                             figsize=(19,17), gridspec_kw={'hspace':0.3, 'wspace':0.1})
+                             figsize=(8, 8), gridspec_kw={'hspace':0.3, 'wspace':0.1})
     if plot_dim == 1: axes = [axes]
     else: axes = axes.flatten()
 

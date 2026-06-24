@@ -1,4 +1,4 @@
-from .qc.hypothesis_tests import hypothesis_test
+from .qa.hypothesis_tests import hypothesis_test
 
 from .lfc3d.structure import sequence_structural_features
 from .lfc3d.conservation import conservation

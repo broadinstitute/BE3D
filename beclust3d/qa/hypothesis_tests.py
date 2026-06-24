@@ -2,10 +2,13 @@
 File: hypothesis_tests.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2025-02-23
-Description: Conducts hypothesis 1 (for one gene) and hypothesis 2 (across multiple genes) statistical tests.
+Description: 
+    Run two hypothesis tests across a set of screens and genes, comparing case vs. control
+    mutation categories using Mann-Whitney U and Kolmogorov-Smirnov tests.
 """
 
 import os
+import warnings
 from pathlib import Path
 
 from .hypothesis_tests_helpers import *
@@ -23,8 +26,11 @@ def hypothesis_test(
     save_type='png', 
 ): 
     """
-    Conduct hypothesis 1 (one gene and one screen vs control from same screen) and hypothesis 2
-    (one gene and one screen vs control from that same gene from all screen) on the set of input screens and genes. 
+    Run two hypothesis tests across a set of screens and genes, comparing case vs. control
+    mutation categories using Mann-Whitney U and Kolmogorov-Smirnov tests.
+
+    Hypothesis 1 tests whether case and control values differ for a given gene within a single screen. 
+    Hypothesis 2 tests the same gene's case values in one screen against its control values pooled across all screens.
 
     Parameters
     ----------
@@ -32,10 +38,10 @@ def hypothesis_test(
         Path to the working directory where output files and results will be saved.
 
     input_dfs : list of pd.DataFrame
-        List of input dataframes, one for each screen.
+        List of input dataframes, one for each screen, each containing mutation category, gene, and value columns.
 
     screen_names : list of str
-        Names of the different screens corresponding to each DataFrame in input_dfs.
+        Names of the different screens corresponding to each DataFrame in input_dfs, used in plot labels and output filenames.
 
     cases : list of str
         List of mutation categories considered as the "case" group (e.g., ['Nonsense']).
@@ -43,8 +49,8 @@ def hypothesis_test(
     controls : list of str
         List of mutation categories considered as the "control" group (e.g., ['No Mutation', 'Silent']).
 
-    comp_name : str
-        Comparison label used for naming plots and outputs (e.g., 'Nonsense_vs_Control').
+    comp_name : str, optional (default='CaseVsControl')
+        Comparison label used for naming plots and outputs (e.g., 'CaseVsControl').
         
     mut_col : str, optional (default='Mutation category')
         Column name in input_dfs specifying the mutation category (e.g., 'Missense', 'Nonsense').
@@ -56,29 +62,29 @@ def hypothesis_test(
         Column name specifying the target gene name in input_dfs.
 
     save_type : str, optional (default='png')
-        Format for saving output plots (e.g., 'png', 'pdf').
+        Format for saving output plots (e.g., 'png', 'pdf', 'svg').
 
     Returns
     -------
     df_MW1_input : pd.DataFrame
-        DataFrame containing Mann-Whitney U test results for Hypothesis 1 (within each screen).
+        DataFrame containing Mann-Whitney U test results for Hypothesis 1, with one row per gene-screen combination.
 
     df_MW2_input : pd.DataFrame
-        DataFrame containing Mann-Whitney U test results for Hypothesis 2 (across all screens).
+        DataFrame containing Mann-Whitney U test results for Hypothesis 2, with one row per gene-screen combination.
 
     df_KS1_input : pd.DataFrame
-        DataFrame containing Kolmogorov-Smirnov test results for Hypothesis 1 (within each screen).
+        DataFrame containing Kolmogorov-Smirnov test results for Hypothesis 1, with one row per gene-screen combination.
 
     df_KS2_input : pd.DataFrame
-        DataFrame containing Kolmogorov-Smirnov test results for Hypothesis 2 (across all screens).
+        DataFrame containing Kolmogorov-Smirnov test results for Hypothesis 2, with one row per gene-screen combination.
     """
 
     # MKDIR #
     working_filedir = Path(workdir)
     if not os.path.exists(working_filedir): 
         os.mkdir(working_filedir)
-    if not os.path.exists(working_filedir / 'hypothesis_qc'):
-        os.mkdir(working_filedir / 'hypothesis_qc')
+    if not os.path.exists(working_filedir / 'hypothesis_qa'):
+        os.mkdir(working_filedir / 'hypothesis_qa')
 
     # CHECK INPUTS ARE SELF CONSISTENT #
     for df in input_dfs: 
@@ -96,8 +102,11 @@ def hypothesis_test(
         unique = df[mut_col].unique().tolist()
         unique_mutations = list(set(unique_mutations+unique))
 
-    for c in cases+controls: 
-        assert c in unique_mutations, f'{c} not found in mutation types'
+    missing = [c for c in cases + controls if c not in unique_mutations]
+    if missing:
+        warnings.warn(f'The following mutation types were not found in the data and will be skipped: {missing}')
+    cases    = [c for c in cases    if c in unique_mutations]
+    controls = [c for c in controls if c in unique_mutations]
 
     assert len(input_dfs) == len(screen_names), 'Lengths of [input_dfs] and [screen_names] must match'
 
@@ -105,36 +114,32 @@ def hypothesis_test(
 
     # MW AND KS TESTS HYPOTHESIS 1 #
     df_MW1_input = hypothesis_one(
-        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name, 
+        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name,
         gene_col, mut_col, val_col, testtype='MannWhitney', col_names = ['screenid','gene_name'])
     df_KS1_input = hypothesis_one(
-        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name, 
+        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name,
         gene_col, mut_col, val_col, testtype='KolmogorovSmirnov', col_names = ['screenid','gene_name'])
-    
-    if len(unique_genes) > 1:
-        hypothesis_plot(
-            working_filedir, df_MW1_input.copy(), df_KS1_input.copy(), screen_names, 'screenid', 'gene_name', 
-            hypothesis='1', header=comp_name, save_type=save_type)
-    if len(screen_names) > 1:
-        hypothesis_plot(
-            working_filedir, df_MW1_input.copy(), df_KS1_input.copy(), unique_genes, 'gene_name', 'screenid', 
-            hypothesis='1', header=comp_name, save_type=save_type)
+
+    hypothesis_plot(
+        working_filedir, df_MW1_input.copy(), df_KS1_input.copy(), screen_names, 'screenid', 'gene_name',
+        hypothesis='1', header=comp_name, save_type=save_type)
+    hypothesis_plot(
+        working_filedir, df_MW1_input.copy(), df_KS1_input.copy(), unique_genes, 'gene_name', 'screenid',
+        hypothesis='1', header=comp_name, save_type=save_type)
 
     # MW AND KS TESTS HYPOTHESIS 2 #
     df_MW2_input = hypothesis_two(
-        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name, 
+        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name,
         gene_col, mut_col, val_col, testtype='MannWhitney', col_names = ['screenid','gene_name'])
     df_KS2_input = hypothesis_two(
-        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name, 
+        working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name,
         gene_col, mut_col, val_col, testtype='KolmogorovSmirnov', col_names = ['screenid','gene_name'])
     
-    if len(unique_genes) > 1:
-        hypothesis_plot(
-            working_filedir, df_MW2_input.copy(), df_KS2_input.copy(), screen_names, 'screenid', 'gene_name', 
-            hypothesis='2', header=comp_name, save_type=save_type)
-    if len(screen_names) > 1:
-        hypothesis_plot(
-            working_filedir, df_MW2_input.copy(), df_KS2_input.copy(), unique_genes, 'gene_name', 'screenid', 
-            hypothesis='2', header=comp_name, save_type=save_type)
+    hypothesis_plot(
+        working_filedir, df_MW2_input.copy(), df_KS2_input.copy(), screen_names, 'screenid', 'gene_name', 
+        hypothesis='2', header=comp_name, save_type=save_type)
+    hypothesis_plot(
+        working_filedir, df_MW2_input.copy(), df_KS2_input.copy(), unique_genes, 'gene_name', 'screenid', 
+        hypothesis='2', header=comp_name, save_type=save_type)
     
     return df_MW1_input, df_MW2_input, df_KS1_input, df_KS2_input

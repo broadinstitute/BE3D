@@ -2,7 +2,8 @@
 File: aggregate_plot.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2025-01-01
-Description: Generates histograms, histplots, and scatterplots for positive and negative scores after binning.
+Description: 
+    Generates histograms and scatterplots for positive and negative scores with binning and significance thresholds.
 """
 
 import os
@@ -29,8 +30,7 @@ def average_split_bin_plots(
     save_type='png', 
 ): 
     """
-    Generates histograms, histplots, and scatterplots for positive and negative scores 
-    with binning and significance thresholds.
+    Generates histograms and scatterplots for positive and negative scores with binning and significance thresholds.
 
     Parameters
     ----------
@@ -41,25 +41,27 @@ def average_split_bin_plots(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     pthr : float, optional (default=0.05)
         p-value threshold for labeling statistical significance.
 
-    screen_name : str
-        Name of the screens corresponding to df_missense.
+    screen_name : str, optional (default='')
+        Screen identifier for df_z. 
+        Use '' for meta-aggregate output or a single screen identifier for per-screen output.
 
     func : str, optional (default='SUM')
-        Name corresponding to 'aggr_func' (e.g., 'SUM', 'MEAN').
+        Aggregation function name. 
+        Use '' for per-screen output or the aggr_func_name used in znorm_meta() for meta-aggregate output.
 
     score_type : str, optional (default='LFC3D')
-        Label for the type of mutation score analyzed (e.g., 'LFC3D', 'LFC', etc.).
+        Label for the type of mutation score analyzed. Either 'LFC' or 'LFC3D'.
 
     aggregate_dir : str, optional (default='meta-aggregate')
         Subdirectory name where plots are stored (e.g., 'meta-aggregate', 'LFC3D', 'LFC').
 
     save_type : str, optional (default='png')
-        Format for saving output plots (e.g., 'png', 'pdf').
+        Format for saving output plots (e.g., 'png', 'pdf', 'svg').
     
     Returns
     ----------
@@ -87,11 +89,13 @@ def average_split_bin_plots(
 
     # HISTOGRAMS #
     if screen_name == '': 
-        histogram_params = [(f'{func}_{score_type}r_neg', neg_label, 'Negative'), 
-                            (f'{func}_{score_type}r_pos', pos_label, 'Positive') ] # META #
+        histogram_params = [(f'{func}_{score_type}r_neg', neg_label, 'Negative {score_type}', f'{func}_{score_type}r_neg', f'{score_type}_neg'), 
+                            (f'{func}_{score_type}r_pos', pos_label, 'Positive {score_type}', f'{func}_{score_type}r_pos', f'{score_type}_pos'),
+                           ] # META #
     else: 
-        histogram_params = [(f'{screen_name}_AVG_{score_type}r_neg', neg_label, 'Negative'), 
-                            (f'{screen_name}_AVG_{score_type}r_pos', pos_label, 'Positive') ] # NON AGGR #
+        histogram_params = [(f'{screen_name}_AVG_{score_type}r_neg', neg_label, 'Negative {score_type}', f'AVG_{score_type}r_neg', f'{score_type}_neg'), 
+                            (f'{screen_name}_AVG_{score_type}r_pos', pos_label, 'Positive {score_type}', f'AVG_{score_type}r_pos', f'{score_type}_pos'),
+                           ] # NON AGGR #
     
     histogram_filename = f"{output_prefix}_signal_vs_background.{save_type}"
     histogram_filename = histogram_filename.replace('__','_')
@@ -108,10 +112,15 @@ def average_split_bin_plots(
     df_z = binning_lfc3d(df_z, neg_label, pos_label)
 
     # HISPLOTS #
-    hisplots_params = [(f'{neg_label}_dis', neg_label, f'{neg_label}_{pthr_str}_psig', 'Negative P-Value'), 
-                       (f'{neg_label}_dis', neg_label, f'{neg_label}_dis', 'Negative P-Value'), 
-                       (f'{pos_label}_dis', pos_label, f'{pos_label}_{pthr_str}_psig', 'Positive P-Value'), 
-                       (f'{pos_label}_dis', pos_label, f'{pos_label}_dis', 'Positive P-Value') ]
+    hisplots_params = [(f'{neg_label}_dis', neg_label, f'{neg_label}_{pthr_str}_psig', 
+                        f'Negative {score_type} P-Value', f'Negative {score_type}'), 
+                       (f'{neg_label}_dis', neg_label, f'{neg_label}_dis', 
+                        f'Negative {score_type} P-Value', f'Negative {score_type}'), 
+                       (f'{pos_label}_dis', pos_label, f'{pos_label}_{pthr_str}_psig', 
+                        f'Positive {score_type} P-Value', f'Positive {score_type}'), 
+                       (f'{pos_label}_dis', pos_label, f'{pos_label}_dis', 
+                        f'Positive {score_type} P-Value', f'Positive {score_type}'),
+                      ]
     
     histplot_filename = f"{output_prefix}_histplot.{save_type}"
     histplot_filename = histplot_filename.replace('__','_')
@@ -120,8 +129,10 @@ def average_split_bin_plots(
         working_filedir / f"{aggregate_dir}/plots/{histplot_filename}", save_type)
 
     # SCATTERPLOT #
-    scatterplot_params = [(f'{neg_label}', f'{neg_label}_{pthr_str}_psig', neg_label, 'Negative'), 
-                          (f'{pos_label}', f'{pos_label}_{pthr_str}_psig', pos_label, 'Positive')]
+    scatterplot_params = [(neg_label, f'{neg_label}_{pthr_str}_psig', neg_label, 'Negative', 
+                           f'{score_type} neg', f'{score_type} neg p-sig', f'{score_type} neg'), 
+                          (pos_label, f'{pos_label}_{pthr_str}_psig', pos_label, 'Positive', 
+                           f'{score_type} pos', f'{score_type} pos p-sig', f'{score_type} pos')]
     
     scatterplot_filename = f"{output_prefix}_scatter_cutoff.{save_type}"
     scatterplot_filename = scatterplot_filename.replace('__','_')
@@ -130,8 +141,10 @@ def average_split_bin_plots(
         working_filedir / f"{aggregate_dir}/plots/{scatterplot_filename}", save_type, colors=False)
     
     # Z SCORE SCATTERPLOT #
-    scatterplot_params = [(f'{neg_label}_dis', f'{neg_label}_dis', f'{neg_label}_{pthr_str}_z', 'Negative'), 
-                          (f'{pos_label}_dis', f'{pos_label}_dis', f'{pos_label}_{pthr_str}_z', 'Positive')]
+    scatterplot_params = [(f'{neg_label}_dis', f'{neg_label}_dis', f'{neg_label}_{pthr_str}_z', 'Negative', 
+                           f'{score_type} neg Percentile', f'{score_type} neg Percentile', f'{score_type} neg Z-score'), 
+                          (f'{pos_label}_dis', f'{pos_label}_dis', f'{pos_label}_{pthr_str}_z', 'Positive', 
+                           f'{score_type} pos Percentile', f'{score_type} pos Percentile', f'{score_type} pos Z-score')]
     
     scatterplot_filename = f"{output_prefix}_scatter_colored.{save_type}"
     scatterplot_filename = scatterplot_filename.replace('__','_')
@@ -154,7 +167,7 @@ def metaaggregation_histogram(
     fig, ax = plt.subplots(1, len(params), figsize=(12, 5), dpi=100)
     results_list = []
 
-    for i, (avg, sum, out) in enumerate(params): 
+    for i, (avg, sum, out, avg_label, sum_label) in enumerate(params): 
         res = {}
         # PICK OUT DATA FOR PLOTTING #
         df_plot = pd.DataFrame()
@@ -189,7 +202,8 @@ def metaaggregation_histogram(
         res['avg med'], res['avg std'] = df_plot[avg].median(), df_plot[avg].std()
 
         # PLOT #
-        plot = df_plot.plot.area(x='unipos', alpha=0.5, stacked = False, ax=ax[i])
+        df_plot_renamed = df_plot.rename(columns={sum: sum_label, avg: avg_label})
+        plot = df_plot_renamed.plot.area(x='unipos', alpha=0.5, stacked=False, ax=ax[i])
         plot.legend_.set_title(None)
         ax[i].axhline(y = res['sum mean'], color = 'r', linestyle = '-')
         ax[i].axhline(y = res['sum mean']-res['sum std'], color = 'r', linestyle = '--')
@@ -202,7 +216,7 @@ def metaaggregation_histogram(
         ax[i].grid(which='major', color='white', linewidth=0.5)
         ax[i].set_axisbelow(True)
 
-        del df_plot, df_filtered
+        del df_plot, df_filtered, df_plot_renamed
         results_list.append(res)
     
     plt.subplots_adjust(wspace=0.15)
@@ -220,15 +234,16 @@ def metaaggregation_hisplot(
     Description
         Helper function to plot the distributions for the top 10 and bottom 10 % of points
     """
-    fig, ax = plt.subplots(1, len(params), figsize=(24, 5), dpi=100)
+    fig, ax = plt.subplots(1, len(params), figsize=(20, 5), dpi=100)
 
-    for i, (dis, x, hue, name) in enumerate(params): 
+    for i, (dis, x, hue, name, label) in enumerate(params): 
     
         df_clean = df_input.loc[df_input[dis] != '-', ].reset_index(drop=True)
         df_clean[x] = df_clean[x].astype(float)
         plot = sns.histplot(df_clean, x=x, hue=hue, bins=50, palette='tab10', ax=ax[i])
         plot.legend_.set_title(None)
         ax[i].set_title(name)
+        ax[i].set_xlabel(label)
 
         # SET BACKGROUND #
         ax[i].set_facecolor('#EBEBEB')
@@ -256,31 +271,33 @@ def metaaggregation_scatterplot(
     """
     fig, ax = plt.subplots(1, 2, figsize=(12, 6), dpi=300)
 
-    for i, (dis, pval, y, out) in enumerate(params): 
-
-        df_combined_clean = df_meta.loc[df_meta[dis] != '-', ]
-        df_combined_clean[y] = df_combined_clean[y].astype(float)
-        df_combined_clean = df_combined_clean.sort_values(by=pval, ascending=False) ### consistent coloring hits nonhits
+    for i, (dis, pval, y, out, new_dis, new_pval, new_y) in enumerate(params):
+        df_meta = df_meta.rename(columns={pval:new_pval, y:new_y})
+    
+        df_combined_clean = df_meta.loc[df_meta[new_dis] != '-', ]
+        df_combined_clean = df_combined_clean.copy()
+        df_combined_clean[new_y] = df_combined_clean[new_y].astype(float)
+        df_combined_clean = df_combined_clean.sort_values(by=new_pval, ascending=False) ### consistent coloring hits nonhits
         # MULTIPLE COLORS #
         if colors: 
-            if 'pos' in dis: factor=1
-            if 'neg' in dis: factor=-1
+            if 'pos' in new_dis: factor=1
+            if 'neg' in new_dis: factor=-1
             ax[i].axhline(y = factor*1.65, color = 'r', linestyle = '--')
             ax[i].axhline(y = factor*1.96, color = 'r', linestyle = '--')
             ax[i].axhline(y = factor*2.58, color = 'r', linestyle = '--')
 
-            plot = sns.scatterplot(data=df_combined_clean, x="unipos", y=y, 
-                                   hue=pval, palette='tab10', ax=ax[i])
+            plot = sns.scatterplot(data=df_combined_clean, x="unipos", y=new_y, 
+                                   hue=new_pval, palette='tab10', ax=ax[i])
 
         # ABOVE AND BELOW THRESHOLD #
         else: 
-            df_combined_psig = df_meta.loc[df_meta[pval] == 'p>='+str(pthr), ]
-            line_list = df_combined_psig[y][df_combined_psig[y] != '-'].astype(float)
-            if 'pos' in dis: line_val = line_list.max()
-            if 'neg' in dis: line_val = line_list.min()
+            df_combined_psig = df_meta.loc[df_meta[new_pval] == 'p>='+str(pthr), ]
+            line_list = df_combined_psig[new_y][df_combined_psig[new_y] != '-'].astype(float)
+            if 'pos' in new_dis: line_val = line_list.max()
+            if 'neg' in new_dis: line_val = line_list.min()
             ax[i].axhline(y = line_val, color = 'r', linestyle = '--')
-            plot = sns.scatterplot(data=df_combined_clean, x="unipos", y=y, 
-                                   hue=pval, palette='tab10', ax=ax[i])
+            plot = sns.scatterplot(data=df_combined_clean, x="unipos", y=new_y, 
+                                   hue=new_pval, palette='tab10', ax=ax[i])
             
         # plot.legend_.set_title(None)
         ax[i].set_xticks(np.arange(0, len(df_meta), 100))

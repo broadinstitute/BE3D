@@ -136,7 +136,7 @@ def main(**kwargs):
         sys.exit()
         
     if qa_passed_only:
-        h2_ks_test_pd = pd.read_csv(f'{output_dir}/hypothesis_qc/KolmogorovSmirnov_hypothesis2.tsv',sep='\t')
+        h2_ks_test_pd = pd.read_csv(f'{output_dir}/hypothesis_qa/KolmogorovSmirnov_hypothesis2.tsv',sep='\t')
         h2_ks_test_pd = h2_ks_test_pd.replace(-999,None)
         white_screen_list = h2_ks_test_pd[(h2_ks_test_pd[f"p_{'_'.join(qa_cases)}_vs_{'_'.join(qa_controls)}"]<0.05)&(h2_ks_test_pd['gene_name'].isin(gene_list))]['screenid'].to_list()
         print(f'original screen size: {len(screen_names)}, screen white list size: {len(white_screen_list)}, QA-passed screen size: {len(list(set(screen_names).intersection(white_screen_list)))}')
@@ -844,7 +844,7 @@ if __name__ == '__main__':
     from beclust3d.lfc3d.structure import sequence_structural_features
     from beclust3d.lfc3d.preprocess_data import parse_be_data, sanitary_check
     from beclust3d.lfc3d.preprocess_data_plot import plot_rawdata
-    from beclust3d.qc.hypothesis_tests import hypothesis_test
+    from beclust3d.qa.hypothesis_tests import hypothesis_test
     from beclust3d.lfc3d.randomize_data import randomize_data
     from beclust3d.lfc3d.prioritize_sequence import prioritize_by_sequence
     from beclust3d.lfc3d.prioritize_sequence_plot import plot_screendata_sequence

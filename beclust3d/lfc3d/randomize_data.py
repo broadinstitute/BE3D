@@ -2,7 +2,8 @@
 File: randomize_data.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
-Description: Randomizes missense mutation scores to create a baseline distribution.
+Description: 
+    Randomizes mutation scores from a parsed screen DataFrame to create a baseline distribution.
 """
 
 import pandas as pd
@@ -16,13 +17,14 @@ def randomize_data(
     input_gene, 
     screen_name, 
     nRandom=1000, 
-    val_colname = 'LFC', 
+    val_colname='LFC', 
     muttype='Missense', 
     seed=False, 
 ): 
     """
-    Takes reformatted Missense dataframe and randomizes them to provide a baseline signal. 
-    This function is run per gene per screen. 
+    Randomizes mutation scores from a parsed screen DataFrame to create a baseline distribution.
+
+    This function is run per gene per screen.
 
     Parameters
     ----------
@@ -33,22 +35,22 @@ def randomize_data(
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
-
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
+        
     screen_name : str
-        Name of the screens corresponding to df_missense.
+        Name of the screen corresponding to df_missense.
 
     nRandom : int, optional (default=1000)
         Number of randomizations per screen for calculating randomized LFC and LFC3D scores.
 
     val_colname : str, optional (default='LFC')
-        Column name in df_missense specifying the value measurement.
-
+        Column name in input_dfs specifying the value measurement (e.g., log fold-change).
+        
     muttype : str, optional (default='Missense')
         Type of mutation to focus on (e.g., 'Missense', 'Nonsense', etc.).
 
     seed : bool, optional (default=False)
-        Whether or not to randomize with a seed. 
+        If True, randomizations are performed with a fixed seed for reproducibility.
 
     Returns
     -------

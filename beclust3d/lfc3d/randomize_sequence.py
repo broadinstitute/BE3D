@@ -2,7 +2,9 @@
 File: randomize_sequence.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-25
-Description: Randomizes scores based on structural sequence and conservation information.
+Description: 
+    Randomizes per-residue scores weighted by structural and conservation features 
+    to create a baseline distribution for significance testing.
 """
 
 import os
@@ -29,44 +31,46 @@ def randomize_sequence(
         # AND MEAN FOR AVG RANDOMIZATIONS WHICH IS NOT TUNABLE, SO MEAN IS HARD CODED HERE #
 ): 
     """
-    Description
-        Randomizes the scores weighted by structural sequence and conservation fom previous step
+    Randomizes per-residue scores weighted by structural and conservation features 
+    to create a baseline distribution for significance testing.
             
     Parameters
     ----------
     df_missense : pd.DataFrame
-        DataFrame from prioritize_sequence which contains the LFC per residue information to be randomized. 
-
+        Per-residue LFC DataFrame from prioritize_by_sequence() to be randomized.
+        
     df_rand : pd.DataFrame
-        DataFrame from randomize_data which contains the randomized LFC values.
+        Randomized per-guide LFC DataFrame from randomize_data().
 
     workdir : str
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     screen_name : str
-        Name of the screens corresponding to df_missense.
+        Name of the screen corresponding to df_missense.
 
     nRandom : int, optional (default=1000)
         Number of randomizations per screen for calculating randomized LFC and LFC3D scores.
-
-    conservation : bool, optional (default=False)
-        If True, aggregates LFC only for residues marked as 'conserved' in the conservation data.
-        Non-conserved residues will be skipped (set to NaN or '-').
-
-    muttype : str, optional (default='Missense')
-        Type of mutation to focus on (e.g., 'Missense', 'Nonsense', etc.).
-        
-    function_name : str, optional
-        Names corresponding to the functio from prioritize_sequence to randomize.
     
+    conservation : bool, optional (default=False)
+        If True, aggregates LFC only for residues marked as conserved. Non-conserved residues are skipped. 
+        Should match whether df_consrv was provided in prioritize_by_sequence().
+        
+    muttype : str, optional (default='Missense')
+        Mutation category to randomize (e.g., 'Missense', 'Nonsense'). 
+        Should match one of the mutation types in df_dict from prioritize_by_sequence().
+        
+    function_name : str, optional (default='mean')
+        Aggregation function name to apply per residue. 
+        Should match one of the function_names used in prioritize_by_sequence().
+        
     target_pos : str, optional (default='unipos')
-        Column name specifying the target residue position from df_consrv.
-
-    target_res : str, optional (default=None)
-        Column name specifying the alternate residue information from df_consrv.
+        Column name in df_missense containing the primary sequence residue positions.
+        
+    target_res : str or None, optional (default=None)
+        Column name in df_missense containing the primary sequence residue identities.
 
     Returns
     -------

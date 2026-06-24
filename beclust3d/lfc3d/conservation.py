@@ -2,8 +2,8 @@
 File: conservation.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-25
-Description: Generates dataframes of sequence conservation by aligning sequences across species or isoforms.
-             Translated from Notebook 2
+Description: 
+    Aligns two protein sequences and generates per-residue conservation scores.
 """
 
 import pandas as pd
@@ -35,44 +35,49 @@ def conservation(
     }, 
 ): 
     """
-    Generate dataframes of sequence conservation for each residue. 
-    The default is to query the alignment from protein sequences, but the user can also upload an alignment file.
-    The alternate gene and uniprot is for if the data corresponds to a different sequence, 
-    whether it's a different gene or isoform of species, to be aligned to the sequence and structure. 
+    Aligns two protein sequences and generates per-residue conservation scores.
 
+    The alternate gene and UniProt are used when the conservation data corresponds to a
+    different sequence (e.g., a mouse ortholog or alternate isoform) that is aligned against
+    the primary sequence and structure. Alignment can be run locally via MUSCLE, submitted
+    remotely via the MUSCLE API, or skipped entirely by providing a precomputed alignment file.
+    
     Parameters
     ----------
     workdir : str
         Path to the working directory where output files and results will be saved.
 
     input_gene : str
-        Name of the gene being processed. 
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1'). 
 
     alt_input_gene : str
         Name of the alternate gene (e.g., mouse ortholog or isoform) to align against.
 
     input_uniprot : str
-        Uniprot of the gene being processed. 
+        Uniprot of the gene being processed (e.g., 'Q12345').. 
 
     alt_input_uniprot : str
-        UniProt for the alternate gene.
+        Uniprot of the alternate gene (e.g., mouse ortholog or isoform) to align against.
 
-    alignment_filename : str or Path or None, optional (default=None)
-        If provided, path to a precomputed sequence alignment file (.afa or other format).
-        If None, the function generates the alignment automatically.
+    alignment_filename : str or None, optional (default=None)
+        Path to a precomputed alignment file. If provided, skips running MUSCLE entirely.
 
-    mode : {'run', 'query'}, optional (default='run')
-        - 'run': Perform local multiple sequence alignment using MUSCLE.
-        - 'query': Submit a remote MUSCLE API job (requires `email` and `title`).
-
+    mode : str, optional (default='run')
+        Alignment method. 'run' performs alignment locally using MUSCLE; 
+        'query' submits a remote MUSCLE API job (requires email and title). 
+        Which method works may vary by machine.
+        
     title : str or None, optional
-        Title for the MUSCLE remote query (required if `mode='query'`).
-
+        Job title for the remote MUSCLE API request. Required if mode='query'.
+        
     email : str or None, optional
-        Email address required for using the remote MUSCLE API (required if `mode='query'`).
-
+        Email address for the remote MUSCLE API request. Required if mode='query'.
+    
+    muscle_path : str, optional (default='muscle')
+        Path to the local MUSCLE executable. Only used if mode='run'.
+        
     wait_time : int, optional (default=30)
-        Time in seconds to wait before re-polling the MUSCLE API when submitting a remote alignment request.
+        Seconds to wait between re-polling the MUSCLE API. Only used if mode='query'.
 
     Returns
     -------
@@ -80,8 +85,9 @@ def conservation(
         DataFrame containing per-residue conservation scores based on the sequence alignment.
 
     df_residuemap : pd.DataFrame
-        DataFrame mapping residue indices between the primary and alternate sequences 
+        DataFrame mapping residue indices between the primary and alternate sequences.
     """
+  
     # MKDIR #
     working_filedir = Path(workdir)
     if not os.path.exists(working_filedir): 
