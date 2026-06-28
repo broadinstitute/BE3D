@@ -454,8 +454,9 @@ def main(**kwargs):
 							workdir=output_dir,
 							input_gene=input_gene,
 							category_col=each_feature,
+							score_type=score_type,
 							values_cols=colnames, values_vals=[f'p<0.{cutoff_str}', f'p<0.{cutoff_str}'], value_names=['NEG', 'POS'],
-							plot_type='Count', colors = ['darkred', 'darkblue'],
+							plot_type='Count',
 						)
 
 						os.rename(f'{output_dir}/characterization/plots/{input_gene}_Count_{each_feature}_barplot.png',
@@ -840,8 +841,9 @@ def main(**kwargs):
 							workdir=output_dir,
 							input_gene=input_gene,
 							category_col=each_feature,
+							score_type=score_type,
 							values_cols=colnames, values_vals=[f'p<0.{cutoff_str}', f'p<0.{cutoff_str}'], value_names=['NEG', 'POS'],
-							plot_type='Count', colors = ['darkred', 'darkblue'],
+							plot_type='Count',
 						)
 
 						os.rename(f'{output_dir}/characterization/plots/{input_gene}_Count_{each_feature}_barplot.png',
