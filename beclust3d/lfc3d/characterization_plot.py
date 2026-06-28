@@ -381,7 +381,12 @@ def hits_feature_barplot(
     count_data_list = []
     for col, val, name in zip(values_cols, values_vals, value_names): 
         count_data = df_input.groupby([category_col, col]).size().unstack(fill_value=0)
-        count_data = count_data[val]
+        # A threshold value (e.g. 'p<0.05') is only present as a column when at
+        # least one row reaches it; absent it, plot zero counts instead of crashing.
+        if val in count_data.columns:
+            count_data = count_data[val]
+        else:
+            count_data = pd.Series(0, index=count_data.index)
         count_data = count_data.rename(name)
         count_data_list.append(count_data)
     
