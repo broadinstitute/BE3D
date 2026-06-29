@@ -174,16 +174,16 @@ python be3d_local.py ./yaml/men1_local.yaml
 BE3D can also be run directly in Google Colab.
 
 - **Single Screen Notebook Example (DNMT3A)**: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-SingleScreen-Notebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv9_SingleScreen_DNMT3A_Notebook.ipynb)
 
 - **Multi Screen Notebook with Meta-Aggregation Example (MEN1)**: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-MultipleScreens-Notebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv9_MultiScreen_MEN1_Notebook.ipynb)
 
-- **Multi Screen Notebook with Meta-Aggregation and Conservation Example (MORC2)**: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-MultipleScreensConservation-Notebook.ipynb)
+- **Multi Screen Notebook with Meta-Aggregation and Conservation Example (MORC2)** _(currently unavailable due to data confidentiality)_: 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv9_MultiScreen_MORC2_Notebook.ipynb)
 
 - **Multi Screen Notebook with Meta-Aggregation and Across Complex Example (KBTBD4)**: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv6-MultipleScreensComplex-Notebook.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv9_MultiScreen_KBTBD4_Notebook.ipynb)
 
 ## Github Structure
 
