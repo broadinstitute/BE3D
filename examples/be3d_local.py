@@ -465,10 +465,10 @@ def main(**kwargs):
 
 		# SCATTERPLOT #
 		# if conservation_run: # TODO: maybe later
-		df_lfc_dis = pd.read_csv(f"{output_dir}/LFC/{gene_type}_{input_gene}_LFC_dis_wght.tsv", sep='\t')
-		df_lfc3d_dis = pd.read_csv(f"{output_dir}/LFC3D/{gene_type}_{input_gene}_LFC3D_dis_wght.tsv", sep='\t')
-		df_lfc = pd.read_csv(f"{output_dir}/LFC/{gene_type}_{input_gene}_NonAggr_LFC.tsv", sep='\t')
-		df_lfc3d = pd.read_csv(f"{output_dir}/LFC3D/{gene_type}_{input_gene}_NonAggr_LFC3D.tsv", sep='\t')
+		df_lfc_dis = pd.read_csv(f"{output_dir}/LFC/{gene_type}_{gene}_LFC_dis_wght.tsv", sep='\t')
+		df_lfc3d_dis = pd.read_csv(f"{output_dir}/LFC3D/{gene_type}_{gene}_LFC3D_dis_wght.tsv", sep='\t')
+		df_lfc = pd.read_csv(f"{output_dir}/LFC/{gene_type}_{gene}_NonAggr_LFC.tsv", sep='\t')
+		df_lfc3d = pd.read_csv(f"{output_dir}/LFC3D/{gene_type}_{gene}_NonAggr_LFC3D.tsv", sep='\t')
 
 		for screen_name in screen_names:
 			df_dis_input = pd.DataFrame()

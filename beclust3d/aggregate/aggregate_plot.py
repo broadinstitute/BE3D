@@ -239,9 +239,14 @@ def metaaggregation_hisplot(
     for i, (dis, x, hue, name, label) in enumerate(params): 
     
         df_clean = df_input.loc[df_input[dis] != '-', ].reset_index(drop=True)
+        df_clean = df_clean.loc[df_clean[x] != '-', ].reset_index(drop=True)
         df_clean[x] = df_clean[x].astype(float)
-        plot = sns.histplot(df_clean, x=x, hue=hue, bins=50, palette='tab10', ax=ax[i])
-        plot.legend_.set_title(None)
+
+        # histplot with hue raises "No objects to concatenate" when given 0 rows
+        if not df_clean.empty:
+            plot = sns.histplot(df_clean, x=x, hue=hue, bins=50, palette='tab10', ax=ax[i])
+            if plot.legend_ is not None:
+                plot.legend_.set_title(None)
         ax[i].set_title(name)
         ax[i].set_xlabel(label)
 
@@ -274,7 +279,7 @@ def metaaggregation_scatterplot(
     for i, (dis, pval, y, out, new_dis, new_pval, new_y) in enumerate(params):
         df_meta = df_meta.rename(columns={pval:new_pval, y:new_y})
     
-        df_combined_clean = df_meta.loc[df_meta[new_dis] != '-', ]
+        df_combined_clean = df_meta.loc[df_meta[new_y] != '-', ]
         df_combined_clean = df_combined_clean.copy()
         df_combined_clean[new_y] = df_combined_clean[new_y].astype(float)
         df_combined_clean = df_combined_clean.sort_values(by=new_pval, ascending=False) ### consistent coloring hits nonhits

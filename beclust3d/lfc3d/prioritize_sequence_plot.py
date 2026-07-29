@@ -302,12 +302,16 @@ def dual_histogram_by_residue(
     df_struc_consvr[colname] = df_struc_consvr[colname].astype(float)
     df_struc_consvr_pos = df_struc_consvr[df_struc_consvr[colname] > 0.0]
     df_struc_consvr_neg = df_struc_consvr[df_struc_consvr[colname] < 0.0]
-    plot1 = sns.histplot(ax=axs[0], data=df_struc_consvr_pos, x=colname, hue=colname_plab, bins=80, palette='tab10')
-    plot2 = sns.histplot(ax=axs[1], data=df_struc_consvr_neg, x=colname, hue=colname_plab, bins=80, palette='tab10')
+
+    # histplot with hue raises "No objects to concatenate" when given 0 rows
+    if not df_struc_consvr_pos.empty:
+        sns.histplot(ax=axs[0], data=df_struc_consvr_pos, x=colname, hue=colname_plab, bins=80, palette='tab10')
+    if not df_struc_consvr_neg.empty:
+        sns.histplot(ax=axs[1], data=df_struc_consvr_neg, x=colname, hue=colname_plab, bins=80, palette='tab10')
 
     # give corresponding titles
-    plot1.set_title(f'Positive LFC Counts')
-    plot2.set_title(f'Negative LFC Counts')
+    axs[0].set_title(f'Positive LFC Counts')
+    axs[1].set_title(f'Negative LFC Counts')
     plt.suptitle(f'{input_gene} Mean Missense LFC Counts')
     plt.subplots_adjust(wspace=0.1)
 
