@@ -5,6 +5,7 @@ import numpy as np
 import yaml
 import glob
 import shutil
+from datetime import datetime
 
 def load_config(config_yaml):
 	with open(config_yaml, "r") as file:
@@ -908,6 +909,13 @@ def main(**kwargs):
 		g2p_formatted_hit_cluster(output_dir, gene_list, screen_names, lfc_pthr=single_screen_pthr_str.split('.')[1], lfc3d_pthr=single_screen_pthr_str.split('.')[1], meta_pthr=multi_screen_pthr_str.split('.')[1], function_for_meta=function_for_meta, conservation=conservation_run, input_gene=input_gene)
 	else:
 		g2p_formatted_hit_cluster(output_dir, gene_list, screen_names, lfc_pthr=single_screen_pthr_str.split('.')[1], lfc3d_pthr=single_screen_pthr_str.split('.')[1], meta_pthr=multi_screen_pthr_str.split('.')[1], function_for_meta=False, conservation=conservation_run, input_gene=input_gene)
+
+	# REACHING HERE MEANS THE FULL PIPELINE RAN WITHOUT ERROR; QA-FAILED OR qa_only RUNS EXIT EARLIER AND NEVER WRITE THIS #
+	with open(os.path.join(output_dir, 'RUN_COMPLETED.txt'), 'w') as f:
+		f.write(f'status: SUCCESS\n')
+		f.write(f'finished_at: {datetime.now().isoformat()}\n')
+		f.write(f'input_gene: {input_gene}\n')
+		f.write(f'screens: {",".join(screen_names)}\n')
 
 if __name__ == '__main__':
 	config_yaml = sys.argv[1]
