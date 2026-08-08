@@ -160,7 +160,7 @@ def main(**kwargs):
 		conserv_dfs = list()
 		gene_list = list() # where we need only have genes passed QA, so OVERWRITE the previous raw gene list.
 		for screen_name in screen_names:
-			if screen_name.startswith(alt_screen_start):
+			if alt_gene_name and screen_name.startswith(alt_screen_start):
 				conserv_dfs.append(df_residuemap)
 				gene_list.append(alt_gene_name)
 			else:
