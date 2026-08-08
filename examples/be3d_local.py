@@ -141,7 +141,21 @@ def main(**kwargs):
 		h2_ks_test_pd = h2_ks_test_pd.replace(-999,None)
 		white_screen_list = h2_ks_test_pd[(h2_ks_test_pd[f"p_{'_'.join(qa_cases)}_vs_{'_'.join(qa_controls)}"]<0.05)&(h2_ks_test_pd['gene_name'].isin(gene_list))]['screenid'].to_list()
 		print(f'original screen size: {len(screen_names)}, screen white list size: {len(white_screen_list)}, QA-passed screen size: {len(list(set(screen_names).intersection(white_screen_list)))}')
-		screen_names = list(set(screen_names).intersection(white_screen_list))
+
+		original_screen_names = screen_names
+		passed_screen_names = list(set(original_screen_names).intersection(white_screen_list))
+		failed_screen_names = [s for s in original_screen_names if s not in passed_screen_names]
+		qa_status = 'PASSED' if passed_screen_names else 'FAILED'
+
+		# TAG THE OUTPUT FOLDER WITH QA STATUS SO A FAILED GENE IS DISTINGUISHABLE WITHOUT RE-RUNNING #
+		with open(os.path.join(output_dir, 'QA_STATUS.txt'), 'w') as f:
+			f.write(f'qa_status: {qa_status}\n')
+			f.write(f'n_screens_total: {len(original_screen_names)}\n')
+			f.write(f'n_screens_passed: {len(passed_screen_names)}\n')
+			f.write(f'screens_passed: {",".join(sorted(passed_screen_names))}\n')
+			f.write(f'screens_failed: {",".join(sorted(failed_screen_names))}\n')
+
+		screen_names = passed_screen_names
 		input_dfs = [pd.read_csv(os.path.join(screen_dir,f'{s}.tsv'), sep='\t') for s in screen_names]
 		conserv_dfs = list()
 		gene_list = list() # where we need only have genes passed QA, so OVERWRITE the previous raw gene list.
@@ -152,6 +166,10 @@ def main(**kwargs):
 			else:
 				conserv_dfs.append(None)
 				gene_list.append(input_gene)
+
+		if qa_status == 'FAILED':
+			print(f'QA FAILED: 0/{len(original_screen_names)} screens passed QA for gene {input_gene}. See {output_dir}/QA_STATUS.txt')
+			sys.exit(1)
 
 	## WHERE WE CAN HAVE A BARRICADE FOR FILTERING QA_PASSED or ALL screens # Re-organise input_dfs, conservation_dfs
 
