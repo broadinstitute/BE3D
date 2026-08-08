@@ -138,50 +138,66 @@ def calculate_lfc3d(
             for gene_identifier, be3d_dir in ppi_gene_edits_dict.items():
                 _gene = gene_identifier.split('_')[0]
                 ppi_edits_dict2[gene_identifier] = pd.read_csv(os.path.join(be3d_dir,'screendata_sequence',f'{_gene}_{screen_name}_protein_edits.tsv'),sep='\t')[lfc_colname].to_dict()
+
+        # PRECOMPUTE NEIGHBOR SOURCES ONCE PER SCREEN, SINCE NEITHER THE NEIGHBOR TOPOLOGY NOR #
+        # THE conserved_only/CHAIN-MATCHING GATING DEPENDS ON r; ONLY THE LOOKED-UP VALUES DO #
+        if not LFC_only:
+            aa_eligible = [True] * len(df_edits)
+            aa_sources = [None] * len(df_edits)
+            for aa in range(len(df_edits)):
+                if conserved_only and taa_conserv_dict[aa] != 'conserved':  ###
+                    aa_eligible[aa] = False
+                    continue
+                aa_sources[aa] = _resolve_neighbor_sources(
+                    target_gene_chain, aa, taa_conserv_dict,
+                    naa_pos_chain_dict[f'{target_gene_chain}_{aa}'],
+                    conserved_only, ppi_chain_gene_dict,
+                )
+
         # CALCULATE LFC3D, IF LFC_only SKIP OVER #
-        if not LFC_only: 
+        if not LFC_only:
             aggr_vals = []
             taa_LFC_dict = df_edits[lfc_colname].to_dict() ###
 
             for aa in range(len(df_edits)): # FOR EVERY RESIDUE # ###
                 # RESIDUE NEEDS TO BE CONSERVED #
-                if conserved_only and taa_conserv_dict[aa] != 'conserved':  ###
+                if not aa_eligible[aa]:  ###
                     aggr_vals.append('-')
                     continue
                 # CALCULATE LFC3D #
-                taa_naa_LFC_vals = helper(target_gene_chain, aa, taa_LFC_dict, taa_conserv_dict, naa_pos_chain_dict[f'{target_gene_chain}_{aa}'], conserved_only, ppi_chain_gene_dict, ppi_edits_dict2)
+                taa_naa_LFC_vals = _gather_values(aa_sources[aa], taa_LFC_dict, ppi_edits_dict2)
                 if len(taa_naa_LFC_vals) == 0:
                     aggr_vals.append('-')
-                else: 
+                else:
                     aggr_vals.append(str(function_aggr_lfc3d(taa_naa_LFC_vals)))
-            
+
             df_struct_3d = pd.concat([df_struct_3d, pd.DataFrame({f"{screen_name}_LFC3D": aggr_vals})], axis=1)
             del taa_LFC_dict, aggr_vals
 
         # REPEAT LFC LFC3D CALCULATIONS FOR RANDOMIZED DATA #
-        
+
         dict_temp = {}
         for r in range(nRandom):
             # ADD LFC RANDOMIZATION COLUMNS FROM DF #
             dict_temp[f"{screen_name}_LFCr{str(r+1)}"] = df_rand[f'{lfc_colname}r{str(r+1)}']
 
             # CALCULATE LFC3D RANDOMIZATION, IF LFC_only SKIP OVER #
-            if not LFC_only: 
+            if not LFC_only:
                 aggr_vals = []
                 taa_LFC_rand_dict = df_rand[f'{lfc_colname}r{str(r+1)}'].to_dict() ###
 
                 for aa in range(len(df_rand)): # FOR EVERY RESIDUE # ###
                     # RESIDUE NEEDS TO BE CONSERVED #
-                    if conserved_only and taa_conserv_dict[aa] != 'conserved': ###
+                    if not aa_eligible[aa]: ###
                         aggr_vals.append('-')
                         continue
                     # CALCULATE LFC3D RANDOMIZATION #
-                    taa_naa_LFC_vals = helper(target_gene_chain, aa, taa_LFC_rand_dict, taa_conserv_dict, naa_pos_chain_dict[f'{target_gene_chain}_{aa}'], conserved_only, ppi_chain_gene_dict, ppi_edits_dict2)
+                    taa_naa_LFC_vals = _gather_values(aa_sources[aa], taa_LFC_rand_dict, ppi_edits_dict2)
                     if len(taa_naa_LFC_vals) == 0:
                         aggr_vals.append('-')
                     else:
                         aggr_vals.append(function_aggr_lfc3d(taa_naa_LFC_vals))
-                
+
                 dict_temp[f"{screen_name}_LFC3Dr{str(r+1)}"] = aggr_vals
                 del aggr_vals
 
@@ -222,49 +238,66 @@ def calculate_lfc3d(
 
     return df_struct_3d
 
-def helper(
-    target_gene_chain, # should be main targe gene
+def _resolve_neighbor_sources(
+    target_gene_chain, # should be main target gene
     aa, # should be main target gene
-    taa_LFC_dict,  # should be all chain
     df_struc_edits_dict, # only for main chain or target gene
     naa_chain_pos_str,  # only for main target gene
     conserved_only, # only for main target gene
     ppi_chain_gene_dict,
-    ppi_edits_dict
+):
+    """
+    Resolves, for one residue, the fixed list of value sources (self + eligible neighbors)
+    that feed into its LFC3D aggregation. Everything here is independent of which randomization
+    column is being processed, so it's computed once per screen and reused for the real data
+    pass and every one of the nRandom randomized passes (see _gather_values).
 
-): 
+    Each source is either ('local', idx) meaning "look up taa_LFC_dict[idx]" (covers both the
+    residue itself and same-chain neighbors), or ('cross', gene_identifier, idx) meaning
+    "look up ppi_edits_dict[gene_identifier][idx]" (cross-chain PPI neighbor).
+    """
     # naa IS NEIGHBORING AMINO ACIDS #
     # taa IS THIS AMINO ACID #
-    taa_naa_LFC_vals = []
-    taa_LFC = taa_LFC_dict[aa] ###
-
-    # VALUE FOR THIS RESIDUE #
-    if taa_LFC != '-': 
-        if not conserved_only or df_struc_edits_dict[aa] == 'conserved': ###
-            taa_naa_LFC_vals.append(float(taa_LFC))
+    # VALUE FOR THIS RESIDUE: caller already skips aa entirely when conserved_only excludes it #
+    sources = [('local', aa)]
 
     # CHECK NEIGHBORING RESIDUES #
     if isinstance(naa_chain_pos_str, str):  ###
+        is_ppi_mode = isinstance(ppi_chain_gene_dict, dict)
         naa_chain_pos_list = naa_chain_pos_str.split(';') ###
         for naa_chain_pos in naa_chain_pos_list:  ###
-            # VALUE FOR NEIGHBORING RESIDUE #
             naa_chain, naa_pos = naa_chain_pos.split('_')
+            naa_idx = int(naa_pos) - 1
 
-            if isinstance(ppi_chain_gene_dict,dict): # For PPIs
+            if is_ppi_mode: # For PPIs
                 if naa_chain == target_gene_chain:
-                    if not conserved_only or df_struc_edits_dict[int(naa_pos)-1] == 'conserved': ###
-                        naa_LFC = taa_LFC_dict[int(naa_pos)-1] ###
-                        if naa_LFC != '-': 
-                            taa_naa_LFC_vals.append(float(naa_LFC))
+                    if not conserved_only or df_struc_edits_dict[naa_idx] == 'conserved': ###
+                        sources.append(('local', naa_idx))
                 else:
-                    naa_LFC = ppi_edits_dict[ppi_chain_gene_dict[naa_chain]][int(naa_pos)-1] ###
-                    if naa_LFC != '-': 
-                        taa_naa_LFC_vals.append(float(naa_LFC))          
+                    # CROSS-CHAIN PPI NEIGHBORS ARE NEVER conserved_only-GATED #
+                    sources.append(('cross', ppi_chain_gene_dict[naa_chain], naa_idx))
             else: # For Monomer
-                if not conserved_only or df_struc_edits_dict[int(naa_pos)-1] == 'conserved': ###
+                if not conserved_only or df_struc_edits_dict[naa_idx] == 'conserved': ###
                     if naa_chain == target_gene_chain:
-                        naa_LFC = taa_LFC_dict[int(naa_pos)-1] ###
-                        if naa_LFC != '-': 
-                            taa_naa_LFC_vals.append(float(naa_LFC))
+                        sources.append(('local', naa_idx))
+
+    return sources
+
+def _gather_values(sources, taa_LFC_dict, ppi_edits_dict):
+    """
+    Fetches the actual LFC values for a precomputed source list. This is the only part of the
+    per-residue computation that depends on r (which randomization column's values are used),
+    including which entries happen to be '-' after permutation.
+    """
+    taa_naa_LFC_vals = []
+    for source in sources:
+        if source[0] == 'cross':
+            _, gene_identifier, idx = source
+            val = ppi_edits_dict[gene_identifier][idx] ###
+        else:
+            _, idx = source
+            val = taa_LFC_dict[idx] ###
+        if val != '-':
+            taa_naa_LFC_vals.append(float(val))
 
     return taa_naa_LFC_vals
