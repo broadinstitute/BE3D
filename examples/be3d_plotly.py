@@ -43,6 +43,18 @@ from IPython.display import display
 DEFAULT_WIDTH = 700
 DEFAULT_HEIGHT = 700
 
+# Shared color scheme, used consistently for every p-value / direction
+# based coloring in this module: positive selection is blue, negative
+# selection is red. Wherever a plot splits the same direction further by
+# significance (p<thr vs p>=thr), the non-significant half uses the pale
+# version of that direction's color rather than a separate hue.
+COLOR_POS = "#1f618d"        # blue: positive direction, significant
+COLOR_POS_PALE = "#aed6f1"   # pale blue: positive direction, not significant
+COLOR_NEG = "#c0392b"        # red: negative direction, significant
+COLOR_NEG_PALE = "#f5b7b1"   # pale red: negative direction, not significant
+COLOR_NEUTRAL = "#bdc3c7"    # gray: no clear direction / not a hit
+COLOR_COMBINED = "#8e44ad"   # purple: significant in both directions
+
 
 def _find_one(pattern):
     matches = sorted(glob.glob(pattern))
@@ -128,7 +140,7 @@ def plot_hypothesis_qa(output_dir, pthr=0.05, test="MannWhitney",
         df, x="screenid", y="-log10(p)", color="significant",
         hover_data=hover_cols + [pcol],
         title=f"BE-QA: {test} test, {comp_name} by screen",
-        color_discrete_map={f"p < {pthr}": "#e74c3c", f"p >= {pthr}": "#7f8c8d"},
+        color_discrete_map={f"p < {pthr}": COLOR_NEG, f"p >= {pthr}": COLOR_NEG_PALE},
     )
     fig.add_hline(y=-np.log10(pthr), line_dash="dash", line_color="gray",
                    annotation_text=f"p = {pthr}")
@@ -217,8 +229,8 @@ def plot_score_scatter(output_dir, input_gene, screen_name, score_type="LFC", pt
         long_df, x="unipos", y="value", color="group",
         title=f"{input_gene} {score_type} by sequence position — {screen_name}",
         color_discrete_map={
-            f"positive / p<{pthr_str}": "#c0392b", f"positive / p>={pthr_str}": "#f5b7b1",
-            f"negative / p<{pthr_str}": "#1f618d", f"negative / p>={pthr_str}": "#aed6f1",
+            f"positive / p<{pthr_str}": COLOR_POS, f"positive / p>={pthr_str}": COLOR_POS_PALE,
+            f"negative / p<{pthr_str}": COLOR_NEG, f"negative / p>={pthr_str}": COLOR_NEG_PALE,
         },
     )
     fig.add_hline(y=0, line_color="black", line_width=1)
@@ -315,8 +327,8 @@ def plot_lfc_lfc3d_scatter(output_dir, input_gene, screen_name, pthr_str="05",
     fig = px.scatter(
         merged, x=lfc_col, y=lfc3d_col, color="hit_type", hover_data=["unipos"],
         title=f"{input_gene} LFC vs. LFC3D — {screen_name}",
-        color_discrete_map={"Not a Hit": "#bdc3c7", "Pos Hit": "#e74c3c",
-                             "Neg Hit": "#2980b9", "Pos + Neg Hit": "#8e44ad"},
+        color_discrete_map={"Not a Hit": COLOR_NEUTRAL, "Pos Hit": COLOR_POS,
+                             "Neg Hit": COLOR_NEG, "Pos + Neg Hit": COLOR_COMBINED},
     )
     fig.update_layout(xaxis_title="LFC", yaxis_title="LFC3D",
                        width=width, height=height, autosize=False)
@@ -360,7 +372,7 @@ def plot_plddt_rsa_scatter(output_dir, input_gene, screen_name,
         merged, x="bfactor_pLDDT", y="RSA", color="direction", size=size_col,
         hover_data=["unipos", lfc3d_col],
         title=f"{input_gene} pLDDT vs. RSA — {screen_name}",
-        color_discrete_map={"positive": "#c0392b", "negative": "#1f618d"},
+        color_discrete_map={"positive": COLOR_POS, "negative": COLOR_NEG},
     )
     fig.update_layout(xaxis_title="pLDDT", yaxis_title="RSA",
                        width=width, height=height, autosize=False)
@@ -412,7 +424,7 @@ def plot_domain_barplot(output_dir, input_gene, input_uniprot, screen_name, pthr
     fig = px.bar(
         counts, x="Domain", y="count", color="hit_type", barmode="group",
         title=f"{input_gene} LFC3D hit count by domain (p<{pthr_str}) — {screen_name}",
-        color_discrete_map={"POS": "#c0392b", "NEG": "#1f618d"},
+        color_discrete_map={"POS": COLOR_POS, "NEG": COLOR_NEG},
     )
     fig.update_layout(xaxis_title="Domain", yaxis_title="Hit count",
                        width=width, height=height, autosize=False)
@@ -435,7 +447,7 @@ def plot_plddt_dis_barplot(output_dir, input_gene, screen_name, pthr_str="05",
     fig = px.bar(
         counts, x="pLDDT_dis", y="count", color="hit_type", barmode="group",
         title=f"{input_gene} LFC3D hit count by pLDDT-disorder category (p<{pthr_str}) — {screen_name}",
-        color_discrete_map={"POS": "#c0392b", "NEG": "#1f618d"},
+        color_discrete_map={"POS": COLOR_POS, "NEG": COLOR_NEG},
     )
     fig.update_layout(xaxis_title="pLDDT disorder category", yaxis_title="Hit count",
                        width=width, height=height, autosize=False)
