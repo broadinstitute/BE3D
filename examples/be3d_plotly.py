@@ -41,7 +41,7 @@ from IPython.display import display
 # accepts width=/height= overrides if you want a different size for a
 # specific plot.
 DEFAULT_WIDTH = 700
-DEFAULT_HEIGHT = 700
+DEFAULT_HEIGHT = 400
 
 # Shared color scheme, used consistently for every p-value / direction
 # based coloring in this module: positive selection is blue, negative
