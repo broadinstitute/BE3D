@@ -399,11 +399,11 @@ def plot_enrichment_test(output_dir, input_gene, screen_name, score_type="LFC3D"
 
     df["ci_low"] = df["ci"].apply(lambda c: c[0])
     df["ci_high"] = df["ci"].apply(lambda c: c[1])
-    label_col = "score_type" if "score_type" in df.columns else df.index.astype(str)
+    y_labels = df["score_type"] if "score_type" in df.columns else df.index.astype(str)
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=df["odds_ratio"], y=df[label_col] if isinstance(label_col, pd.Series) else label_col,
+        x=df["odds_ratio"], y=y_labels,
         mode="markers",
         error_x=dict(type="data", symmetric=False,
                      array=df["ci_high"] - df["odds_ratio"], arrayminus=df["odds_ratio"] - df["ci_low"]),
