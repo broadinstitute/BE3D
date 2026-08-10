@@ -15,6 +15,13 @@ Usage in a notebook cell:
     fig = plot_hypothesis_qa(output_dir, pthr=0.05)
     if fig is not None:
         fig.show()
+
+To lay two or more already-built figures out side by side instead of
+stacked, use show_side_by_side():
+    from be3d_plotly import plot_score_scatter, show_side_by_side
+    fig1 = plot_score_scatter(output_dir, input_gene, screen_name, score_type='LFC')
+    fig2 = plot_score_scatter(output_dir, input_gene, screen_name, score_type='LFC3D')
+    show_side_by_side(fig1, fig2)
 """
 
 import os
@@ -25,6 +32,8 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import ipywidgets as widgets
+from IPython.display import display
 
 # Default figure size (px), kept 1:1 square. Plotly figures otherwise
 # auto-fit to the notebook cell/container width, which shrinks/stretches
@@ -48,6 +57,38 @@ def _load_tsv(path):
 
 def _warn(msg):
     print(f"[be3d_plotly] {msg}")
+
+
+def show_side_by_side(*figs, width=None, height=None):
+    """
+    Display multiple already-built Plotly figures in one row instead of
+    stacked, each staying independently interactive (hover/zoom/legend
+    toggle) via ipywidgets.HBox + go.FigureWidget.
+
+    Any None entries (e.g. a plot_* call that returned None because its
+    input data was missing) are skipped. If only one figure remains after
+    that, it's just shown normally at DEFAULT_WIDTH x DEFAULT_HEIGHT.
+
+    width / height : optional per-panel override (px). Defaults to
+    splitting DEFAULT_WIDTH evenly across however many figures are shown
+    (min 350px per panel) and DEFAULT_HEIGHT for the height.
+    """
+    figs = [f for f in figs if f is not None]
+    if not figs:
+        return
+    if len(figs) == 1:
+        figs[0].update_layout(width=width or DEFAULT_WIDTH, height=height or DEFAULT_HEIGHT,
+                               autosize=False)
+        figs[0].show()
+        return
+
+    panel_width = width or max(DEFAULT_WIDTH // len(figs), 350)
+    panel_height = height or DEFAULT_HEIGHT
+    panels = []
+    for fig in figs:
+        fig.update_layout(width=panel_width, height=panel_height, autosize=False)
+        panels.append(go.FigureWidget(fig))
+    display(widgets.HBox(panels))
 
 
 # ── 1. BE-QA hypothesis test scatter ──────────────────────────────────────────
