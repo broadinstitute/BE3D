@@ -49,6 +49,11 @@ def plot_hypothesis_qa(output_dir, pthr=0.05, test="MannWhitney"):
     Interactive scatter of hypothesis-test p-values by screen id.
     Reads `hypothesis_qa/{test}_hypothesis2.tsv` (test = "MannWhitney" or
     "KolmogorovSmirnov").
+
+    The p-value column is named dynamically by the pipeline as
+    `p_{cases}_vs_{controls}` (e.g. `p_Nonsense_vs_No Mutation`), not a
+    fixed `p_CaseVsControl`, so it's detected by prefix instead of a
+    hardcoded name.
     """
     path = os.path.join(output_dir, "hypothesis_qa", f"{test}_hypothesis2.tsv")
     df = _load_tsv(path)
@@ -56,12 +61,15 @@ def plot_hypothesis_qa(output_dir, pthr=0.05, test="MannWhitney"):
         _warn(f"Could not find {path}; skipping hypothesis QA plot.")
         return None
 
-    pcol = "p_CaseVsControl"
-    if pcol not in df.columns:
-        _warn(f"Expected column '{pcol}' not found in {path}; skipping plot.")
+    p_cols = [c for c in df.columns if c.startswith("p_")]
+    if not p_cols:
+        _warn(f"No 'p_*' column found in {path}; skipping plot.")
         return None
+    pcol = p_cols[0]
+    comp_name = pcol[len("p_"):]
 
     df = df.copy()
+    df[pcol] = pd.to_numeric(df[pcol], errors="coerce")
     df["-log10(p)"] = -np.log10(df[pcol].clip(lower=1e-300))
     df["significant"] = np.where(df[pcol] < pthr, f"p < {pthr}", f"p >= {pthr}")
 
@@ -69,7 +77,7 @@ def plot_hypothesis_qa(output_dir, pthr=0.05, test="MannWhitney"):
     fig = px.scatter(
         df, x="screenid", y="-log10(p)", color="significant",
         hover_data=hover_cols + [pcol],
-        title=f"BE-QA: {test} test, case vs. control by screen",
+        title=f"BE-QA: {test} test, {comp_name} by screen",
         color_discrete_map={f"p < {pthr}": "#e74c3c", f"p >= {pthr}": "#7f8c8d"},
     )
     fig.add_hline(y=-np.log10(pthr), line_dash="dash", line_color="gray",
@@ -130,6 +138,12 @@ def plot_score_scatter(output_dir, input_gene, screen_name, score_type="LFC", pt
     if "unipos" not in df.columns or not all(c in df.columns for c in needed):
         _warn(f"Expected columns {['unipos'] + needed} not all found in {path}; skipping plot.")
         return None
+
+    # The pipeline uses the literal string '-' (not NaN) to mark residues
+    # with no value in the pos/neg split; coerce to numeric so those become
+    # proper NaN instead of tripping up abs()/comparisons below.
+    df[pos_val_col] = pd.to_numeric(df[pos_val_col], errors="coerce")
+    df[neg_val_col] = pd.to_numeric(df[neg_val_col], errors="coerce")
 
     rows = []
     for _, r in df.iterrows():
@@ -213,7 +227,15 @@ def plot_lfc_lfc3d_scatter(output_dir, input_gene, screen_name, pthr_str="05"):
         _warn(f"Expected columns '{lfc_col}'/'{lfc3d_col}' not found; skipping plot.")
         return None
 
+    # Non-conserved / skipped residues are written as the literal string
+    # '-' rather than NaN in these tables; coerce to numeric.
+    lfc_df = lfc_df.copy()
+    lfc3d_df = lfc3d_df.copy()
+    lfc_df[lfc_col] = pd.to_numeric(lfc_df[lfc_col], errors="coerce")
+    lfc3d_df[lfc3d_col] = pd.to_numeric(lfc3d_df[lfc3d_col], errors="coerce")
+
     merged = lfc_df[["unipos", lfc_col]].merge(lfc3d_df[["unipos", lfc3d_col]], on="unipos")
+    merged = merged.dropna(subset=[lfc_col, lfc3d_col])
     if pos_sig_col in psig_df.columns and neg_sig_col in psig_df.columns:
         merged = merged.merge(psig_df[["unipos", pos_sig_col, neg_sig_col]], on="unipos", how="left")
 
@@ -258,8 +280,16 @@ def plot_plddt_rsa_scatter(output_dir, input_gene, screen_name):
         _warn(f"Expected columns {needed + [lfc3d_col]} not all found; skipping plot.")
         return None
 
+    # Non-conserved / skipped residues are written as the literal string
+    # '-' rather than NaN in these tables; coerce to numeric.
+    lfc3d_df = lfc3d_df.copy()
+    lfc3d_df[lfc3d_col] = pd.to_numeric(lfc3d_df[lfc3d_col], errors="coerce")
+    if wght_col in lfc3d_df.columns:
+        lfc3d_df[wght_col] = pd.to_numeric(lfc3d_df[wght_col], errors="coerce")
+
     cols = ["unipos"] + [c for c in (lfc3d_col, wght_col) if c in lfc3d_df.columns]
     merged = struc_df[["unipos"] + needed].merge(lfc3d_df[cols], on="unipos")
+    merged = merged.dropna(subset=[lfc3d_col])
     merged["direction"] = np.where(merged[lfc3d_col] >= 0, "positive", "negative")
     size_col = None
     if wght_col in merged.columns:
