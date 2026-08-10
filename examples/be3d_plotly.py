@@ -26,6 +26,14 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
+# Default figure size (px), kept 1:1 square. Plotly figures otherwise
+# auto-fit to the notebook cell/container width, which shrinks/stretches
+# unpredictably between Colab and Jupyter. Every plotting function below
+# accepts width=/height= overrides if you want a different size for a
+# specific plot.
+DEFAULT_WIDTH = 700
+DEFAULT_HEIGHT = 700
+
 
 def _find_one(pattern):
     matches = sorted(glob.glob(pattern))
@@ -44,7 +52,8 @@ def _warn(msg):
 
 # ── 1. BE-QA hypothesis test scatter ──────────────────────────────────────────
 
-def plot_hypothesis_qa(output_dir, pthr=0.05, test="MannWhitney"):
+def plot_hypothesis_qa(output_dir, pthr=0.05, test="MannWhitney",
+                        width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     """
     Interactive scatter of hypothesis-test p-values by screen id.
     Reads `hypothesis_qa/{test}_hypothesis2.tsv` (test = "MannWhitney" or
@@ -82,14 +91,16 @@ def plot_hypothesis_qa(output_dir, pthr=0.05, test="MannWhitney"):
     )
     fig.add_hline(y=-np.log10(pthr), line_dash="dash", line_color="gray",
                    annotation_text=f"p = {pthr}")
-    fig.update_layout(xaxis_title="Screen", yaxis_title="-log10(p-value)")
+    fig.update_layout(xaxis_title="Screen", yaxis_title="-log10(p-value)",
+                       width=width, height=height, autosize=False)
     return fig
 
 
 # ── 2. Violin plot of raw scores by mutation type ─────────────────────────────
 
 def plot_violin_by_muttype(screen_dir, screen_file, mut_col="Mut_type", val_col="sgRNA_score",
-                            gene_col=None, gene_name=None):
+                            gene_col=None, gene_name=None,
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     """
     Interactive violin plot of the raw per-guide score distribution,
     split by mutation category. Reads the raw screen TSV directly
@@ -111,13 +122,15 @@ def plot_violin_by_muttype(screen_dir, screen_file, mut_col="Mut_type", val_col=
         df, x=mut_col, y=val_col, color=mut_col, box=True, points="outliers",
         title=f"Score distribution by mutation category — {os.path.basename(screen_file)}",
     )
-    fig.update_layout(xaxis_title="Mutation category", yaxis_title=val_col, showlegend=False)
+    fig.update_layout(xaxis_title="Mutation category", yaxis_title=val_col, showlegend=False,
+                       width=width, height=height, autosize=False)
     return fig
 
 
 # ── 3. LFC / LFC3D cutoff scatter along sequence position ────────────────────
 
-def plot_score_scatter(output_dir, input_gene, screen_name, score_type="LFC", pthr_str="05"):
+def plot_score_scatter(output_dir, input_gene, screen_name, score_type="LFC", pthr_str="05",
+                        width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     """
     Interactive scatter of per-residue LFC or LFC3D scores along sequence
     position (unipos), colored by significance at the given p-value cutoff.
@@ -168,14 +181,16 @@ def plot_score_scatter(output_dir, input_gene, screen_name, score_type="LFC", pt
         },
     )
     fig.add_hline(y=0, line_color="black", line_width=1)
-    fig.update_layout(xaxis_title="Residue position", yaxis_title=score_type)
+    fig.update_layout(xaxis_title="Residue position", yaxis_title=score_type,
+                       width=width, height=height, autosize=False)
     return fig
 
 
 # ── 4. 3-D structural cluster viewer (replaces the static dendrogram) ────────
 
 def plot_cluster_3d(output_dir, input_gene, screen_name, score_type="LFC3D",
-                     direction="Positive", pthr_str="001", dist="6A"):
+                     direction="Positive", pthr_str="001", dist="6A",
+                     width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     """
     Interactive 3-D scatter of residues colored by spatial cluster
     assignment, using the residue coordinates + cluster ids already saved
@@ -207,12 +222,14 @@ def plot_cluster_3d(output_dir, input_gene, screen_name, score_type="LFC3D",
         title=f"{input_gene} {direction} {score_type} clusters (p<{pthr_str}, {dist}) — {screen_name}",
     )
     fig.update_traces(marker=dict(size=4))
+    fig.update_layout(width=width, height=height, autosize=False)
     return fig
 
 
 # ── 5a. LFC vs LFC3D scatter ──────────────────────────────────────────────────
 
-def plot_lfc_lfc3d_scatter(output_dir, input_gene, screen_name, pthr_str="05"):
+def plot_lfc_lfc3d_scatter(output_dir, input_gene, screen_name, pthr_str="05",
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     lfc_path = _find_one(os.path.join(output_dir, "LFC", f"*_{input_gene}_LFC_dis_wght.tsv"))
     lfc3d_path = _find_one(os.path.join(output_dir, "LFC3D", f"*_{input_gene}_LFC3D_dis_wght.tsv"))
     psig_path = _find_one(os.path.join(output_dir, "LFC3D", f"*_{input_gene}_NonAggr_LFC3D.tsv"))
@@ -260,13 +277,15 @@ def plot_lfc_lfc3d_scatter(output_dir, input_gene, screen_name, pthr_str="05"):
         color_discrete_map={"Not a Hit": "#bdc3c7", "Pos Hit": "#e74c3c",
                              "Neg Hit": "#2980b9", "Pos + Neg Hit": "#8e44ad"},
     )
-    fig.update_layout(xaxis_title="LFC", yaxis_title="LFC3D")
+    fig.update_layout(xaxis_title="LFC", yaxis_title="LFC3D",
+                       width=width, height=height, autosize=False)
     return fig
 
 
 # ── 5b. pLDDT vs RSA scatter ──────────────────────────────────────────────────
 
-def plot_plddt_rsa_scatter(output_dir, input_gene, screen_name):
+def plot_plddt_rsa_scatter(output_dir, input_gene, screen_name,
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     struc_path = _find_one(os.path.join(output_dir, "sequence_structure", "*_coord_struc_features.tsv"))
     lfc3d_path = _find_one(os.path.join(output_dir, "LFC3D", f"*_{input_gene}_LFC3D_dis_wght.tsv"))
     struc_df, lfc3d_df = _load_tsv(struc_path), _load_tsv(lfc3d_path)
@@ -302,7 +321,8 @@ def plot_plddt_rsa_scatter(output_dir, input_gene, screen_name):
         title=f"{input_gene} pLDDT vs. RSA — {screen_name}",
         color_discrete_map={"positive": "#c0392b", "negative": "#1f618d"},
     )
-    fig.update_layout(xaxis_title="pLDDT", yaxis_title="RSA")
+    fig.update_layout(xaxis_title="pLDDT", yaxis_title="RSA",
+                       width=width, height=height, autosize=False)
     return fig
 
 
@@ -330,7 +350,8 @@ def _hit_counts_by_category(output_dir, input_gene, screen_name, category_df, ca
     return counts
 
 
-def plot_domain_barplot(output_dir, input_gene, input_uniprot, screen_name, pthr_str="05"):
+def plot_domain_barplot(output_dir, input_gene, input_uniprot, screen_name, pthr_str="05",
+                         width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     domains_path = os.path.join(output_dir, "sequence_structure", f"{input_gene}_{input_uniprot}_domains.tsv")
     domains_df = _load_tsv(domains_path)
     if domains_df is None:
@@ -352,11 +373,13 @@ def plot_domain_barplot(output_dir, input_gene, input_uniprot, screen_name, pthr
         title=f"{input_gene} LFC3D hit count by domain (p<{pthr_str}) — {screen_name}",
         color_discrete_map={"POS": "#c0392b", "NEG": "#1f618d"},
     )
-    fig.update_layout(xaxis_title="Domain", yaxis_title="Hit count")
+    fig.update_layout(xaxis_title="Domain", yaxis_title="Hit count",
+                       width=width, height=height, autosize=False)
     return fig
 
 
-def plot_plddt_dis_barplot(output_dir, input_gene, screen_name, pthr_str="05"):
+def plot_plddt_dis_barplot(output_dir, input_gene, screen_name, pthr_str="05",
+                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     struc_path = _find_one(os.path.join(output_dir, "sequence_structure", "*_coord_struc_features.tsv"))
     struc_df = _load_tsv(struc_path)
     if struc_df is None:
@@ -373,13 +396,15 @@ def plot_plddt_dis_barplot(output_dir, input_gene, screen_name, pthr_str="05"):
         title=f"{input_gene} LFC3D hit count by pLDDT-disorder category (p<{pthr_str}) — {screen_name}",
         color_discrete_map={"POS": "#c0392b", "NEG": "#1f618d"},
     )
-    fig.update_layout(xaxis_title="pLDDT disorder category", yaxis_title="Hit count")
+    fig.update_layout(xaxis_title="pLDDT disorder category", yaxis_title="Hit count",
+                       width=width, height=height, autosize=False)
     return fig
 
 
 # ── 5d. Enrichment test forest plot ──────────────────────────────────────────
 
-def plot_enrichment_test(output_dir, input_gene, screen_name, score_type="LFC3D", pthr_str="05"):
+def plot_enrichment_test(output_dir, input_gene, screen_name, score_type="LFC3D", pthr_str="05",
+                          width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     """
     Reads the enrichment_test() pickle (list of dicts with score_type,
     odds_ratio [log2], ci [log2 low/high], p_value) and renders a forest
@@ -415,5 +440,6 @@ def plot_enrichment_test(output_dir, input_gene, screen_name, score_type="LFC3D"
     fig.update_layout(
         title=f"{input_gene} enrichment test ({score_type}, p<{pthr_str}) — {screen_name}",
         xaxis_title="log2(odds ratio)", yaxis_title="",
+        width=width, height=height, autosize=False,
     )
     return fig
