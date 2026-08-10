@@ -337,6 +337,11 @@ def plot_domain_barplot(output_dir, input_gene, input_uniprot, screen_name, pthr
         _warn(f"Could not find {domains_path}; skipping domain barplot.")
         return None
 
+    # domains.tsv uses 'Position' for the residue index (not 'unipos' like
+    # the other structure/score tables); normalize so it can be merged.
+    if "unipos" not in domains_df.columns and "Position" in domains_df.columns:
+        domains_df = domains_df.rename(columns={"Position": "unipos"})
+
     counts = _hit_counts_by_category(output_dir, input_gene, screen_name, domains_df, "Domain", pthr_str)
     if counts is None or counts.empty:
         _warn("Could not assemble domain hit counts; skipping domain barplot.")
