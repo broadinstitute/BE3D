@@ -71,6 +71,20 @@ def _warn(msg):
     print(f"[be3d_plotly] {msg}")
 
 
+def _pthr_label(pthr_str):
+    """
+    The pipeline's psig columns store significance labels as the literal
+    string 'p<{threshold}' / 'p>={threshold}' using the full decimal
+    representation (e.g. 'p<0.05', written by calculate_stats()), while
+    column *names* use only the fractional digits (e.g.
+    '..._pos_05_psig', written by nonaggregate()). pthr_str here is that
+    column-name fragment ('05', '001', ...); this reconstructs the
+    decimal string ('05' -> '0.05') so label comparisons actually match
+    what's stored in the data instead of silently never matching.
+    """
+    return f"0.{pthr_str}"
+
+
 def show_side_by_side(*figs, width=None, height=None):
     """
     Display multiple already-built Plotly figures in one row instead of
@@ -225,12 +239,15 @@ def plot_score_scatter(output_dir, input_gene, screen_name, score_type="LFC", pt
     long_df = pd.DataFrame(rows)
     long_df["group"] = long_df["direction"] + " / " + long_df["significant"].astype(str)
 
+    # color_discrete_map keys must match the actual 'p<0.05'/'p>=0.05'
+    # label text stored in the psig columns, not the '05' file-name suffix.
+    pthr_label = _pthr_label(pthr_str)
     fig = px.scatter(
         long_df, x="unipos", y="value", color="group",
         title=f"{input_gene} {score_type} by sequence position — {screen_name}",
         color_discrete_map={
-            f"positive / p<{pthr_str}": COLOR_POS, f"positive / p>={pthr_str}": COLOR_POS_PALE,
-            f"negative / p<{pthr_str}": COLOR_NEG, f"negative / p>={pthr_str}": COLOR_NEG_PALE,
+            f"positive / p<{pthr_label}": COLOR_POS, f"positive / p>={pthr_label}": COLOR_POS_PALE,
+            f"negative / p<{pthr_label}": COLOR_NEG, f"negative / p>={pthr_label}": COLOR_NEG_PALE,
         },
     )
     fig.add_hline(y=0, line_color="black", line_width=1)
@@ -309,9 +326,14 @@ def plot_lfc_lfc3d_scatter(output_dir, input_gene, screen_name, pthr_str="05",
     if pos_sig_col in psig_df.columns and neg_sig_col in psig_df.columns:
         merged = merged.merge(psig_df[["unipos", pos_sig_col, neg_sig_col]], on="unipos", how="left")
 
+        # Compare against the actual 'p<0.05' label text, not the '05'
+        # file-name suffix -- otherwise this never matches and everything
+        # falls through to "Not a Hit".
+        pthr_label = _pthr_label(pthr_str)
+
         def _label(r):
-            pos_hit = str(r.get(pos_sig_col, "")).startswith(f"p<{pthr_str}")
-            neg_hit = str(r.get(neg_sig_col, "")).startswith(f"p<{pthr_str}")
+            pos_hit = str(r.get(pos_sig_col, "")).startswith(f"p<{pthr_label}")
+            neg_hit = str(r.get(neg_sig_col, "")).startswith(f"p<{pthr_label}")
             if pos_hit and neg_hit:
                 return "Pos + Neg Hit"
             if pos_hit:
@@ -393,8 +415,12 @@ def _hit_counts_by_category(output_dir, input_gene, screen_name, category_df, ca
 
     merged = category_df[["unipos", category_col]].merge(
         nonaggr_df[["unipos", pos_sig_col, neg_sig_col]], on="unipos", how="left")
-    pos_hits = merged[merged[pos_sig_col].astype(str).str.startswith(f"p<{pthr_str}")]
-    neg_hits = merged[merged[neg_sig_col].astype(str).str.startswith(f"p<{pthr_str}")]
+    # Compare against the actual 'p<0.05' label text, not the '05'
+    # file-name suffix -- otherwise this never matches and every category
+    # comes back with zero hits.
+    pthr_label = _pthr_label(pthr_str)
+    pos_hits = merged[merged[pos_sig_col].astype(str).str.startswith(f"p<{pthr_label}")]
+    neg_hits = merged[merged[neg_sig_col].astype(str).str.startswith(f"p<{pthr_label}")]
 
     counts = pd.concat([
         pos_hits.groupby(category_col).size().rename("count").reset_index().assign(hit_type="POS"),
@@ -423,7 +449,7 @@ def plot_domain_barplot(output_dir, input_gene, input_uniprot, screen_name, pthr
 
     fig = px.bar(
         counts, x="Domain", y="count", color="hit_type", barmode="group",
-        title=f"{input_gene} LFC3D hit count by domain (p<{pthr_str}) — {screen_name}",
+        title=f"{input_gene} LFC3D hit count by domain (p<{_pthr_label(pthr_str)}) — {screen_name}",
         color_discrete_map={"POS": COLOR_POS, "NEG": COLOR_NEG},
     )
     fig.update_layout(xaxis_title="Domain", yaxis_title="Hit count",
@@ -446,7 +472,7 @@ def plot_plddt_dis_barplot(output_dir, input_gene, screen_name, pthr_str="05",
 
     fig = px.bar(
         counts, x="pLDDT_dis", y="count", color="hit_type", barmode="group",
-        title=f"{input_gene} LFC3D hit count by pLDDT-disorder category (p<{pthr_str}) — {screen_name}",
+        title=f"{input_gene} LFC3D hit count by pLDDT-disorder category (p<{_pthr_label(pthr_str)}) — {screen_name}",
         color_discrete_map={"POS": COLOR_POS, "NEG": COLOR_NEG},
     )
     fig.update_layout(xaxis_title="pLDDT disorder category", yaxis_title="Hit count",
@@ -479,19 +505,32 @@ def plot_enrichment_test(output_dir, input_gene, screen_name, score_type="LFC3D"
     df["ci_high"] = df["ci"].apply(lambda c: c[1])
     y_labels = df["score_type"] if "score_type" in df.columns else df.index.astype(str)
 
+    # Gray out points that don't clear the significance threshold;
+    # significant points are colored by the direction of the odds ratio
+    # (enriched vs. depleted), consistent with the rest of the module.
+    pthr_value = float(_pthr_label(pthr_str))
+    p_values = df["p_value"] if "p_value" in df.columns else pd.Series([None] * len(df))
+
+    def _dot_color(p_value, odds_ratio):
+        if p_value is None or pd.isna(p_value) or p_value >= pthr_value:
+            return COLOR_NEUTRAL
+        return COLOR_POS if odds_ratio >= 0 else COLOR_NEG
+
+    marker_colors = [_dot_color(p, o) for p, o in zip(p_values, df["odds_ratio"])]
+
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=df["odds_ratio"], y=y_labels,
         mode="markers",
         error_x=dict(type="data", symmetric=False,
                      array=df["ci_high"] - df["odds_ratio"], arrayminus=df["odds_ratio"] - df["ci_low"]),
-        marker=dict(size=10, color="#2c3e50"),
+        marker=dict(size=10, color=marker_colors),
         text=[f"p = {p:.3g}" for p in df.get("p_value", [None] * len(df))],
         hovertemplate="%{y}: log2(OR) = %{x:.2f}<br>%{text}<extra></extra>",
     ))
     fig.add_vline(x=0, line_dash="dash", line_color="gray")
     fig.update_layout(
-        title=f"{input_gene} enrichment test ({score_type}, p<{pthr_str}) — {screen_name}",
+        title=f"{input_gene} enrichment test ({score_type}, p<{_pthr_label(pthr_str)}) — {screen_name}",
         xaxis_title="log2(odds ratio)", yaxis_title="",
         width=width, height=height, autosize=False,
     )
