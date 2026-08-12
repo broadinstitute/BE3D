@@ -141,6 +141,7 @@ def main(**kwargs):
 		h2_ks_test_pd = h2_ks_test_pd.replace(-999,None)
 		white_screen_list = h2_ks_test_pd[(h2_ks_test_pd[f"p_{'_'.join(qa_cases)}_vs_{'_'.join(qa_controls)}"]<0.05)&(h2_ks_test_pd['gene_name'].isin(gene_list))]['screenid'].to_list()
 		print(f'original screen size: {len(screen_names)}, screen white list size: {len(white_screen_list)}, QA-passed screen size: {len(list(set(screen_names).intersection(white_screen_list)))}')
+		screen_name_to_file = dict(zip([s.split('.')[0] for s in screens], screens))
 
 		original_screen_names = screen_names
 		passed_screen_names = list(set(original_screen_names).intersection(white_screen_list))
@@ -156,7 +157,7 @@ def main(**kwargs):
 			f.write(f'screens_failed: {",".join(sorted(failed_screen_names))}\n')
 
 		screen_names = passed_screen_names
-		input_dfs = [pd.read_csv(os.path.join(screen_dir,f'{s}.tsv'), sep='\t') for s in screen_names]
+		input_dfs = [pd.read_csv(os.path.join(screen_dir,screen_name_to_file[s]), sep='\t') for s in screen_names]
 		conserv_dfs = list()
 		gene_list = list() # where we need only have genes passed QA, so OVERWRITE the previous raw gene list.
 		for screen_name in screen_names:
