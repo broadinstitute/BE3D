@@ -269,6 +269,11 @@ class YamlConfigEditor:
         self._field_widgets = {}  # dotted_key -> (kind, widget)
         self._screens_table = _ScreensTable(self._screens_as_list())
 
+        # Flat, always-visible section list rather than a collapsible Accordion:
+        # Colab's custom widget manager has long-standing rendering gaps for
+        # Accordion/Tab container widgets specifically (independent of the
+        # ipywidgets version), while plain VBox/HBox/HTML render reliably there.
+        section_titles = ["Screens"] + [g["title"] for g in FIELD_GROUPS]
         sections = [self._build_screens_section()]
         for group in FIELD_GROUPS:
             sections.append(self._build_group_section(group))
@@ -278,14 +283,14 @@ class YamlConfigEditor:
                                            layout=widgets.Layout(width="160px"))
         self.save_button.on_click(lambda _btn: self.save())
 
-        accordion = widgets.Accordion(children=sections)
-        for i, group in enumerate(["Screens"] + [g["title"] for g in FIELD_GROUPS]):
-            accordion.set_title(i, group)
-        accordion.selected_index = 0
+        section_blocks = []
+        for title, section in zip(section_titles, sections):
+            section_blocks.append(widgets.HTML(f"<h4 style='margin:12px 0 4px;'>{title}</h4>"))
+            section_blocks.append(section)
 
         self.widget = widgets.VBox([
             widgets.HTML("<h3>⚙️ BEClust3D Configuration</h3>"),
-            accordion,
+            *section_blocks,
             widgets.HBox([self.save_button, self.status_label]),
         ])
 
