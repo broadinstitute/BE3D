@@ -4,8 +4,8 @@ output_dir: /content/KBTBD4/                                                    
 muscle_path: /content/muscle                                                          # path to the local MUSCLE executable for sequence alignment (used in conservation)
 # input screen file(s) to process; used as screen_names throughout the pipeline
 screens:
-  - YeoNature2025-ABE-Screen-NegCtrl.tsv
-  - YeoNature2025-CBE-Screen-NegCtrl.tsv
+  - YeoNature2025-KBTBD4-ABE-Screen-NegCtrl.tsv
+  - YeoNature2025-KBTBD4-CBE-Screen-NegCtrl.tsv
 user_fasta: null                                                                      # path to user-supplied FASTA file; if set, skips UniProt sequence query (used in sequence_structural_features)
 user_pdb: /content/KBTBD4/KBTBD4_8voj_single_chain_A.pdb                              # path to user-supplied PDB file; if set, skips AlphaFold structure query (used in sequence_structural_features)
 user_dssp: null                                                                       # path to user-supplied DSSP file; if set, skips running DSSP locally (used in sequence_structural_features)
