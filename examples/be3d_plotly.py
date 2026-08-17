@@ -34,6 +34,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import ipywidgets as widgets
 from IPython.display import display
+from scipy.cluster.hierarchy import dendrogram as _scipy_dendrogram
+from sklearn.cluster import AgglomerativeClustering
 
 # Default figure size (px), kept 1:1 square. Plotly figures otherwise
 # auto-fit to the notebook cell/container width, which shrinks/stretches
@@ -304,6 +306,171 @@ def plot_cluster_3d(output_dir, input_gene, screen_name, score_type="LFC3D",
     fig.update_traces(marker=dict(size=4))
     fig.update_layout(width=width, height=height, autosize=False)
     return fig
+
+
+# ── 4b. Interactive dendrogram (the actual hierarchical-clustering view) ─────
+#
+# The pipeline never persists the full merge tree, only the rendered
+# matplotlib image (beclust3d.lfc3d.clustering_plot.plot_dendrogram) -- the
+# saved Aggr_Hits.tsv only has cluster *labels* at a handful of discrete
+# distance cutoffs. So this recomputes the same single-linkage Euclidean
+# AgglomerativeClustering(distance_threshold=dist) fit on the same
+# significant-residue coordinates the pipeline used, which is deterministic
+# and reproduces the identical tree/labels, then renders it as an actual
+# Plotly dendrogram (not a 3-D scatter substitute).
+
+def _agglomerative_dendrogram_figure(coords, leaf_labels, dist, title,
+                                      width=DEFAULT_WIDTH, height=600):
+    n = coords.shape[0]
+    if n < 2:
+        _warn("Not enough significant residues to build a dendrogram.")
+        return None
+
+    model = AgglomerativeClustering(n_clusters=None, metric="euclidean", linkage="single",
+                                     distance_threshold=dist).fit(coords)
+
+    # Reconstruct the linkage matrix (children_, distances_, leaf counts per
+    # merge) exactly the way clustering_plot.plot_dendrogram does, since
+    # scipy's dendrogram() wants a standard linkage matrix, not the raw
+    # sklearn AgglomerativeClustering attributes.
+    counts = np.zeros(model.children_.shape[0])
+    for i, merge in enumerate(model.children_):
+        c = 0
+        for child_idx in merge:
+            c += 1 if child_idx < n else counts[child_idx - n]
+        counts[i] = c
+    linkage_matrix = np.column_stack([model.children_, model.distances_, counts]).astype(float)
+
+    def node_distance(node_id):
+        if node_id < n:
+            return 0.0
+        idx = int(node_id - n)
+        return linkage_matrix[idx, 2] if idx < len(linkage_matrix) else 0.0
+
+    def cluster_for_node(node_id):
+        if node_id < n:
+            return model.labels_[node_id]
+        idx = int(node_id - n)
+        if idx < len(linkage_matrix):
+            return cluster_for_node(int(linkage_matrix[idx, 0]))
+        return -1
+
+    palette = px.colors.qualitative.Dark24
+    cluster_color_map = {}
+
+    def color_for(cluster_id):
+        cluster_id = int(cluster_id)
+        if cluster_id not in cluster_color_map:
+            cluster_color_map[cluster_id] = palette[len(cluster_color_map) % len(palette)]
+        return cluster_color_map[cluster_id]
+
+    def link_color_func(node_id):
+        # Above the clustering threshold: gray, matching the matplotlib
+        # version's above_threshold_color. Below it: colored by which
+        # cluster this merge belongs to (traced down to its left leaf).
+        if node_distance(node_id) > dist:
+            return "#CCCCCC"
+        return color_for(cluster_for_node(node_id))
+
+    # link_color_func is called by scipy internally during the recursive
+    # plotting traversal, which visits links in a different order than
+    # linkage_matrix's merge order -- its returned color_list is guaranteed
+    # to already be paired index-for-index with icoord/dcoord, so don't try
+    # to re-derive per-link color from a naive zip against linkage_matrix.
+    ddata = _scipy_dendrogram(
+        linkage_matrix, no_plot=True, labels=leaf_labels,
+        color_threshold=dist, link_color_func=link_color_func,
+    )
+
+    fig = go.Figure()
+    for xs, ys, color in zip(ddata["icoord"], ddata["dcoord"], ddata["color_list"]):
+        fig.add_trace(go.Scatter(x=xs, y=ys, mode="lines", line=dict(color=color, width=1.5),
+                                  hoverinfo="skip", showlegend=False))
+
+    # scipy places leaves at x = 5, 15, 25, ... in the order given by ivl
+    # (the reordered leaf labels) -- this is the standard convention for
+    # converting a scipy dendrogram result into a custom-drawn plot.
+    ivl = ddata["ivl"]
+    leaf_x = [5 + 10 * i for i in range(len(ivl))]
+    fig.add_hline(y=dist, line_dash="dash", line_color="red",
+                  annotation_text=f"Threshold: {dist}Å", annotation_position="top left")
+    fig.update_xaxes(tickmode="array", tickvals=leaf_x, ticktext=ivl, tickangle=90,
+                      tickfont=dict(size=7))
+    fig.update_layout(title=title, yaxis_title="Distance (Å)",
+                       width=width, height=height, autosize=False, showlegend=False)
+    return fig
+
+
+def _significant_residue_coords(struc_df, sig_df, sig_col, pthr_label):
+    coord_cols = ["x_coord", "y_coord", "z_coord"]
+    merged = struc_df[["unipos", "unires", "chain"] + coord_cols].merge(
+        sig_df[["unipos", sig_col]], on="unipos")
+    merged = merged[merged[sig_col] == f"p<{pthr_label}"]
+    merged = merged[~merged[coord_cols].isin(["-"]).any(axis=1)]
+    if merged.empty:
+        return None, None
+    coords = merged[coord_cols].astype(float).to_numpy()
+    leaf_labels = [f"{row.unipos}-{row.chain}" for row in merged.itertuples()]
+    return coords, leaf_labels
+
+
+def plot_dendrogram(output_dir, input_gene, screen_name, score_type="LFC3D",
+                     direction="Positive", pthr_str="001", dist=6.0,
+                     width=DEFAULT_WIDTH, height=600):
+    """
+    Interactive Plotly dendrogram of the spatial hierarchical clustering for
+    a single screen -- a genuine merge-tree view (rotate/pan/hover), not the
+    3-D cluster scatter. dist is the clustering radius in Angstroms (the
+    yaml's clustering_radius, typically 6.0).
+    """
+    struc_path = _find_one(os.path.join(output_dir, "sequence_structure", "*_coord_struc_features.tsv"))
+    nonaggr_path = _find_one(os.path.join(output_dir, score_type, f"*_{input_gene}_NonAggr_{score_type}.tsv"))
+    struc_df, sig_df = _load_tsv(struc_path), _load_tsv(nonaggr_path)
+    if struc_df is None or sig_df is None:
+        _warn(f"Could not find structural features or NonAggr {score_type} table; skipping dendrogram.")
+        return None
+
+    sign = "pos" if direction.lower().startswith("pos") else "neg"
+    sig_col = f"{screen_name}_{score_type}_{sign}_{pthr_str}_psig"
+    if sig_col not in sig_df.columns:
+        _warn(f"Expected column '{sig_col}' not found in {nonaggr_path}; skipping dendrogram.")
+        return None
+
+    pthr_label = _pthr_label(pthr_str)
+    coords, leaf_labels = _significant_residue_coords(struc_df, sig_df, sig_col, pthr_label)
+    if coords is None:
+        _warn(f"No residues pass {sig_col} == p<{pthr_label}; skipping dendrogram.")
+        return None
+
+    title = f"{input_gene} {score_type} {direction} Clusters (p<{pthr_label}, {dist}Å) — {screen_name}"
+    return _agglomerative_dendrogram_figure(coords, leaf_labels, dist, title, width, height)
+
+
+def plot_meta_dendrogram(output_dir, input_gene, function_for_meta="SUM", score_type="LFC3D",
+                          direction="Positive", pthr_str="001", dist=6.0,
+                          conservation_run=False, width=DEFAULT_WIDTH, height=600):
+    """Meta-aggregate equivalent of plot_dendrogram."""
+    struc_path = _find_one(os.path.join(output_dir, "sequence_structure", "*_coord_struc_features.tsv"))
+    psig_path = _meta_agg_path(output_dir, input_gene, f"MetaAggr_{score_type}.tsv", conservation_run)
+    struc_df, sig_df = _load_tsv(struc_path), _load_tsv(psig_path)
+    if struc_df is None or sig_df is None:
+        _warn(f"Could not find structural features or meta-aggregate {score_type} table; skipping dendrogram.")
+        return None
+
+    sign = "pos" if direction.lower().startswith("pos") else "neg"
+    sig_col = f"{function_for_meta}_{score_type}_{sign}_{pthr_str}_psig"
+    if sig_col not in sig_df.columns:
+        _warn(f"Expected column '{sig_col}' not found in {psig_path}; skipping dendrogram.")
+        return None
+
+    pthr_label = _pthr_label(pthr_str)
+    coords, leaf_labels = _significant_residue_coords(struc_df, sig_df, sig_col, pthr_label)
+    if coords is None:
+        _warn(f"No residues pass {sig_col} == p<{pthr_label}; skipping dendrogram.")
+        return None
+
+    title = f"{input_gene} {score_type} {direction} Clusters (p<{pthr_label}, {dist}Å) — Meta ({function_for_meta})"
+    return _agglomerative_dendrogram_figure(coords, leaf_labels, dist, title, width, height)
 
 
 # ── 5a. LFC vs LFC3D scatter ──────────────────────────────────────────────────
