@@ -124,6 +124,15 @@ FIELD_GROUPS = [
             ("priority_on_alternative", "bool", "Prioritize alternate species sequence", ""),
         ],
     },
+    {
+        "title": "Protein-Protein Interaction (PPI)",
+        "fields": [
+            ("ppi_chain_gene_dict", "dict", "Chain → interacting gene",
+             "One 'chain: gene_identifier' pair per line, e.g. 'C: HDAC1'. Leave blank if this isn't a PPI run."),
+            ("ppi_gene_edits_dict", "dict", "Gene identifier → BEClust3D output dir",
+             "One 'gene_identifier: /content/output_dir' pair per line, e.g. 'HDAC1: /content/HDAC1'."),
+        ],
+    },
 ]
 
 # Keys handled specially outside FIELD_GROUPS: "screens" (the add/remove table).
@@ -162,6 +171,25 @@ def _text_to_list(s):
     return [x for x in items if x]
 
 
+def _dict_to_text(v):
+    if not v:
+        return ""
+    return "\n".join(f"{k}: {val}" for k, val in v.items())
+
+
+def _text_to_dict(s):
+    result = {}
+    for line in s.splitlines():
+        line = line.strip()
+        if not line or ":" not in line:
+            continue
+        key, _, value = line.partition(":")
+        key, value = key.strip(), value.strip()
+        if key:
+            result[key] = value
+    return result or None
+
+
 # ── Widget builders ───────────────────────────────────────────────────────────
 
 def _make_widget(kind, current_value, options=None):
@@ -181,6 +209,9 @@ def _make_widget(kind, current_value, options=None):
     if kind == "list":
         return widgets.Text(value=_list_to_text(current_value), layout=layout,
                              placeholder="comma-separated, e.g. Nonsense, Splice")
+    if kind == "dict":
+        return widgets.Textarea(value=_dict_to_text(current_value), layout=widgets.Layout(width="320px", height="60px"),
+                                 placeholder="one key: value per line")
     raise ValueError(f"Unknown widget kind: {kind}")
 
 
@@ -198,6 +229,8 @@ def _read_widget(kind, widget):
         return widget.value
     if kind == "list":
         return _text_to_list(widget.value)
+    if kind == "dict":
+        return _text_to_dict(widget.value)
     raise ValueError(f"Unknown widget kind: {kind}")
 
 
