@@ -259,7 +259,7 @@ def plot_score_scatter(output_dir, input_gene, screen_name, score_type="LFC", pt
 # ── 4. 3-D structural cluster viewer (replaces the static dendrogram) ────────
 
 def plot_cluster_3d(output_dir, input_gene, screen_name, score_type="LFC3D",
-                     direction="Positive", pthr_str="001", dist="6A",
+                     direction="Positive", pthr_str="001", dist="6A", column_prefix=None,
                      width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     """
     Interactive 3-D scatter of residues colored by spatial cluster
@@ -267,6 +267,14 @@ def plot_cluster_3d(output_dir, input_gene, screen_name, score_type="LFC3D",
     to `cluster_{score_type}/{input_gene}_{screen_name}_Aggr_Hits.tsv`.
     This is a more explorable substitute for the static dendrogram image
     (rotate/zoom/hover instead of a flat tree).
+
+    column_prefix : str, optional
+        Prefix used when clustering() built the psig column it clustered on
+        (clustering.py names the output column '{psig_column}_Clust_{dist}A').
+        For a per-screen call this is the screen name itself (the default,
+        when left None), but for the meta-aggregate call it's the
+        aggregation function name instead (e.g. 'SUM', 'mean') -- pass
+        function_for_meta explicitly for screen_name='Meta'.
     """
     path = os.path.join(output_dir, f"cluster_{score_type}", f"{input_gene}_{screen_name}_Aggr_Hits.tsv")
     df = _load_tsv(path)
@@ -274,8 +282,10 @@ def plot_cluster_3d(output_dir, input_gene, screen_name, score_type="LFC3D",
         _warn(f"Could not find {path}; skipping 3D cluster plot.")
         return None
 
+    if column_prefix is None:
+        column_prefix = screen_name
     sign = "pos" if direction.lower().startswith("pos") else "neg"
-    cluster_col = f"{score_type}_{sign}_{pthr_str}_psig_Clust_{dist}"
+    cluster_col = f"{column_prefix}_{score_type}_{sign}_{pthr_str}_psig_Clust_{dist}"
     coord_cols = ["x_coord", "y_coord", "z_coord"]
     if cluster_col not in df.columns or not all(c in df.columns for c in coord_cols):
         candidates = [c for c in df.columns if "_Clust_" in c]
@@ -482,15 +492,24 @@ def plot_plddt_dis_barplot(output_dir, input_gene, screen_name, pthr_str="05",
 
 # ── 5d. Enrichment test forest plot ──────────────────────────────────────────
 
-def plot_enrichment_test(output_dir, input_gene, screen_name, score_type="LFC3D", pthr_str="05",
+def plot_enrichment_test(output_dir, input_gene, screen_name=None, score_type="LFC3D", pthr_str="05",
                           width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     """
     Reads the enrichment_test() pickle (list of dicts with score_type,
     odds_ratio [log2], ci [log2 low/high], p_value) and renders a forest
     plot with hoverable confidence intervals.
+
+    screen_name : str, optional
+        Per-screen calls (bemetaclust3d_characterization.py excluded) name
+        this pickle '..._{score_type}_{pthr_str}_{screen_name}.pickle'; the
+        meta-aggregate characterization step writes it without any screen
+        suffix at all, so leave this None for the meta case.
     """
-    path = os.path.join(output_dir, "characterization",
-                         f"{input_gene}_enrichment_test_{score_type}_{pthr_str}_{screen_name}.pickle")
+    if screen_name:
+        fname = f"{input_gene}_enrichment_test_{score_type}_{pthr_str}_{screen_name}.pickle"
+    else:
+        fname = f"{input_gene}_enrichment_test_{score_type}_{pthr_str}.pickle"
+    path = os.path.join(output_dir, "characterization", fname)
     if not os.path.exists(path):
         _warn(f"Could not find {path}; skipping enrichment test plot.")
         return None
@@ -529,9 +548,248 @@ def plot_enrichment_test(output_dir, input_gene, screen_name, score_type="LFC3D"
         hovertemplate="%{y}: log2(OR) = %{x:.2f}<br>%{text}<extra></extra>",
     ))
     fig.add_vline(x=0, line_dash="dash", line_color="gray")
+    title_suffix = f" — {screen_name}" if screen_name else ""
     fig.update_layout(
-        title=f"{input_gene} enrichment test ({score_type}, p<{_pthr_label(pthr_str)}) — {screen_name}",
+        title=f"{input_gene} enrichment test ({score_type}, p<{_pthr_label(pthr_str)}){title_suffix}",
         xaxis_title="log2(odds ratio)", yaxis_title="",
         width=width, height=height, autosize=False,
     )
+    return fig
+
+
+# ── 6. Meta-aggregate (BE-MetaClust3D) equivalents ───────────────────────────
+#
+# bemetaclust3d_metaaggregate.py / bemetaclust3d_characterization.py write a
+# genuinely different file/column layout than the per-screen pipeline: there's
+# one shared `meta-aggregate/{input_gene}_*.tsv` per score type (no per-screen
+# suffix), and the value columns are prefixed by the aggregation function name
+# (function_for_meta, e.g. 'SUM', 'mean') rather than by a screen name. These
+# can't reuse the per-screen functions above without silently reading the
+# wrong column, so they get their own small set of equivalents instead.
+
+def _meta_agg_path(output_dir, input_gene, suffix, conservation_run=False):
+    prefix = "Merged" if conservation_run else input_gene
+    return os.path.join(output_dir, "meta-aggregate", f"{prefix}_{suffix}")
+
+
+def plot_meta_score_scatter(output_dir, input_gene, function_for_meta="SUM", score_type="LFC3D", pthr_str="05",
+                             conservation_run=False, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    """
+    Meta-aggregate equivalent of plot_score_scatter (per-residue score along
+    sequence position, colored by significance). Reads
+    `meta-aggregate/{input_gene}_MetaAggr_{score_type}.tsv`; value/psig
+    columns are prefixed by the aggregation function name (average_split_bin_plots
+    builds them as '{func}_{score_type}_pos'/'_neg' when screen_name==''),
+    not by a screen name like the per-screen NonAggr table.
+    """
+    path = _meta_agg_path(output_dir, input_gene, f"MetaAggr_{score_type}.tsv", conservation_run)
+    df = _load_tsv(path)
+    if df is None:
+        _warn(f"Could not find meta-aggregate {score_type} table ({path}); skipping plot.")
+        return None
+
+    pos_val_col = f"{function_for_meta}_{score_type}_pos"
+    neg_val_col = f"{function_for_meta}_{score_type}_neg"
+    pos_sig_col = f"{function_for_meta}_{score_type}_pos_{pthr_str}_psig"
+    neg_sig_col = f"{function_for_meta}_{score_type}_neg_{pthr_str}_psig"
+    needed = [pos_val_col, neg_val_col, pos_sig_col, neg_sig_col]
+    if "unipos" not in df.columns or not all(c in df.columns for c in needed):
+        _warn(f"Expected columns {['unipos'] + needed} not all found in {path}; skipping plot.")
+        return None
+
+    df = df.copy()
+    df[pos_val_col] = pd.to_numeric(df[pos_val_col], errors="coerce")
+    df[neg_val_col] = pd.to_numeric(df[neg_val_col], errors="coerce")
+
+    rows = []
+    for _, r in df.iterrows():
+        if pd.notna(r[pos_val_col]) and r[pos_val_col] != 0:
+            rows.append({"unipos": r["unipos"], "value": r[pos_val_col], "direction": "positive",
+                          "significant": r[pos_sig_col]})
+        if pd.notna(r[neg_val_col]) and r[neg_val_col] != 0:
+            rows.append({"unipos": r["unipos"], "value": -abs(r[neg_val_col]), "direction": "negative",
+                         "significant": r[neg_sig_col]})
+    if not rows:
+        _warn(f"No non-zero meta {score_type} values found; skipping plot.")
+        return None
+    long_df = pd.DataFrame(rows)
+    long_df["group"] = long_df["direction"] + " / " + long_df["significant"].astype(str)
+
+    pthr_label = _pthr_label(pthr_str)
+    fig = px.scatter(
+        long_df, x="unipos", y="value", color="group",
+        title=f"{input_gene} {score_type} by sequence position — Meta ({function_for_meta})",
+        color_discrete_map={
+            f"positive / p<{pthr_label}": COLOR_POS, f"positive / p>={pthr_label}": COLOR_POS_PALE,
+            f"negative / p<{pthr_label}": COLOR_NEG, f"negative / p>={pthr_label}": COLOR_NEG_PALE,
+        },
+    )
+    fig.add_hline(y=0, line_color="black", line_width=1)
+    fig.update_layout(xaxis_title="Residue position", yaxis_title=score_type,
+                       width=width, height=height, autosize=False)
+    return fig
+
+
+def plot_meta_lfc_lfc3d_scatter(output_dir, input_gene, function_for_meta="SUM", pthr_str="05",
+                                 conservation_run=False, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    """Meta-aggregate equivalent of plot_lfc_lfc3d_scatter."""
+    lfc_path = _meta_agg_path(output_dir, input_gene, "LFC_dis_wght.tsv", conservation_run)
+    lfc3d_path = _meta_agg_path(output_dir, input_gene, "LFC3D_dis_wght.tsv", conservation_run)
+    lfc3d_psig_path = _meta_agg_path(output_dir, input_gene, "MetaAggr_LFC3D.tsv", conservation_run)
+    lfc_df, lfc3d_df, psig_df = _load_tsv(lfc_path), _load_tsv(lfc3d_path), _load_tsv(lfc3d_psig_path)
+    if lfc_df is None or lfc3d_df is None or psig_df is None:
+        _warn("Could not find meta-aggregate LFC/LFC3D dis_wght or MetaAggr tables; skipping LFC vs LFC3D scatter.")
+        return None
+
+    lfc_col, lfc3d_col = f"{function_for_meta}_LFC", f"{function_for_meta}_LFC3D"
+    pos_sig_col, neg_sig_col = f"{function_for_meta}_LFC3D_pos_{pthr_str}_psig", f"{function_for_meta}_LFC3D_neg_{pthr_str}_psig"
+    if lfc_col not in lfc_df.columns or lfc3d_col not in lfc3d_df.columns:
+        _warn(f"Expected columns '{lfc_col}'/'{lfc3d_col}' not found; skipping plot.")
+        return None
+
+    lfc_df, lfc3d_df = lfc_df.copy(), lfc3d_df.copy()
+    lfc_df[lfc_col] = pd.to_numeric(lfc_df[lfc_col], errors="coerce")
+    lfc3d_df[lfc3d_col] = pd.to_numeric(lfc3d_df[lfc3d_col], errors="coerce")
+
+    merged = lfc_df[["unipos", lfc_col]].merge(lfc3d_df[["unipos", lfc3d_col]], on="unipos")
+    merged = merged.dropna(subset=[lfc_col, lfc3d_col])
+    if pos_sig_col in psig_df.columns and neg_sig_col in psig_df.columns:
+        merged = merged.merge(psig_df[["unipos", pos_sig_col, neg_sig_col]], on="unipos", how="left")
+        pthr_label = _pthr_label(pthr_str)
+
+        def _label(r):
+            pos_hit = str(r.get(pos_sig_col, "")).startswith(f"p<{pthr_label}")
+            neg_hit = str(r.get(neg_sig_col, "")).startswith(f"p<{pthr_label}")
+            if pos_hit and neg_hit:
+                return "Pos + Neg Hit"
+            if pos_hit:
+                return "Pos Hit"
+            if neg_hit:
+                return "Neg Hit"
+            return "Not a Hit"
+
+        merged["hit_type"] = merged.apply(_label, axis=1)
+    else:
+        merged["hit_type"] = "Not a Hit"
+
+    fig = px.scatter(
+        merged, x=lfc_col, y=lfc3d_col, color="hit_type", hover_data=["unipos"],
+        title=f"{input_gene} LFC vs. LFC3D — Meta ({function_for_meta})",
+        color_discrete_map={"Not a Hit": COLOR_NEUTRAL, "Pos Hit": COLOR_POS,
+                             "Neg Hit": COLOR_NEG, "Pos + Neg Hit": COLOR_COMBINED},
+    )
+    fig.update_layout(xaxis_title="LFC", yaxis_title="LFC3D",
+                       width=width, height=height, autosize=False)
+    return fig
+
+
+def plot_meta_plddt_rsa_scatter(output_dir, input_gene, function_for_meta="SUM", score_type="LFC3D",
+                                 conservation_run=False, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    """Meta-aggregate equivalent of plot_plddt_rsa_scatter."""
+    struc_path = _find_one(os.path.join(output_dir, "sequence_structure", "*_coord_struc_features.tsv"))
+    wght_path = _meta_agg_path(output_dir, input_gene, f"{score_type}_dis_wght.tsv", conservation_run)
+    struc_df, wght_df = _load_tsv(struc_path), _load_tsv(wght_path)
+    if struc_df is None or wght_df is None:
+        _warn("Could not find structural features or meta-aggregate dis_wght table; skipping pLDDT vs RSA scatter.")
+        return None
+
+    wght_col = f"{function_for_meta}_{score_type}_wght"
+    needed = ["bfactor_pLDDT", "RSA"]
+    if not all(c in struc_df.columns for c in needed) or wght_col not in wght_df.columns:
+        _warn(f"Expected columns {needed + [wght_col]} not all found; skipping plot.")
+        return None
+
+    wght_df = wght_df.copy()
+    wght_df[wght_col] = pd.to_numeric(wght_df[wght_col], errors="coerce")
+
+    merged = struc_df[["unipos"] + needed].merge(wght_df[["unipos", wght_col]], on="unipos")
+    merged = merged.dropna(subset=[wght_col])
+    merged = merged[merged[wght_col] != 0]
+    merged["direction"] = np.where(merged[wght_col] > 0, "positive", "negative")
+    merged["marker_size"] = merged[wght_col].abs() * 100
+
+    fig = px.scatter(
+        merged, x="bfactor_pLDDT", y="RSA", color="direction", size="marker_size",
+        hover_data=["unipos", wght_col],
+        title=f"{input_gene} pLDDT vs. RSA — Meta ({function_for_meta})",
+        color_discrete_map={"positive": COLOR_POS, "negative": COLOR_NEG},
+    )
+    fig.update_layout(xaxis_title="pLDDT", yaxis_title="RSA",
+                       width=width, height=height, autosize=False)
+    return fig
+
+
+def _meta_hit_counts_by_category(output_dir, input_gene, function_for_meta, category_df, category_col,
+                                  pthr_str, score_type="LFC3D", conservation_run=False):
+    psig_path = _meta_agg_path(output_dir, input_gene, f"MetaAggr_{score_type}.tsv", conservation_run)
+    psig_df = _load_tsv(psig_path)
+    if psig_df is None or category_col not in category_df.columns:
+        return None
+
+    pos_sig_col, neg_sig_col = f"{function_for_meta}_{score_type}_pos_{pthr_str}_psig", f"{function_for_meta}_{score_type}_neg_{pthr_str}_psig"
+    if pos_sig_col not in psig_df.columns or neg_sig_col not in psig_df.columns:
+        return None
+
+    merged = category_df[["unipos", category_col]].merge(
+        psig_df[["unipos", pos_sig_col, neg_sig_col]], on="unipos", how="left")
+    pthr_label = _pthr_label(pthr_str)
+    pos_hits = merged[merged[pos_sig_col].astype(str).str.startswith(f"p<{pthr_label}")]
+    neg_hits = merged[merged[neg_sig_col].astype(str).str.startswith(f"p<{pthr_label}")]
+
+    counts = pd.concat([
+        pos_hits.groupby(category_col).size().rename("count").reset_index().assign(hit_type="POS"),
+        neg_hits.groupby(category_col).size().rename("count").reset_index().assign(hit_type="NEG"),
+    ], ignore_index=True)
+    return counts
+
+
+def plot_meta_domain_barplot(output_dir, input_gene, input_uniprot, function_for_meta="SUM", pthr_str="05",
+                              conservation_run=False, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    """Meta-aggregate equivalent of plot_domain_barplot."""
+    domains_path = os.path.join(output_dir, "sequence_structure", f"{input_gene}_{input_uniprot}_domains.tsv")
+    domains_df = _load_tsv(domains_path)
+    if domains_df is None:
+        _warn(f"Could not find {domains_path}; skipping domain barplot.")
+        return None
+    if "unipos" not in domains_df.columns and "Position" in domains_df.columns:
+        domains_df = domains_df.rename(columns={"Position": "unipos"})
+
+    counts = _meta_hit_counts_by_category(output_dir, input_gene, function_for_meta, domains_df, "Domain",
+                                           pthr_str, conservation_run=conservation_run)
+    if counts is None or counts.empty:
+        _warn("Could not assemble meta domain hit counts; skipping domain barplot.")
+        return None
+
+    fig = px.bar(
+        counts, x="Domain", y="count", color="hit_type", barmode="group",
+        title=f"{input_gene} LFC3D hit count by domain (p<{_pthr_label(pthr_str)}) — Meta ({function_for_meta})",
+        color_discrete_map={"POS": COLOR_POS, "NEG": COLOR_NEG},
+    )
+    fig.update_layout(xaxis_title="Domain", yaxis_title="Hit count",
+                       width=width, height=height, autosize=False)
+    return fig
+
+
+def plot_meta_plddt_dis_barplot(output_dir, input_gene, function_for_meta="SUM", pthr_str="05",
+                                 conservation_run=False, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    """Meta-aggregate equivalent of plot_plddt_dis_barplot."""
+    struc_path = _find_one(os.path.join(output_dir, "sequence_structure", "*_coord_struc_features.tsv"))
+    struc_df = _load_tsv(struc_path)
+    if struc_df is None:
+        _warn("Could not find structural features table; skipping pLDDT-disorder barplot.")
+        return None
+
+    counts = _meta_hit_counts_by_category(output_dir, input_gene, function_for_meta, struc_df, "pLDDT_dis",
+                                           pthr_str, conservation_run=conservation_run)
+    if counts is None or counts.empty:
+        _warn("Could not assemble meta pLDDT-disorder hit counts; skipping barplot.")
+        return None
+
+    fig = px.bar(
+        counts, x="pLDDT_dis", y="count", color="hit_type", barmode="group",
+        title=f"{input_gene} LFC3D hit count by pLDDT-disorder category (p<{_pthr_label(pthr_str)}) — Meta ({function_for_meta})",
+        color_discrete_map={"POS": COLOR_POS, "NEG": COLOR_NEG},
+    )
+    fig.update_layout(xaxis_title="pLDDT disorder category", yaxis_title="Hit count",
+                       width=width, height=height, autosize=False)
     return fig
