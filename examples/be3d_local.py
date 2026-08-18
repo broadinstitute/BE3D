@@ -5,6 +5,7 @@ import numpy as np
 import yaml
 import glob
 import shutil
+from datetime import datetime
 
 def load_config(config_yaml):
 	with open(config_yaml, "r") as file:
@@ -140,17 +141,36 @@ def main(**kwargs):
 		h2_ks_test_pd = h2_ks_test_pd.replace(-999,None)
 		white_screen_list = h2_ks_test_pd[(h2_ks_test_pd[f"p_{'_'.join(qa_cases)}_vs_{'_'.join(qa_controls)}"]<0.05)&(h2_ks_test_pd['gene_name'].isin(gene_list))]['screenid'].to_list()
 		print(f'original screen size: {len(screen_names)}, screen white list size: {len(white_screen_list)}, QA-passed screen size: {len(list(set(screen_names).intersection(white_screen_list)))}')
-		screen_names = list(set(screen_names).intersection(white_screen_list))
-		input_dfs = [pd.read_csv(os.path.join(screen_dir,f'{s}.tsv'), sep='\t') for s in screen_names]
+		screen_name_to_file = dict(zip([s.split('.')[0] for s in screens], screens))
+
+		original_screen_names = screen_names
+		passed_screen_names = list(set(original_screen_names).intersection(white_screen_list))
+		failed_screen_names = [s for s in original_screen_names if s not in passed_screen_names]
+		qa_status = 'PASSED' if passed_screen_names else 'FAILED'
+
+		# TAG THE OUTPUT FOLDER WITH QA STATUS SO A FAILED GENE IS DISTINGUISHABLE WITHOUT RE-RUNNING #
+		with open(os.path.join(output_dir, 'QA_STATUS.txt'), 'w') as f:
+			f.write(f'qa_status: {qa_status}\n')
+			f.write(f'n_screens_total: {len(original_screen_names)}\n')
+			f.write(f'n_screens_passed: {len(passed_screen_names)}\n')
+			f.write(f'screens_passed: {",".join(sorted(passed_screen_names))}\n')
+			f.write(f'screens_failed: {",".join(sorted(failed_screen_names))}\n')
+
+		screen_names = passed_screen_names
+		input_dfs = [pd.read_csv(os.path.join(screen_dir,screen_name_to_file[s]), sep='\t') for s in screen_names]
 		conserv_dfs = list()
 		gene_list = list() # where we need only have genes passed QA, so OVERWRITE the previous raw gene list.
 		for screen_name in screen_names:
-			if screen_name.startswith(alt_screen_start):
+			if alt_gene_name and screen_name.startswith(alt_screen_start):
 				conserv_dfs.append(df_residuemap)
 				gene_list.append(alt_gene_name)
 			else:
 				conserv_dfs.append(None)
 				gene_list.append(input_gene)
+
+		if qa_status == 'FAILED':
+			print(f'QA FAILED: 0/{len(original_screen_names)} screens passed QA for gene {input_gene}. See {output_dir}/QA_STATUS.txt')
+			sys.exit(1)
 
 	## WHERE WE CAN HAVE A BARRICADE FOR FILTERING QA_PASSED or ALL screens # Re-organise input_dfs, conservation_dfs
 
@@ -908,6 +928,13 @@ def main(**kwargs):
 		g2p_formatted_hit_cluster(output_dir, gene_list, screen_names, lfc_pthr=single_screen_pthr_str.split('.')[1], lfc3d_pthr=single_screen_pthr_str.split('.')[1], meta_pthr=multi_screen_pthr_str.split('.')[1], function_for_meta=function_for_meta, conservation=conservation_run, input_gene=input_gene)
 	else:
 		g2p_formatted_hit_cluster(output_dir, gene_list, screen_names, lfc_pthr=single_screen_pthr_str.split('.')[1], lfc3d_pthr=single_screen_pthr_str.split('.')[1], meta_pthr=multi_screen_pthr_str.split('.')[1], function_for_meta=False, conservation=conservation_run, input_gene=input_gene)
+
+	# REACHING HERE MEANS THE FULL PIPELINE RAN WITHOUT ERROR; QA-FAILED OR qa_only RUNS EXIT EARLIER AND NEVER WRITE THIS #
+	with open(os.path.join(output_dir, 'RUN_COMPLETED.txt'), 'w') as f:
+		f.write(f'status: SUCCESS\n')
+		f.write(f'finished_at: {datetime.now().isoformat()}\n')
+		f.write(f'input_gene: {input_gene}\n')
+		f.write(f'screens: {",".join(screen_names)}\n')
 
 if __name__ == '__main__':
 	config_yaml = sys.argv[1]

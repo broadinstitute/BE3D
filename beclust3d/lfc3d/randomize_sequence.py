@@ -8,6 +8,7 @@ Description:
 """
 
 import os
+import numpy as np
 import pandas as pd
 from pathlib import Path
 
@@ -95,19 +96,22 @@ def randomize_sequence(
     position_list = df_missense[target_pos].tolist()
     rand_columns = [col for col in df_rand.columns if col.startswith('LFC')]
     new_rand_columns = [f'{function_name}_{muttype}_LFC'] + [f'{function_name}_{muttype}_LFCr{j+1}' for j in range(nRandom)]
-    df_mis_positions = pd.DataFrame(columns=new_rand_columns)
 
-    for i in range(len(df_missense)): 
-        df_mis_pos = df_rand.loc[df_rand['edit_pos'] == position_list[i]]
-        df_mis_pos = df_mis_pos[rand_columns]
+    # AVERAGE RAND COLUMNS PER UNIQUE POSITION ONCE, THEN MAP BACK TO EVERY ROW #
+    # (equivalent to, but much faster than, re-filtering df_rand per row of df_missense) #
+    rand_mean = df_rand.groupby('edit_pos')[rand_columns].mean()
+    position_arr = np.asarray(position_list)
+    matched_mask = np.isin(position_arr, rand_mean.index.values) # TRUE IFF >=1 MATCHING ROW EXISTED #
 
-        if df_mis_pos.shape[0] == 0 or (res_list is not None and res_list[i] == '-'): 
-            # FILL WITH '-' PLACEHOLDERS IF THERE IS NOT DATA, OR IF POSITION IS NOT CONSERVED #
-            res = ['-' for _ in range(df_mis_pos.shape[1])]
-        else: 
-            # AVERAGE ACROSS COLUMNS FOR ONE OR MORE ROWS #
-            res = df_mis_pos.mean().tolist()
-        df_mis_positions.loc[i] = res # ADD ROW FROM MISSENSE RANDOMIZED #
+    df_mis_positions = rand_mean.reindex(position_arr).reset_index(drop=True)
+    df_mis_positions.columns = new_rand_columns # POSITIONAL RENAME, SAME ORDER AS rand_columns #
+
+    # FILL WITH '-' PLACEHOLDERS IF THERE IS NOT DATA, OR IF POSITION IS NOT CONSERVED #
+    placeholder_mask = ~matched_mask
+    if res_list is not None:
+        placeholder_mask = placeholder_mask | (np.asarray(res_list, dtype=object) == '-')
+    df_mis_positions = df_mis_positions.astype(object)
+    df_mis_positions.loc[placeholder_mask, :] = '-'
 
     missense_columns = ['unipos', 'unires', 'chain', 'conservation', 
                         f'{function_name}_{muttype}_LFC', f'{function_name}_{muttype}_LFC_stdev', 

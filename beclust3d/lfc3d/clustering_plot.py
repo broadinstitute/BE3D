@@ -36,11 +36,12 @@ def plot_clustering(
     score_type='LFC3D',  
     merge_col=['unipos', 'chain'], 
     clustering_kwargs = {"n_clusters": None, "metric": "euclidean", "linkage": "single"}, 
-    horizontal=False, 
-    line_subplots_kwargs={'figsize':(6, 5)}, 
-    dendrogram_subplots_kwargs={'figsize':(12, 10)}, 
-    save_type='png', 
-): 
+    horizontal=False,
+    line_subplots_kwargs={'figsize':(6, 5)},
+    dendrogram_subplots_kwargs={'figsize':(12, 10)},
+    save_type='png',
+    max_distance=None,
+):
     """
     Generates line plots and dendrograms for clustering results at a specified distance threshold.
 
@@ -108,7 +109,11 @@ def plot_clustering(
         
     save_type : str, optional (default='png')
         File format for saved plots (e.g., 'png', 'pdf', 'svg').
-        
+
+    max_distance : float, optional (default=None)
+        If set, caps the distance axis of the dendrogram at this value instead of
+        auto-scaling to the tallest merge. Purely cosmetic - does not affect clustering.
+
     Returns
     -------
     None
@@ -189,9 +194,10 @@ def plot_clustering(
         cluster_info = plot_dendrogram(
             clustering, df_pvals_temp, 
             dist, horizontal, pos_col, chain_col, 
-            title, dend_filename, 
+            title, dend_filename,
             dendrogram_subplots_kwargs, save_type,
-            cluster_colors=cluster_colors)
+            cluster_colors=cluster_colors,
+            max_distance=max_distance)
         
         # NEW: Save detailed color mapping with active/inactive status
         analysis_color_file = working_filedir / f"cluster_{score_type}/{prefix}_{name}_{pthr}_{int(dist)}A_color_mapping.json"
@@ -322,10 +328,12 @@ def plot_dendrogram(
     chain_col, 
     title, 
     dend_filename, 
-    subplots_kwargs, 
+    subplots_kwargs,
     save_type,
     cluster_colors=None,
-):  
+    max_distance=None,
+    log2_scale=False,
+):
     """
     Plot hierarchical clustering dendrogram with consistent cluster coloring.
     Only colors links below the distance threshold.
@@ -348,8 +356,20 @@ def plot_dendrogram(
                 current_count += counts[child_idx - n_samples]
         counts[i] = current_count
 
+    plot_dist = float(dist)
+    plot_max_distance = max_distance
+    plot_distances = np.asarray(clustering.distances_, dtype=float)
+    distance_label = 'Distance (Å)'
+
+    if log2_scale:
+        plot_dist = np.log2(plot_dist + 1)
+        plot_distances = np.log2(plot_distances + 1)
+        if plot_max_distance is not None:
+            plot_max_distance = np.log2(float(plot_max_distance) + 1)
+        distance_label = 'log2 Distance (Å + 1)'
+
     linkage_matrix = np.column_stack(
-        [clustering.children_, clustering.distances_, counts]).astype(float)
+        [clustering.children_, plot_distances, counts]).astype(float)
     
     # Create labels with cluster information
     xlbl_pos = list(df_pvals_temp[pos_col])
@@ -406,7 +426,7 @@ def plot_dendrogram(
         node_distance = get_node_distance(node_id, linkage_matrix, n_samples)
         
         # If above threshold, return gray
-        if node_distance > dist:
+        if node_distance > plot_dist:
             return '#CCCCCC'
         
         # If below threshold, color by cluster
@@ -416,7 +436,7 @@ def plot_dendrogram(
     # Plot dendrogram with custom coloring
     dend_result = dendrogram(
         linkage_matrix,
-        color_threshold=dist,
+        color_threshold=plot_dist,
         above_threshold_color='#CCCCCC',
         labels=xlbl,
         orientation='right' if horizontal else 'top',
@@ -450,6 +470,8 @@ def plot_dendrogram(
     # Create detailed cluster information
     cluster_info = {
         "threshold_distance": float(dist),
+        "plot_threshold_distance": float(plot_dist),
+        "log2_scale": bool(log2_scale),
         "total_clusters": int(len(all_cluster_ids)),
         "active_clusters": int(len(active_clusters)),
         "grayed_clusters": int(len(grayed_clusters)),
@@ -473,13 +495,17 @@ def plot_dendrogram(
     # Styling
     ax.set_title(title, fontsize=10, pad=10)
     if horizontal:
-        ax.set_xlabel('Distance (Å)', fontsize=8)
+        ax.set_xlabel(distance_label, fontsize=8)
         ax.tick_params(axis='y', labelsize=6)
-        ax.axvline(x=dist, color='red', linestyle='--', linewidth=1, alpha=0.5, label=f'Threshold: {dist}Å')
+        ax.axvline(x=plot_dist, color='red', linestyle='--', linewidth=1, alpha=0.5, label=f'Threshold: {dist}Å')
+        if plot_max_distance is not None:
+            ax.set_xlim(0, plot_max_distance)
     else:
-        ax.set_ylabel('Distance (Å)', fontsize=8)
+        ax.set_ylabel(distance_label, fontsize=8)
         ax.tick_params(axis='x', labelsize=6, rotation=90)
-        ax.axhline(y=dist, color='red', linestyle='--', linewidth=1, alpha=0.5, label=f'Threshold: {dist}Å')
+        ax.axhline(y=plot_dist, color='red', linestyle='--', linewidth=1, alpha=0.5, label=f'Threshold: {dist}Å')
+        if plot_max_distance is not None:
+            ax.set_ylim(0, plot_max_distance)
     
     ax.legend(loc='best', fontsize=6)
     
