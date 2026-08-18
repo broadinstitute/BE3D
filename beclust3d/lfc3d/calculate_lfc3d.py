@@ -35,7 +35,6 @@ def calculate_lfc3d(
     target_gene_chain = 'A',
     ppi_chain_gene_dict = {}, # {'GENE1':'B','GENE2':'C'}
     ppi_gene_edits_dict = {}, # {'GENE1': edits_dict, 'GENE2': edits_dict}
-    blind_chain = None, # if set to target_gene_chain, drop self + same-chain neighbors, keeping only cross-chain PPI sources
     func_map={'mean':np.mean, 'median':np.median, 'sum':np.sum, 'min':np.min, 'max':np.max},
 ):
     """
@@ -153,7 +152,6 @@ def calculate_lfc3d(
                     target_gene_chain, aa, taa_conserv_dict,
                     naa_pos_chain_dict[f'{target_gene_chain}_{aa}'],
                     conserved_only, ppi_chain_gene_dict,
-                    blind_chain=blind_chain,
                 )
 
         # CALCULATE LFC3D, IF LFC_only SKIP OVER #
@@ -247,7 +245,6 @@ def _resolve_neighbor_sources(
     naa_chain_pos_str,  # only for main target gene
     conserved_only, # only for main target gene
     ppi_chain_gene_dict,
-    blind_chain=None,
 ):
     """
     Resolves, for one residue, the fixed list of value sources (self + eligible neighbors)
@@ -258,18 +255,12 @@ def _resolve_neighbor_sources(
     Each source is either ('local', idx) meaning "look up taa_LFC_dict[idx]" (covers both the
     residue itself and same-chain neighbors), or ('cross', gene_identifier, idx) meaning
     "look up ppi_edits_dict[gene_identifier][idx]" (cross-chain PPI neighbor).
-
-    blind_chain : if it equals target_gene_chain, every 'local' source (the residue's own
-    value AND same-chain neighbors) is dropped, so the residue's LFC3D is aggregated purely
-    from cross-chain PPI neighbors -- i.e. "what do this position's partner-chain neighbors
-    look like", blind to the target chain's own signal.
     """
     # naa IS NEIGHBORING AMINO ACIDS #
     # taa IS THIS AMINO ACID #
     # VALUE FOR THIS RESIDUE: caller already skips aa entirely when conserved_only excludes it #
     is_ppi_mode = isinstance(ppi_chain_gene_dict, dict)
-    is_blind = is_ppi_mode and blind_chain is not None and blind_chain == target_gene_chain
-    sources = [] if is_blind else [('local', aa)]
+    sources = [('local', aa)]
 
     # CHECK NEIGHBORING RESIDUES #
     if isinstance(naa_chain_pos_str, str):  ###
@@ -280,7 +271,7 @@ def _resolve_neighbor_sources(
 
             if is_ppi_mode: # For PPIs
                 if naa_chain == target_gene_chain:
-                    if not is_blind and (not conserved_only or df_struc_edits_dict[naa_idx] == 'conserved'): ###
+                    if not conserved_only or df_struc_edits_dict[naa_idx] == 'conserved': ###
                         sources.append(('local', naa_idx))
                 elif naa_chain in ppi_chain_gene_dict:
                     # CROSS-CHAIN PPI NEIGHBORS ARE NEVER conserved_only-GATED #

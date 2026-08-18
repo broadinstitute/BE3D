@@ -373,9 +373,6 @@ def main(**kwargs):
 	atom_level_naa=kwargs['atom_level_naa']
 	muscle_path=kwargs['muscle_path']
 	mutation_priority=kwargs['mutation_priority']
-	blind_mode=kwargs['blind_mode']
-	if blind_mode is True: # blind_mode: true means "blind this run's own target chain" #
-		blind_mode = input_chain
 
 	if user_pdb:
 		structureid = f'PDB-{input_uniprot}'
@@ -636,7 +633,6 @@ def main(**kwargs):
 			target_gene_chain=input_chain,
 			ppi_chain_gene_dict=ppi_chain_gene_dict,
 			ppi_gene_edits_dict=ppi_gene_edits_dict,
-			blind_chain=blind_mode,
 		)
 		
 		# LFC #
@@ -1353,10 +1349,6 @@ if __name__ == '__main__':
 	muscle_path = config.get('muscle_path', 'muscle')
 	mutation_priority = config.get('mutation_priority') # optional; most-to-least-deleterious order for collapsing
 	                                                      # delimiter-joined multi-category mut_col values (e.g. 'Silent;Missense;')
-	blind_mode = config.get('blind_mode') # optional chain letter (e.g. 'B'); null to skip. When set to the target
-	                                       # gene's own chain, LFC3D is aggregated purely from cross-chain PPI
-	                                       # neighbors, dropping the residue's own value and same-chain neighbors
-	                                       # (monomer/complex only -- see mode: blind_target for the honest version)
 
 	# KWARGS SHARED ACROSS EVERY main() CALL, REGARDLESS OF MODE #
 	common_kwargs = dict(
@@ -1368,7 +1360,7 @@ if __name__ == '__main__':
 		alt_screen_start=alt_screen_start, v_score_threshold=v_score_threshold,
 		function_for_meta=function_for_meta, qa_passed_only=qa_passed_only, qa_only=qa_only, qa_controls=qa_controls, qa_cases=qa_cases,
 		priority_on_alternative=priority_on_alternative, config_yaml=config_yaml, atom_level_naa=atom_level_naa, muscle_path=muscle_path,
-		mutation_priority=mutation_priority, blind_mode=blind_mode,
+		mutation_priority=mutation_priority,
 	)
 
 	if mode == 'monomer':
