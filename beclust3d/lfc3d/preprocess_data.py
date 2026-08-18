@@ -24,11 +24,12 @@ def parse_be_data(
     edits_col='Amino Acid Edits', 
     mut_categories=["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"], 
     mut_delimiter=',', 
-    conserv_dfs=[], 
+    conserv_dfs=[],
     conserv_col='mouse_res_pos',
     v_score_threshold=3, ### conserv_col
-    gene_list=False, 
-): 
+    gene_list=False,
+    mutation_priority=None,
+):
     """
     Parses raw base editing screen data into per-mutation-type DataFrames for each screen.
 
@@ -80,6 +81,12 @@ def parse_be_data(
     gene_list : bool, optional (default=False)
         If True, processes a list of genes rather than a single gene.
 
+    mutation_priority : list of str or None, optional (default=None)
+        Priority order (most to least deleterious) used to collapse a guide's
+        mut_col value into a single category when it is a delimiter-joined
+        list of per-edit categories (e.g. 'Silent;Missense;'). If None, mut_col
+        values are used as-is, assuming they are already single categories.
+
     Returns
     -------
     mut_dfs : dict
@@ -121,6 +128,10 @@ def parse_be_data(
             conserv_list = [str(x) for x in conserv_df[conserv_df['v_score']>=v_score_threshold][conserv_col].tolist()]
         # NARROW DOWN TO INPUT_GENE #
         df_gene = screen_df.loc[screen_df[gene_col] == input_gene, ]
+        if mutation_priority:
+            df_gene = df_gene.copy()
+            df_gene[mut_col] = df_gene[mut_col].apply(
+                lambda x: reduce_mutation_type(x, mut_delimiter, mutation_priority))
         mut_dfs[screen_name] = {}
 
         # NARROW DOWN TO EACH MUTATION TYPE #
