@@ -9,6 +9,7 @@ Description:
 import os
 from pathlib import Path
 import shutil
+import pandas as pd
 
 from .structure_helpers import *
 
@@ -133,3 +134,82 @@ def sequence_structural_features(
     coord_dssp_filename = f"sequence_structure/{structureid}_coord_struc_features.tsv"
     df_coord_dssp = degree_of_burial(df_dssp, df_coord, working_filedir, coord_dssp_filename, target_chainid)
     return df_coord_dssp
+
+def sequence_structural_features_lite(
+    workdir,
+    input_gene,
+    input_uniprot,
+    structureid,
+    target_chainid,
+    user_fasta=None,
+    user_pdb=None,
+):
+    """
+    Lightweight variant of sequence_structural_features for PPI partner chains
+    that are only ever used as a cross-chain LFC lookup (see calculate_lfc3d).
+    Produces just the unipos/unires/chain residue table by aligning the gene's
+    own UniProt sequence to its chain in the shared PDB structure, skipping
+    domains, DSSP, neighbor/radius counting, and burial degree entirely.
+
+    Parameters
+    ----------
+    workdir : str
+        Path to the working directory where output files and results will be saved.
+
+    input_gene : str
+        Name of the gene being processed (e.g., 'DNMT3A', 'MEN1').
+
+    input_uniprot : str
+        Uniprot of the gene being processed (e.g., 'Q12345')..
+
+    structureid : str
+        Identifier for the protein structure (used for naming processed files).
+
+    target_chainid : str
+        Chain ID of input_gene in the PDB structure. Only residues from this chain are included.
+
+    user_fasta : str or None, optional
+        Path to a user-supplied UniProt FASTA file. If provided, skips querying UniProt online.
+
+    user_pdb : str or None, optional
+        Path to a user-supplied AlphaFold/complex PDB file. If provided, skips querying AlphaFold online.
+
+    Returns
+    -------
+    df_coord : pd.DataFrame
+        DataFrame with columns ['unipos', 'unires', 'chain'] for the target chain.
+    """
+
+    # NAME VARIABLES, PATHS, CREATE DIRECTORIES #
+    working_filedir = Path(workdir)
+    if not os.path.exists(working_filedir):
+        os.mkdir(working_filedir)
+    if not os.path.exists(working_filedir / 'sequence_structure'):
+        os.mkdir(working_filedir / 'sequence_structure')
+
+    # UNIPROT #
+    out_fasta = working_filedir / f"sequence_structure/{input_gene}_{input_uniprot}.tsv"
+    if user_fasta is not None: # USER INPUT FOR UNIPROT #
+        assert os.path.isfile(user_fasta), f'{user_fasta} does not exist'
+        uFasta_file = user_fasta
+    else: # QUERY DATABASE #
+        uFasta_file = query_uniprot(working_filedir, input_uniprot)
+    parse_uniprot(uFasta_file, out_fasta)
+
+    # STRUCTURE #
+    pdb_filename = f"sequence_structure/{input_uniprot}.pdb"
+    pdb_processed_filename = f"sequence_structure/{structureid}_processed.pdb"
+    if user_pdb is not None: # USER INPUT FOR ALPHAFOLD/COMPLEX #
+        assert os.path.isfile(user_pdb), f'{user_pdb} does not exist'
+        shutil.copy2(user_pdb, os.path.join(working_filedir, pdb_filename))
+    else: # QUERY DATABASE #
+        query_af(working_filedir, pdb_filename, structureid)
+    parse_af(working_filedir, pdb_filename, pdb_processed_filename)
+    update_pdb_element_symbols(os.path.join(working_filedir, pdb_processed_filename), os.path.join(working_filedir, pdb_processed_filename))
+
+    coord_filename = f"sequence_structure/{structureid}_coord.tsv"
+    parse_coord(working_filedir, pdb_processed_filename, out_fasta, coord_filename, target_chainid)
+
+    df_coord = pd.read_csv(working_filedir / coord_filename, sep='\t')
+    df_coord = df_coord[df_coord['chain'] == target_chainid][['unipos', 'unires', 'chain']].reset_index(drop=True)
+    return df_coord

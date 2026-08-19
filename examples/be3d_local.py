@@ -13,6 +13,520 @@ def load_config(config_yaml):
 
 	return config
 
+def preprocess_ppi_partner(
+	partner_dir, gene, uniprot, chain,
+	screens, screen_dir, screen_names,
+	mut_col, val_col, gene_col, edits_col, mut_categories, mut_delimiter,
+	user_fasta, user_pdb, mutation_priority=None,
+	conservation_run=False, alt_gene_name=None, alt_uniprot_id=None, alt_screen_start=None,
+	v_score_threshold=3, muscle_path='muscle', priority_on_alternative=False,
+):
+	"""
+	Lightweight preprocessing for a PPI partner chain: only produces
+	{partner_dir}/screendata_sequence/{gene}_{screen_name}_protein_edits.tsv,
+	the single file calculate_lfc3d reads as a cross-chain LFC lookup for
+	that chain. Skips DSSP/radius/domains/burial, QA, and randomization
+	entirely since none of them are used for that value.
+
+	If conservation_run and alt_gene_name are set, screens whose name starts
+	with alt_screen_start are treated as coming from a different species/ortholog
+	(e.g. mouse Setdb1 screens for a human SETDB1 partner) -- the same
+	gene-name switch + residue-map alignment main() applies to its own target
+	gene, mirrored here so the partner's screendata is read under the right
+	gene symbol and mouse edit positions get mapped onto the partner's own
+	(human/PDB-numbered) residues before aggregating. The OUTPUT file is
+	always written under the partner's own fixed `gene` name regardless,
+	since that's the name ppi_gene_edits_dict/calculate_lfc3d look up by.
+	"""
+	structureid = f'PDB-{uniprot}' if user_pdb else f'AF-{uniprot}-F1-model_v6'
+	df_struc_lite = sequence_structural_features_lite(
+		partner_dir, gene, uniprot, structureid,
+		target_chainid=chain,
+		user_fasta=user_fasta, user_pdb=user_pdb,
+	)
+
+	input_dfs = [pd.read_csv(os.path.join(screen_dir, s), sep='\t') for s in screens]
+	if mutation_priority:
+		for df in input_dfs:
+			df[mut_col] = df[mut_col].apply(lambda x: reduce_mutation_type(x, mut_delimiter, mutation_priority))
+
+	# SPECIES-AWARE GENE NAME PER SCREEN, MIRRORING main()'s CONSERVATION SETUP #
+	if conservation_run and alt_gene_name:
+		_, df_residuemap = conservation(
+			partner_dir, gene, alt_gene_name, uniprot, alt_uniprot_id,
+			muscle_path=muscle_path,
+		)
+		conserv_dfs, gene_list = [], []
+		for screen_name in screen_names:
+			if priority_on_alternative or screen_name.startswith(alt_screen_start):
+				conserv_dfs.append(df_residuemap)
+				gene_list.append(alt_gene_name)
+			else:
+				conserv_dfs.append(None)
+				gene_list.append(gene)
+	else:
+		conserv_dfs = [None] * len(screen_names)
+		gene_list = [gene] * len(screen_names)
+
+	parse_be_data(
+		partner_dir, input_dfs, gene, screen_names,
+		mut_col=mut_col, val_col=val_col, gene_col=gene_col, edits_col=edits_col,
+		mut_categories=mut_categories, mut_delimiter=mut_delimiter,
+		conserv_dfs=conserv_dfs, conserv_col='alternative_res_pos',
+		gene_list=gene_list, v_score_threshold=v_score_threshold,
+	)
+
+	for screen_name, screen_gene, df_consrv in zip(screen_names, gene_list, conserv_dfs):
+		df_control = pd.read_csv(f'{partner_dir}/screendata/{screen_gene}_{screen_name}_No_Mutation.tsv', sep='\t', index_col=0)
+		df_dict = {}
+		for mut in ['Missense', 'Silent', 'Nonsense']:
+			filepath = f'{partner_dir}/screendata/{screen_gene}_{screen_name}_{mut}.tsv'
+			if os.path.exists(filepath):
+				df_dict[mut] = pd.read_csv(filepath, sep='\t', index_col=0)
+
+		if df_consrv is not None:
+			prioritize_by_sequence(
+				df_dict, df_struc_lite, df_consrv, df_control,
+				partner_dir, gene, screen_name, # ALWAYS the partner's own fixed name (not screen_gene) #
+				target_res_pos='original_res_pos', alt_res_pos='alternative_res_pos', alt_res='alternative_res',
+			)
+		else:
+			prioritize_by_sequence(
+				df_dict, df_struc_lite, df_consrv, df_control,
+				partner_dir, gene, screen_name,
+			)
+
+DEFAULT_FUNC_MAP = {'mean': np.mean, 'median': np.median, 'sum': np.sum, 'min': min, 'max': max}
+
+def compute_blind_lfc3d(df_struc, target_chain, ppi_chain_gene_dict, ppi_edits_dict, lfc_colname, aggr_func):
+	"""
+	For each residue of the target chain, aggregate ONLY its cross-chain
+	(listed partner) neighbor LFC values -- self and same-chain neighbors are
+	always excluded, since there is no own-chain screen data to contribute in
+	the first place. Returns (values, n_neighbors) lists, one entry per row
+	of df_struc, in the same order.
+	"""
+	naa_pos_list = df_struc['Naa_pos'].fillna('-').tolist()
+	naa_chain_list = df_struc['Naa_chain'].fillna('-').tolist()
+
+	values, n_neighbors = [], []
+	for naa_pos_str, naa_chain_str in zip(naa_pos_list, naa_chain_list):
+		if naa_pos_str in ('-', '') or naa_chain_str in ('-', ''):
+			values.append('-')
+			n_neighbors.append(0)
+			continue
+
+		neighbor_vals = []
+		for naa_chain, naa_pos in zip(naa_chain_str.split(';'), naa_pos_str.split(';')):
+			if naa_chain == target_chain:
+				continue # SAME-CHAIN NEIGHBORS EXCLUDED -- BLIND BY DEFINITION, NO SELF-DATA EXISTS #
+			gene_identifier = ppi_chain_gene_dict.get(naa_chain)
+			if gene_identifier is None:
+				continue # CHAIN PRESENT IN THE PDB BUT NOT A LISTED PARTNER -- IGNORE #
+			val = ppi_edits_dict.get(gene_identifier, {}).get(int(naa_pos) - 1)
+			if val is not None and val != '-' and not (isinstance(val, float) and np.isnan(val)):
+				neighbor_vals.append(float(val))
+
+		if neighbor_vals:
+			values.append(aggr_func(neighbor_vals))
+			n_neighbors.append(len(neighbor_vals))
+		else:
+			values.append('-')
+			n_neighbors.append(0)
+
+	return values, n_neighbors
+
+def split_neg_pos(values):
+	"""
+	Classify each per-residue combined value as neg (< 0) or pos (> 0), mutually
+	exclusive, matching average_split_score's convention exactly (0.0 or missing
+	falls into neither). Returns (neg_values, pos_values), same length as values.
+	"""
+	neg_values, pos_values = [], []
+	for v in values:
+		fv = float(v) if v != '-' else 0.0
+		neg_values.append(fv if fv < 0 else '-')
+		pos_values.append(fv if fv > 0 else '-')
+	return neg_values, pos_values
+
+def meta_split_neg_pos(per_screen_neg_cols, per_screen_pos_cols, df_out, meta_func):
+	"""
+	Meta-aggregate neg/pos separately across screens, matching average_split_meta's
+	convention: per residue, gather every screen's neg value into one list and
+	aggregate it, independently of gathering every screen's pos value into another
+	list and aggregating that -- so a residue can end up with BOTH a Meta-neg and
+	a Meta-pos value if different screens disagree in sign (e.g. screen A calls it
+	negative, screen B calls it positive). Returns (meta_neg, meta_pos) lists.
+	"""
+	meta_neg, meta_pos = [], []
+	for i in range(len(df_out)):
+		neg_here = [df_out.at[i, c] for c in per_screen_neg_cols if df_out.at[i, c] != '-']
+		pos_here = [df_out.at[i, c] for c in per_screen_pos_cols if df_out.at[i, c] != '-']
+		meta_neg.append(meta_func(neg_here) if neg_here else '-')
+		meta_pos.append(meta_func(pos_here) if pos_here else '-')
+	return meta_neg, meta_pos
+
+def write_bfactor_pdb(input_pdb_path, output_pdb_path, target_chain, value_by_unipos):
+	"""
+	Write a copy of the input PDB with the B-factor column of every ATOM record
+	replaced: for the target chain, the residue's score (looked up by residue
+	number == unipos, matching this codebase's PDB-numbering convention); 0.0
+	for every other chain/atom and for target-chain residues with no score.
+	"""
+	from biopandas.pdb import PandasPdb
+
+	ppdb = PandasPdb().read_pdb(input_pdb_path)
+	atom_df = ppdb.df['ATOM'].copy()
+
+	def _bfactor(row):
+		if row['chain_id'] != target_chain:
+			return 0.0
+		val = value_by_unipos.get(int(row['residue_number']))
+		if val is None or val == '-':
+			return 0.0
+		return float(val)
+
+	atom_df['b_factor'] = atom_df.apply(_bfactor, axis=1)
+	ppdb.df['ATOM'] = atom_df
+	ppdb.to_pdb(path=output_pdb_path, records=['ATOM'], gz=False, append_newline=True)
+
+def run_blind_target(
+	target_gene, target_uniprot, target_chain, output_dir, partners,
+	user_pdb=None, user_fasta=None, user_dssp=None,
+	structure_radius=6.0, atom_level_naa=False,
+	function_for_lfc='mean', function_for_lfc3d='mean', function_for_meta='mean',
+	mut_delimiter_default=';', mutation_priority=None,
+):
+	"""
+	Computes a purely partner-derived ("blind") LFC3D signal at the residues of
+	target_chain -- for a chain with no base-editing screen data of its own (a
+	structural scaffold chain), or one whose own data is deliberately ignored.
+
+	Unlike main()'s pipeline, this never runs parse_be_data/hypothesis_test/
+	prioritize_by_sequence/randomize_data/calculate_lfc3d for the target itself --
+	only sequence_structural_features (for real radius-based neighbor topology)
+	and preprocess_ppi_partner (for each partner's LFC lookup) are reused.
+
+	IMPORTANT: this does NOT compute a significance-tested "hit". Only
+	('cross', ...) neighbor sources ever apply here (no self/same-chain
+	contribution is possible), and a partner's cross-chain LFC value is always
+	its fixed real value, never re-randomized per permutation -- so a purely
+	cross-chain-derived value would be identical across every randomization
+	iteration, giving zero variance in the null distribution and making a
+	z-score/p-value meaningless. This reports only the raw aggregated LFC3D
+	value (split into neg/pos/overall) as a descriptive quantity.
+	"""
+	os.makedirs(output_dir, exist_ok=True)
+
+	structureid = f'PDB-{target_uniprot}' if user_pdb else f'AF-{target_uniprot}-F1-model_v6'
+
+	# FULL STRUCTURAL FEATURES FOR THE TARGET -- NEEDS THE REAL RADIUS-BASED
+	# Naa_chain/Naa_pos NEIGHBOR TOPOLOGY, SO NOT THE _lite VARIANT #
+	df_struc = sequence_structural_features(
+		output_dir, target_gene, target_uniprot, structureid,
+		target_chainid=target_chain,
+		radius=structure_radius,
+		user_fasta=user_fasta, user_pdb=user_pdb, user_dssp=user_dssp,
+		atom_level_naa=atom_level_naa,
+	)
+
+	lfc_colname = f'{function_for_lfc}_Missense_LFC'
+	ppi_chain_gene_dict = {}
+	ppi_edits_dict_per_screen = {} # gene_identifier -> {screen_name: {row_idx: lfc_value}}
+	all_screen_names = []
+
+	for partner in partners:
+		gene = partner['gene']
+		uniprot = partner['uniprot']
+		chain = partner['chain']
+		screens = [s.strip() for s in partner['screens'].split(',')]
+		screen_names = [s.split('.')[0] for s in screens]
+		screen_dir = partner['screen_dir']
+		mut_categories = partner['mut_categories']
+		mut_delimiter = partner.get('mut_delimiter', mut_delimiter_default)
+
+		gene_identifier = f'{gene}_chain_{chain}'
+		partner_dir = os.path.join(output_dir, 'ppi_partners', gene_identifier)
+		os.makedirs(partner_dir, exist_ok=True)
+
+		preprocess_ppi_partner(
+			partner_dir, gene, uniprot, chain,
+			screens, screen_dir, screen_names,
+			partner.get('mut_col', 'Mutation_type'), partner.get('val_col', 'sgRNA_score'),
+			partner.get('gene_col', 'Gene'), partner.get('edits_col', 'Mutation_list'),
+			mut_categories, mut_delimiter,
+			partner.get('user_fasta'), partner.get('user_pdb', user_pdb),
+			mutation_priority=partner.get('mutation_priority', mutation_priority),
+			conservation_run=partner.get('conservation_run', False),
+			alt_gene_name=partner.get('alt_gene_name'),
+			alt_uniprot_id=partner.get('alt_uniprot_id'),
+			alt_screen_start=partner.get('alt_screen_start'),
+			v_score_threshold=partner.get('v_score_threshold', 3),
+			muscle_path=partner.get('muscle_path', 'muscle'),
+			priority_on_alternative=partner.get('priority_on_alternative', False),
+		)
+
+		ppi_chain_gene_dict[chain] = gene_identifier
+		ppi_edits_dict_per_screen[gene_identifier] = {}
+		for screen_name in screen_names:
+			if screen_name not in all_screen_names:
+				all_screen_names.append(screen_name)
+			df_partner_edits = pd.read_csv(
+				f'{partner_dir}/screendata_sequence/{gene}_{screen_name}_protein_edits.tsv', sep='\t')
+			ppi_edits_dict_per_screen[gene_identifier][screen_name] = df_partner_edits[lfc_colname].to_dict()
+
+	aggr_func = DEFAULT_FUNC_MAP[function_for_lfc3d]
+	meta_func = DEFAULT_FUNC_MAP[function_for_meta]
+
+	df_out = df_struc[['unipos', 'unires', 'chain']].copy()
+	neg_cols, pos_cols = [], []
+	for screen_name in all_screen_names:
+		ppi_edits_dict = {gid: d.get(screen_name, {}) for gid, d in ppi_edits_dict_per_screen.items()}
+		values, n_neighbors = compute_blind_lfc3d(
+			df_struc, target_chain, ppi_chain_gene_dict, ppi_edits_dict, lfc_colname, aggr_func)
+		neg_values, pos_values = split_neg_pos(values)
+
+		col = f'{screen_name}_LFC3D_blind'
+		df_out[col] = values
+		df_out[f'{col}_nneighbors'] = n_neighbors
+		df_out[f'{col}_neg'] = neg_values
+		df_out[f'{col}_pos'] = pos_values
+		neg_cols.append(f'{col}_neg')
+		pos_cols.append(f'{col}_pos')
+
+	# WHICH LEVEL TO REPORT/MAP ONTO THE PDB: THE SINGLE SCREEN'S VALUES IF THERE'S
+	# ONLY ONE, OTHERWISE THE META-AGGREGATE ACROSS SCREENS (NOT MUTUALLY EXCLUSIVE --
+	# A RESIDUE CAN HAVE BOTH A META-NEG AND META-POS IF SCREENS DISAGREE IN SIGN) #
+	if len(all_screen_names) > 1:
+		meta_neg, meta_pos = meta_split_neg_pos(neg_cols, pos_cols, df_out, meta_func)
+		df_out['Meta_LFC3D_blind_neg'] = meta_neg
+		df_out['Meta_LFC3D_blind_pos'] = meta_pos
+		report_neg, report_pos = meta_neg, meta_pos
+	else:
+		report_neg, report_pos = df_out[neg_cols[0]].tolist(), df_out[pos_cols[0]].tolist()
+
+	# OVERALL: abs(neg) + abs(pos) -- HIGHER (MORE "SIGNIFICANT") WHEN A RESIDUE HAS
+	# EVIDENCE IN BOTH DIRECTIONS AT ONCE, NOT JUST ONE #
+	def _overall(n, p):
+		n_abs = abs(float(n)) if n != '-' else 0.0
+		p_abs = abs(float(p)) if p != '-' else 0.0
+		total = n_abs + p_abs
+		return total if total > 0 else '-'
+	report_overall = [_overall(n, p) for n, p in zip(report_neg, report_pos)]
+	overall_colname = 'Meta_LFC3D_blind_overall' if len(all_screen_names) > 1 else f'{all_screen_names[0]}_LFC3D_blind_overall'
+	df_out[overall_colname] = report_overall
+
+	out_path = os.path.join(output_dir, f'{target_gene}_{target_chain}_blind_LFC3D.tsv')
+	df_out.to_csv(out_path, sep='\t', index=False)
+	print(f'Wrote {out_path}')
+
+	# MAP NEG/POS/OVERALL ONTO THE INPUT PDB'S B-FACTOR COLUMN FOR THE TARGET CHAIN #
+	if user_pdb:
+		unipos_list = df_out['unipos'].tolist()
+		for label, report_vals in [('neg', report_neg), ('pos', report_pos), ('overall', report_overall)]:
+			value_by_unipos = {int(pos): val for pos, val in zip(unipos_list, report_vals)}
+			pdb_out_path = os.path.join(output_dir, f'{target_gene}_{target_chain}_blind_LFC3D_{label}.pdb')
+			write_bfactor_pdb(user_pdb, pdb_out_path, target_chain, value_by_unipos)
+			print(f'Wrote {pdb_out_path}')
+
+	return df_out
+
+def run_complex_mode(config, output_dir, common_kwargs, gene_names, uniprot_list, chain_list):
+	"""
+	Runs the full pipeline once per target gene, lite-preprocessing every other chain in
+	ppi_chain_gene_dict as that gene's cross-chain PPI neighbor. Shared by mode: complex
+	and (for the PPI leg) mode: ppi_diff -- output_dir is parameterized so ppi_diff can
+	point it at a 'ppi' subdirectory rather than the top-level output_dir.
+	"""
+	screen_dir = common_kwargs['screen_dir']
+	screens = common_kwargs['screens']
+	mut_col = common_kwargs['mut_col']
+	val_col = common_kwargs['val_col']
+	gene_col = common_kwargs['gene_col']
+	edits_col = common_kwargs['edits_col']
+	mut_categories = common_kwargs['mut_categories']
+	mut_delimiter = common_kwargs['mut_delimiter']
+	mutation_priority = common_kwargs['mutation_priority']
+	conservation_run = common_kwargs['conservation_run']
+	alt_gene_name = common_kwargs['alt_gene_name']
+	alt_uniprot_id = common_kwargs['alt_uniprot_id']
+	alt_screen_start = common_kwargs['alt_screen_start']
+	v_score_threshold = common_kwargs['v_score_threshold']
+	muscle_path = common_kwargs['muscle_path']
+	priority_on_alternative = common_kwargs['priority_on_alternative']
+	user_fasta = common_kwargs['user_fasta']
+	user_pdb = common_kwargs['user_pdb']
+
+	assert len(gene_names) == len(uniprot_list) == len(chain_list), \
+		'input_gene, input_uniprot, input_chain must list the same number of comma-separated entries in complex mode'
+	gene_to_uniprot = dict(zip(gene_names, uniprot_list))
+	# GENES THAT ARE PURE PPI NEIGHBORS (NEVER RUN AS A TARGET) SUPPLY THEIR UNIPROT HERE INSTEAD OF input_gene/input_uniprot #
+	gene_to_uniprot.update(config.get('partner_uniprot') or {})
+
+	ppi_chain_gene_dict_full = config['ppi_chain_gene_dict'] # chain -> gene, covers every chain in the complex
+	screens_list = [s.strip() for s in screens.split(',')]
+	screen_names = [s.split('.')[0] for s in screens_list]
+
+	for target_gene, target_uniprot, target_chain in zip(gene_names, uniprot_list, chain_list):
+		gene_output_dir = os.path.join(output_dir, target_gene)
+		partner_items = [(ch, g) for ch, g in ppi_chain_gene_dict_full.items() if ch != target_chain]
+
+		# LITE-PREPROCESS EVERY OTHER CHAIN AS A CROSS-CHAIN LFC LOOKUP FOR THIS TARGET GENE'S RUN #
+		ppi_chain_gene_dict, ppi_gene_edits_dict = {}, {}
+		for ch, g in partner_items:
+			assert g in gene_to_uniprot, f'gene {g} (chain {ch}) has no matching entry in input_gene/input_uniprot or partner_uniprot'
+			gene_identifier = f'{g}_chain_{ch}'
+			partner_dir = os.path.join(gene_output_dir, 'ppi_partners', gene_identifier)
+			os.makedirs(partner_dir, exist_ok=True)
+
+			preprocess_ppi_partner(
+				partner_dir, g, gene_to_uniprot[g], ch,
+				screens_list, screen_dir, screen_names,
+				mut_col, val_col, gene_col, edits_col, mut_categories, mut_delimiter,
+				user_fasta, user_pdb, mutation_priority=mutation_priority,
+				conservation_run=conservation_run, alt_gene_name=alt_gene_name, alt_uniprot_id=alt_uniprot_id,
+				alt_screen_start=alt_screen_start, v_score_threshold=v_score_threshold,
+				muscle_path=muscle_path, priority_on_alternative=priority_on_alternative,
+			)
+			ppi_chain_gene_dict[ch] = gene_identifier
+			ppi_gene_edits_dict[gene_identifier] = partner_dir
+
+		main(input_gene=target_gene, input_uniprot=target_uniprot, input_chain=target_chain, output_dir=gene_output_dir,
+			ppi_chain_gene_dict=ppi_chain_gene_dict, ppi_gene_edits_dict=ppi_gene_edits_dict, **common_kwargs)
+
+def parse_score_type(score_type):
+	"""
+	'Meta_LFC3D'/'Meta-LFC3D' -> (True, 'LFC3D'); 'LFC3D' -> (False, 'LFC3D'). The 'Meta_'
+	prefix is required to mean meta-aggregated -- bare 'LFC3D'/'LFC' always means
+	single-screen level, never silently the meta-aggregate.
+	"""
+	for prefix in ('Meta_', 'Meta-'):
+		if score_type.startswith(prefix):
+			return True, score_type[len(prefix):]
+	return False, score_type
+
+def _ppi_diff_signed_score(df, neg_col, pos_col):
+	neg = pd.to_numeric(df[neg_col], errors='coerce')
+	pos = pd.to_numeric(df[pos_col], errors='coerce')
+	return neg.where(neg.notna(), pos).fillna(0.0)
+
+def _ppi_diff_load_scored(tsv_path, chain, neg_col, pos_col, gene, score_colname):
+	df = pd.read_csv(tsv_path, sep='\t')
+	df = df[df['chain'] == chain].copy()
+	out = df[['unipos', 'unires', 'chain']].copy()
+	out[score_colname] = _ppi_diff_signed_score(df, neg_col, pos_col).values
+	out['gene'] = gene
+	return out
+
+def load_scored_table_meta(gene_output_dir, gene, chain, base_score_type, function_for_meta, score_colname):
+	tsv_path = os.path.join(gene_output_dir, 'meta-aggregate', f'{gene}_MetaAggr_{base_score_type}.tsv')
+	if not os.path.exists(tsv_path):
+		raise FileNotFoundError(
+			f'{tsv_path} not found; Meta_{base_score_type} requires >1 screen '
+			f'(so meta-aggregate output exists) for gene {gene}'
+		)
+	neg_col = f'{function_for_meta}_{base_score_type}_neg'
+	pos_col = f'{function_for_meta}_{base_score_type}_pos'
+	return _ppi_diff_load_scored(tsv_path, chain, neg_col, pos_col, gene, score_colname)
+
+def load_scored_table_single(gene_output_dir, gene, chain, base_score_type, screen_name, score_colname):
+	tsv_path = os.path.join(gene_output_dir, base_score_type, f'{gene}_NonAggr_{base_score_type}.tsv')
+	if not os.path.exists(tsv_path):
+		raise FileNotFoundError(f'{tsv_path} not found for gene {gene}')
+	neg_col = f'{screen_name}_{base_score_type}_neg'
+	pos_col = f'{screen_name}_{base_score_type}_pos'
+	return _ppi_diff_load_scored(tsv_path, chain, neg_col, pos_col, gene, score_colname)
+
+def write_bfactor_pdb_multichain(base_pdb_path, output_pdb_path, merged_df, score_col):
+	"""
+	Like write_bfactor_pdb, but keyed by (chain, unipos) instead of a single target_chain --
+	needed here since a ppi_diff run's merged table spans every target gene's own chain at
+	once (e.g. chain B from one gene, chain C from another), all painted onto the same PDB.
+	"""
+	from biopandas.pdb import PandasPdb
+
+	value_by_chain_pos = {
+		(row['chain'], int(row['unipos'])): float(row[score_col])
+		for _, row in merged_df.iterrows()
+	}
+
+	ppdb = PandasPdb().read_pdb(base_pdb_path)
+	atom_df = ppdb.df['ATOM'].copy()
+	atom_df['b_factor'] = atom_df.apply(
+		lambda row: value_by_chain_pos.get((row['chain_id'], int(row['residue_number'])), 0.0),
+		axis=1,
+	)
+	ppdb.df['ATOM'] = atom_df
+	ppdb.to_pdb(path=output_pdb_path, records=['ATOM'], gz=False, append_newline=True)
+
+def run_ppi_diff_mode(config, output_dir, common_kwargs, gene_names, uniprot_list, chain_list, score_type, skip_existing):
+	"""
+	Runs the PPI leg (mode: complex, once, covering every target gene) and the no-PPI leg
+	(mode: monomer, once per target gene), then merges each gene's own-chain score table
+	into one combined TSV (noppi_score/ppi_score/delta_score) and three PDBs (no-PPI, PPI,
+	delta) painted onto a shared base structure (one PPI run's processed PDB, which already
+	contains every chain of the input complex, since parse_af keeps every ATOM record
+	regardless of chain).
+	"""
+	is_meta, base_score_type = parse_score_type(score_type)
+	screens_list = [s.strip() for s in common_kwargs['screens'].split(',')]
+	screen_names = [s.split('.')[0] for s in screens_list]
+
+	ppi_output_dir = os.path.join(output_dir, 'ppi')
+	ppi_markers = [os.path.join(ppi_output_dir, g, 'RUN_COMPLETED.txt') for g in gene_names]
+	if skip_existing and all(os.path.exists(m) for m in ppi_markers):
+		print(f'[ppi_diff] skipping PPI leg, already completed in {ppi_output_dir}')
+	else:
+		run_complex_mode(config, ppi_output_dir, common_kwargs, gene_names, uniprot_list, chain_list)
+
+	noppi_dirs = {}
+	for gene, uniprot, chain in zip(gene_names, uniprot_list, chain_list):
+		noppi_output_dir = os.path.join(output_dir, 'no_ppi', gene)
+		noppi_dirs[gene] = noppi_output_dir
+		marker = os.path.join(noppi_output_dir, 'RUN_COMPLETED.txt')
+		if skip_existing and os.path.exists(marker):
+			print(f'[ppi_diff] skipping no-PPI leg for {gene}, already completed in {noppi_output_dir}')
+			continue
+		main(input_gene=gene, input_uniprot=uniprot, input_chain=chain, output_dir=noppi_output_dir,
+			ppi_chain_gene_dict=None, ppi_gene_edits_dict={}, **common_kwargs)
+
+	# ONE PASS PER SCREEN FOR SINGLE-SCREEN-LEVEL score_type; A SINGLE PASS FOR Meta_* #
+	passes = [(None, score_type)] if is_meta else [(s, s) for s in screen_names]
+	function_for_meta = common_kwargs['function_for_meta']
+	user_pdb = common_kwargs['user_pdb']
+
+	base_pdb = None
+	for screen_name, out_label in passes:
+		rows = []
+		for gene, uniprot, chain in zip(gene_names, uniprot_list, chain_list):
+			gene_ppi_dir = os.path.join(ppi_output_dir, gene)
+			gene_noppi_dir = noppi_dirs[gene]
+
+			if is_meta:
+				df_ppi = load_scored_table_meta(gene_ppi_dir, gene, chain, base_score_type, function_for_meta, 'ppi_score')
+				df_noppi = load_scored_table_meta(gene_noppi_dir, gene, chain, base_score_type, function_for_meta, 'noppi_score')
+			else:
+				df_ppi = load_scored_table_single(gene_ppi_dir, gene, chain, base_score_type, screen_name, 'ppi_score')
+				df_noppi = load_scored_table_single(gene_noppi_dir, gene, chain, base_score_type, screen_name, 'noppi_score')
+
+			merged = df_ppi.merge(df_noppi.drop(columns=['gene']), on=['unipos', 'unires', 'chain'], how='outer')
+			merged['delta_score'] = merged['ppi_score'] - merged['noppi_score']
+			rows.append(merged)
+
+			if base_pdb is None:
+				structureid = f"PDB-{uniprot}" if user_pdb else f"AF-{uniprot}-F1-model_v6"
+				base_pdb = os.path.join(gene_ppi_dir, 'sequence_structure', f'{structureid}_processed.pdb')
+
+		combined = pd.concat(rows, ignore_index=True, sort=False)
+		combined_tsv = os.path.join(output_dir, f'ppi_vs_noppi_{out_label}.tsv')
+		combined.to_csv(combined_tsv, sep='\t', index=False)
+		print(f'wrote {combined_tsv} ({len(combined)} residues across {len(gene_names)} chains)')
+
+		write_bfactor_pdb_multichain(base_pdb, os.path.join(output_dir, f'noppi_{out_label}.pdb'), combined, 'noppi_score')
+		write_bfactor_pdb_multichain(base_pdb, os.path.join(output_dir, f'ppi_{out_label}.pdb'), combined, 'ppi_score')
+		write_bfactor_pdb_multichain(base_pdb, os.path.join(output_dir, f'delta_{out_label}.pdb'), combined, 'delta_score')
+		print(f'wrote noppi_{out_label}.pdb, ppi_{out_label}.pdb, delta_{out_label}.pdb in {output_dir}')
+
 def main(**kwargs):
 	## REQUIRED
 	input_gene=kwargs['input_gene']
@@ -54,6 +568,7 @@ def main(**kwargs):
 	v_score_threshold=kwargs['v_score_threshold']
 	atom_level_naa=kwargs['atom_level_naa']
 	muscle_path=kwargs['muscle_path']
+	mutation_priority=kwargs['mutation_priority']
 
 	if user_pdb:
 		structureid = f'PDB-{input_uniprot}'
@@ -79,7 +594,13 @@ def main(**kwargs):
 	screens = [screen.strip() for screen in screens.split(',')]
 	screen_names = [s.split('.')[0] for s in screens]
 	input_dfs = [pd.read_csv(os.path.join(screen_dir,s), sep='\t') for s in screens]
-						  
+
+	# COLLAPSE PER-EDIT MUTATION CATEGORY LISTS (e.g. 'Silent;Missense;') INTO A SINGLE CATEGORY PER GUIDE,
+	# BEFORE hypothesis_test / parse_be_data DO EXACT-MATCH FILTERING AGAINST mut_categories #
+	if mutation_priority:
+		for df in input_dfs:
+			df[mut_col] = df[mut_col].apply(lambda x: reduce_mutation_type(x, mut_delimiter, mutation_priority))
+
 	df_residuemap = pd.DataFrame()
 	conserv_dfs = list()
 	gene_list = list()
@@ -307,7 +828,7 @@ def main(**kwargs):
 			conserved_only=False, gene_type=gene_type,
 			target_gene_chain=input_chain,
 			ppi_chain_gene_dict=ppi_chain_gene_dict,
-			ppi_gene_edits_dict=ppi_gene_edits_dict
+			ppi_gene_edits_dict=ppi_gene_edits_dict,
 		)
 		
 		# LFC #
@@ -942,8 +1463,9 @@ if __name__ == '__main__':
 	beclust3d_path = config['beclust3d_path']
 	sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), beclust3d_path)))
 
-	from beclust3d.lfc3d.structure import sequence_structural_features
+	from beclust3d.lfc3d.structure import sequence_structural_features, sequence_structural_features_lite
 	from beclust3d.lfc3d.preprocess_data import parse_be_data, sanitary_check
+	from beclust3d.lfc3d.preprocess_data_helpers import reduce_mutation_type
 	from beclust3d.lfc3d.preprocess_data_plot import plot_rawdata
 	from beclust3d.qa.hypothesis_tests import hypothesis_test
 	from beclust3d.lfc3d.randomize_data import randomize_data
@@ -965,61 +1487,121 @@ if __name__ == '__main__':
 	input_gene = config['input_gene']
 	input_uniprot = config['input_uniprot']
 	input_chain = config['input_chain']
-	screen_dir = config['screen_dir']
-	screens = config['screens']
 	output_dir= config['output_dir']
-	
-	conservation_run=config['conservation']['run']
-	v_score_threshold = config['conservation']['v_score_threshold']
-	alt_gene_name=config['conservation']['alt_gene_name']
-	alt_uniprot_id=config['conservation']['alt_uniprot_id']
-	alt_screen_start = config['conservation']['alt_screen_start']
+	mode = config.get('mode', 'monomer') # monomer: single target gene (PPI neighbors, if any, are pre-built dirs in ppi_gene_edits_dict)
+	                                      # complex: run the full pipeline once per gene in input_gene, lite-preprocessing every other chain as its PPI neighbor
+	                                      # ppi_diff: same yaml as complex, plus score_type/skip_existing -- runs both the PPI (complex)
+	                                      # and no-PPI (monomer, per gene) legs and merges into one noppi/ppi/delta TSV + 3 PDBs
+	                                      # blind_target: input_gene has no screen data of its own (or it's ignored); LFC3D
+	                                      # is computed purely from partners (config['partners']), never calls main() at all
 
-	mut_col = config['database']['mut_col']
-	val_col = config['database']['val_col']
-	gene_col = config['database']['gene_col']
-	edits_col = config['database']['edits_col']
-	gRNA_col = config['database']['gRNA_col']
-	mut_delimiter = config['database']['mut_delimiter']
+	# THE FIELDS BELOW ARE ONLY EVER USED BY monomer/complex (main()'s full pipeline) -- READ DEFENSIVELY
+	# VIA .get() SO A blind_target YAML (WHICH NEEDS NONE OF THIS) DOESN'T HAVE TO SUPPLY THEM #
+	screen_dir = config.get('screen_dir')
+	screens = config.get('screens')
 
+	conservation_cfg = config.get('conservation') or {}
+	conservation_run = conservation_cfg.get('run', False)
+	v_score_threshold = conservation_cfg.get('v_score_threshold', 3)
+	alt_gene_name = conservation_cfg.get('alt_gene_name')
+	alt_uniprot_id = conservation_cfg.get('alt_uniprot_id')
+	alt_screen_start = conservation_cfg.get('alt_screen_start')
+
+	database_cfg = config.get('database') or {}
+	mut_col = database_cfg.get('mut_col')
+	val_col = database_cfg.get('val_col')
+	gene_col = database_cfg.get('gene_col')
+	edits_col = database_cfg.get('edits_col')
+	gRNA_col = database_cfg.get('gRNA_col')
+	mut_delimiter = database_cfg.get('mut_delimiter', ';')
+
+	mutation_category_cfg = config.get('mutation_category') or {}
 	mut_categories = list()
-	mut_categories.extend(config['mutation_category']['nonsense'])
-	mut_categories.extend(config['mutation_category']['splice'])
-	mut_categories.extend(config['mutation_category']['missense'])
-	mut_categories.extend(config['mutation_category']['silent'])
-	mut_categories.extend(config['mutation_category']['no_mutation'])
-	mut_categories.extend(config['mutation_category']['intron'])
-	
+	mut_categories.extend(mutation_category_cfg.get('nonsense', []))
+	mut_categories.extend(mutation_category_cfg.get('splice', []))
+	mut_categories.extend(mutation_category_cfg.get('missense', []))
+	mut_categories.extend(mutation_category_cfg.get('silent', []))
+	mut_categories.extend(mutation_category_cfg.get('no_mutation', []))
+	mut_categories.extend(mutation_category_cfg.get('intron', []))
+
 	# OPTIONAL
-	user_fasta = config['user_fasta']
-	user_pdb = config['user_pdb']
-	user_dssp = config['user_dssp']
-	function_for_lfc=config['function_for_lfc']
-	function_for_lfc3d=config['function_for_lfc3d']
-	function_for_meta=config['function_for_meta']
-	nRandom = config['nRandom']
-	single_screen_pthr = config['pthr']['single_screen']
-	multi_screen_pthr = config['pthr']['multi_screen']
-	structure_radius = config['structure_radius'] 
-	clustering_radius = config['clustering_radius']
-	qa_passed_only = config['qa']['qa_passed_only']
-	qa_only = config['qa']['qa_only']
-	qa_controls = config['qa']['controls']
-	qa_cases = config['qa']['cases']
-	priority_on_alternative = config['priority_on_alternative']
-	ppi_chain_gene_dict = config['ppi_chain_gene_dict']
-	ppi_gene_edits_dict = config['ppi_gene_edits_dict']
-	atom_level_naa = config['atom_level_naa']
-	muscle_path = config['muscle_path']
-	
-	main(input_gene=input_gene, input_uniprot=input_uniprot, input_chain=input_chain, screen_dir=screen_dir,\
-		screens=screens, mut_col=mut_col, val_col=val_col, gene_col=gene_col, edits_col=edits_col,\
-		gRNA_col=gRNA_col, output_dir=output_dir, user_fasta=user_fasta, user_pdb=user_pdb, user_dssp=user_dssp, nRandom=nRandom,\
-		single_screen_pthr=single_screen_pthr,multi_screen_pthr=multi_screen_pthr,
-		structure_radius=structure_radius, clustering_radius=clustering_radius, function_for_lfc=function_for_lfc, function_for_lfc3d=function_for_lfc3d,\
-		mut_categories=mut_categories,mut_delimiter=mut_delimiter, conservation_run=conservation_run, alt_gene_name=alt_gene_name,alt_uniprot_id=alt_uniprot_id,
-		alt_screen_start=alt_screen_start,v_score_threshold=v_score_threshold,
+	user_fasta = config.get('user_fasta')
+	user_pdb = config.get('user_pdb')
+	user_dssp = config.get('user_dssp')
+	function_for_lfc = config.get('function_for_lfc', 'mean')
+	function_for_lfc3d = config.get('function_for_lfc3d', 'mean')
+	function_for_meta = config.get('function_for_meta', 'mean')
+	nRandom = config.get('nRandom', 500)
+	pthr_cfg = config.get('pthr') or {}
+	single_screen_pthr = pthr_cfg.get('single_screen', 0.05)
+	multi_screen_pthr = pthr_cfg.get('multi_screen', 0.05)
+	structure_radius = config.get('structure_radius', 6.0)
+	clustering_radius = config.get('clustering_radius', 6.0)
+	qa_cfg = config.get('qa') or {}
+	qa_passed_only = qa_cfg.get('qa_passed_only', False)
+	qa_only = qa_cfg.get('qa_only', False)
+	qa_controls = qa_cfg.get('controls', [])
+	qa_cases = qa_cfg.get('cases', [])
+	priority_on_alternative = config.get('priority_on_alternative', False)
+	atom_level_naa = config.get('atom_level_naa', False)
+	muscle_path = config.get('muscle_path', 'muscle')
+	mutation_priority = config.get('mutation_priority') # optional; most-to-least-deleterious order for collapsing
+	                                                      # delimiter-joined multi-category mut_col values (e.g. 'Silent;Missense;')
+
+	# KWARGS SHARED ACROSS EVERY main() CALL, REGARDLESS OF MODE #
+	common_kwargs = dict(
+		screen_dir=screen_dir, screens=screens, mut_col=mut_col, val_col=val_col, gene_col=gene_col, edits_col=edits_col,
+		gRNA_col=gRNA_col, user_fasta=user_fasta, user_pdb=user_pdb, user_dssp=user_dssp, nRandom=nRandom,
+		single_screen_pthr=single_screen_pthr, multi_screen_pthr=multi_screen_pthr,
+		structure_radius=structure_radius, clustering_radius=clustering_radius, function_for_lfc=function_for_lfc, function_for_lfc3d=function_for_lfc3d,
+		mut_categories=mut_categories, mut_delimiter=mut_delimiter, conservation_run=conservation_run, alt_gene_name=alt_gene_name, alt_uniprot_id=alt_uniprot_id,
+		alt_screen_start=alt_screen_start, v_score_threshold=v_score_threshold,
 		function_for_meta=function_for_meta, qa_passed_only=qa_passed_only, qa_only=qa_only, qa_controls=qa_controls, qa_cases=qa_cases,
-		priority_on_alternative=priority_on_alternative, ppi_chain_gene_dict=ppi_chain_gene_dict, ppi_gene_edits_dict=ppi_gene_edits_dict,
-		config_yaml=config_yaml,atom_level_naa=atom_level_naa,muscle_path=muscle_path,
+		priority_on_alternative=priority_on_alternative, config_yaml=config_yaml, atom_level_naa=atom_level_naa, muscle_path=muscle_path,
+		mutation_priority=mutation_priority,
+	)
+
+	if mode == 'monomer':
+		# PPI-RELATED CONFIG (ppi_chain_gene_dict, ppi_gene_edits_dict, partner_uniprot) IS IGNORED IN MONOMER MODE,
+		# EVEN IF PRESENT IN THE YAML -- USE mode: complex (a single-gene list works fine) FOR ANY PPI-AWARE RUN #
+		# NOTE: calculate_lfc3d distinguishes monomer vs PPI mode via `isinstance(ppi_chain_gene_dict, dict)`,
+		# NOT truthiness -- an empty dict {} still counts as PPI mode and crashes on any cross-chain neighbor
+		# found in a multi-chain PDB, so this must be None, not {} #
+		ppi_chain_gene_dict, ppi_gene_edits_dict = None, {}
+
+		main(input_gene=input_gene, input_uniprot=input_uniprot, input_chain=input_chain, output_dir=output_dir,
+			ppi_chain_gene_dict=ppi_chain_gene_dict, ppi_gene_edits_dict=ppi_gene_edits_dict, **common_kwargs)
+
+	elif mode == 'complex':
+		gene_names = [g.strip() for g in input_gene.split(',')]
+		uniprot_list = [u.strip() for u in input_uniprot.split(',')]
+		chain_list = [c.strip() for c in input_chain.split(',')]
+		run_complex_mode(config, output_dir, common_kwargs, gene_names, uniprot_list, chain_list)
+
+	elif mode == 'ppi_diff':
+		# COMPARES mode: complex (PPI leg) AGAINST mode: monomer (no-PPI leg, one run per
+		# target gene) FOR THE SAME input_gene/input_uniprot/input_chain LIST -- SAME YAML
+		# AS mode: complex, PLUS score_type/skip_existing. See run_ppi_diff_mode's docstring
+		# for score_type's 'LFC3D' (per-screen) vs. 'Meta_LFC3D' (meta-aggregated) meaning #
+		gene_names = [g.strip() for g in input_gene.split(',')]
+		uniprot_list = [u.strip() for u in input_uniprot.split(',')]
+		chain_list = [c.strip() for c in input_chain.split(',')]
+		score_type = config.get('score_type', 'LFC3D')
+		skip_existing = config.get('skip_existing', True)
+		run_ppi_diff_mode(config, output_dir, common_kwargs, gene_names, uniprot_list, chain_list, score_type, skip_existing)
+
+	elif mode == 'blind_target':
+		# input_gene HAS NO SCREEN DATA OF ITS OWN (OR ITS OWN DATA IS DELIBERATELY IGNORED) --
+		# NEVER CALLS main(): NO parse_be_data/hypothesis_test/prioritize_by_sequence/calculate_lfc3d FOR THE
+		# TARGET ITSELF, ONLY sequence_structural_features (REAL, NOT _lite) + preprocess_ppi_partner PER PARTNER #
+		run_blind_target(
+			target_gene=input_gene, target_uniprot=input_uniprot, target_chain=input_chain,
+			output_dir=output_dir, partners=config['partners'],
+			user_pdb=user_pdb, user_fasta=user_fasta, user_dssp=user_dssp,
+			structure_radius=structure_radius, atom_level_naa=atom_level_naa,
+			function_for_lfc=function_for_lfc, function_for_lfc3d=function_for_lfc3d, function_for_meta=function_for_meta,
+			mut_delimiter_default=mut_delimiter, mutation_priority=mutation_priority,
 		)
+
+	else:
+		raise ValueError(f"Unknown mode '{mode}'; expected 'monomer', 'complex', 'ppi_diff', or 'blind_target'")

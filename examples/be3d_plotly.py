@@ -32,8 +32,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import ipywidgets as widgets
-from IPython.display import display
+from plotly.subplots import make_subplots
 from scipy.cluster.hierarchy import dendrogram as _scipy_dendrogram
 from sklearn.cluster import AgglomerativeClustering
 
@@ -42,8 +41,8 @@ from sklearn.cluster import AgglomerativeClustering
 # unpredictably between Colab and Jupyter. Every plotting function below
 # accepts width=/height= overrides if you want a different size for a
 # specific plot.
-DEFAULT_WIDTH = 700
-DEFAULT_HEIGHT = 400
+DEFAULT_WIDTH = 1400
+DEFAULT_HEIGHT = 600
 
 # Shared color scheme, used consistently for every p-value / direction
 # based coloring in this module: positive selection is blue, negative
@@ -56,6 +55,9 @@ COLOR_NEG = "#c0392b"        # red: negative direction, significant
 COLOR_NEG_PALE = "#f5b7b1"   # pale red: negative direction, not significant
 COLOR_NEUTRAL = "#bdc3c7"    # gray: no clear direction / not a hit
 COLOR_COMBINED = "#8e44ad"   # purple: significant in both directions
+
+_HIT_TYPE_COLORS = {"Not a Hit": COLOR_NEUTRAL, "Pos Hit": COLOR_POS,
+                     "Neg Hit": COLOR_NEG, "Pos + Neg Hit": COLOR_COMBINED}
 
 
 def _find_one(pattern):
@@ -87,53 +89,227 @@ def _pthr_label(pthr_str):
     return f"0.{pthr_str}"
 
 
-def show_side_by_side(*figs, width=None, height=None):
+def _axis_key(prefix, n):
+    return prefix if n == 1 else f"{prefix}{n}"
+
+
+def _fig_ncols(fig):
+    """Counts a figure's own subplot columns (1 for an ordinary single-panel figure,
+    2+ for one already built with make_subplots, e.g. _lfc_lfc3d_two_panel_figure's
+    'No LFC' strip + main scatter) by finding how many numbered xaxes it has."""
+    n = 1
+    while _axis_key("xaxis", n + 1) in fig.layout:
+        n += 1
+    return n
+
+
+def show_side_by_side(*figs, width=None, height=None, spacing=0.04):
     """
-    Display multiple already-built Plotly figures in one row instead of
-    stacked, each staying independently interactive (hover/zoom/legend
-    toggle) via ipywidgets.HBox + go.FigureWidget.
+    Display multiple already-built Plotly figures in one row, merged into a single
+    make_subplots figure and shown with plain fig.show() -- deliberately NOT
+    go.FigureWidget + ipywidgets.HBox (the previous approach), since FigureWidget
+    requires the 'jupyterlab-plotly' comm widget to be registered with the notebook
+    frontend; when it isn't (observed failing in a VS Code Jupyter session: "Failed to
+    load model class 'FigureModel' ... No version of module jupyterlab-plotly is
+    registered"), every side-by-side plot in the notebook breaks. A merged static
+    figure only needs the plain Plotly renderer, which was already working.
 
-    Any None entries (e.g. a plot_* call that returned None because its
-    input data was missing) are skipped. If only one figure remains after
-    that, it's just shown normally at DEFAULT_WIDTH x DEFAULT_HEIGHT.
+    Each input figure's traces, axis titles/ranges/tick visibility, and 0-reference
+    lines (added via add_hline/add_vline) are carried over into their own subplot
+    column(s). An input figure may itself already be a multi-column subplot figure
+    (e.g. plot_lfc_lfc3d_scatter's 'No LFC' strip + main scatter) -- its own columns
+    are kept as a contiguous block with their original relative widths preserved,
+    rather than assuming every input is a single panel. Traces sharing the same name
+    across panels (e.g. 'positive / p<0.05' in two panels being compared) share one
+    legendgroup, so there's one legend entry, not a duplicate one per panel, and
+    toggling it hides/shows that name in every panel at once.
 
-    width / height : optional per-panel override (px). Defaults to
-    splitting DEFAULT_WIDTH evenly across however many figures are shown
-    (min 350px per panel) and DEFAULT_HEIGHT for the height.
+    Any None entries (e.g. a plot_* call that returned None because its input data
+    was missing) are skipped. If only one figure remains after that, it's just shown
+    normally at DEFAULT_WIDTH x DEFAULT_HEIGHT.
+
+    width / height : optional override (px) applied uniformly to every input figure's
+    overall share of the row, same as before this handled multi-column inputs. When
+    left None (the common case), each figure's OWN pre-set width (whatever its plot_*
+    call actually produced, e.g. plot_lfc_lfc3d_scatter's intentional half-width
+    default) is honored instead of being silently replaced by an even DEFAULT_WIDTH
+    split -- the combined row's total width is just the sum of those.
+
+    spacing : fraction (0-1) of the total row width reserved as blank gap BETWEEN
+    separate input figures (not within one figure's own internal columns, e.g. the
+    'No LFC' strip stays tight against its main scatter regardless of this value) --
+    default 0.04. Spread evenly across however many figure-to-figure gaps there are.
     """
     figs = [f for f in figs if f is not None]
     if not figs:
         return
     if len(figs) == 1:
-        figs[0].update_layout(width=width or DEFAULT_WIDTH, height=height or DEFAULT_HEIGHT,
+        figs[0].update_layout(width=width or figs[0].layout.width or DEFAULT_WIDTH,
+                               height=height or figs[0].layout.height or DEFAULT_HEIGHT,
                                autosize=False)
         figs[0].show()
         return
 
-    panel_width = width or max(DEFAULT_WIDTH // len(figs), 350)
-    panel_height = height or DEFAULT_HEIGHT
-    panels = []
+    ncols_list = [_fig_ncols(f) for f in figs]
+    n_gaps = len(figs) - 1
+    fig_widths = [width or fig.layout.width or max(DEFAULT_WIDTH // len(figs), 350) for fig in figs]
+    total_width = sum(fig_widths)
+    # All panels share one row, so they must share one height -- take the largest of each
+    # figure's own set height rather than a blanket DEFAULT_HEIGHT, so a plot_* call with
+    # an explicit height=... still gets it once composed into a row via show_side_by_side.
+    panel_height = height or max((fig.layout.height or DEFAULT_HEIGHT) for fig in figs)
+
+    # Each input figure keeps its own overall width share (fig_widths, above) out of the
+    # (1 - spacing) content budget; within that share, its own columns keep their
+    # original relative proportions (from their own domain widths). A figure built
+    # directly via go.Figure() (e.g. plot_enrichment_test) rather than make_subplots
+    # never had its xaxis.domain set at all (None, not (0, 1)), so fall back to a
+    # full-width (0, 1) domain for those single-column figures. A dedicated empty spacer
+    # column (hidden axes, no traces) sits between each figure's block -- reusing
+    # make_subplots' own horizontal_spacing for this instead would also widen the gap
+    # inside a multi-column figure's own panels, which should stay tight.
+    if not 0.0 <= spacing < 1.0:
+        raise ValueError(
+            f"spacing must be a fraction of the total row width in [0, 1), got {spacing!r} -- "
+            f"it's not pixels (unlike width/height); try something like spacing=0.08."
+        )
+    content_budget = 1.0 - spacing
+    gap_share = (spacing / n_gaps) if n_gaps else 0.0
+
+    column_widths = []
+    block_start_col = []  # 1-indexed column each figure's own block starts at
+    col = 1
+    for i, (fig, n, fig_width) in enumerate(zip(figs, ncols_list, fig_widths)):
+        block_start_col.append(col)
+        raw_widths = []
+        for c in range(1, n + 1):
+            domain = fig.layout[_axis_key("xaxis", c)].domain or (0, 1)
+            raw_widths.append(domain[1] - domain[0])
+        total_raw = sum(raw_widths) or 1.0
+        share = fig_width / total_width * content_budget
+        column_widths.extend([w / total_raw * share for w in raw_widths])
+        col += n
+        if i < n_gaps:
+            column_widths.append(gap_share)
+            col += 1
+
+    total_cols = len(column_widths)
+    spacer_cols = [block_start_col[i] + ncols_list[i] for i in range(n_gaps)]
+
+    subplot_titles = [""] * total_cols
+    for fig, n, start in zip(figs, ncols_list, block_start_col):
+        title = (fig.layout.title.text or "") if fig.layout.title else ""
+        subplot_titles[start - 1] = title
+
+    combined = make_subplots(rows=1, cols=total_cols, column_widths=column_widths,
+                              subplot_titles=subplot_titles, horizontal_spacing=0.02)
+    for spacer_col in spacer_cols:
+        combined.update_xaxes(visible=False, row=1, col=spacer_col)
+        combined.update_yaxes(visible=False, row=1, col=spacer_col)
+
+    seen_legend_names = set()
+    for fig, n, col_start in zip(figs, ncols_list, block_start_col):
+        col_offset = col_start - 1
+        for trace in fig.data:
+            xaxis_id = trace.xaxis or "x"
+            local_col = 1 if xaxis_id == "x" else int(xaxis_id[1:])
+            target_col = col_offset + local_col
+
+            t = trace.__class__(trace.to_plotly_json())  # copy -- don't mutate the caller's figure
+            if t.name:
+                t.legendgroup = t.name
+                t.showlegend = t.name not in seen_legend_names
+                seen_legend_names.add(t.name)
+            combined.add_trace(t, row=1, col=target_col)
+
+        for local_col in range(1, n + 1):
+            target_col = col_offset + local_col
+            xaxis = fig.layout[_axis_key("xaxis", local_col)]
+            yaxis = fig.layout[_axis_key("yaxis", local_col)]
+            if xaxis.title and xaxis.title.text:
+                combined.update_xaxes(title_text=xaxis.title.text, row=1, col=target_col)
+            if xaxis.showticklabels is False:
+                combined.update_xaxes(showticklabels=False, row=1, col=target_col)
+            if xaxis.range:
+                combined.update_xaxes(range=list(xaxis.range), row=1, col=target_col)
+            if yaxis.title and yaxis.title.text:
+                combined.update_yaxes(title_text=yaxis.title.text, row=1, col=target_col)
+
+        for shape in (fig.layout.shapes or []):
+            xref = (shape.xref or "x").replace(" domain", "")
+            local_col = 1 if xref in ("x", "") else int(xref[1:])
+            target_col = col_offset + local_col
+            if shape.y0 == shape.y1:
+                combined.add_hline(y=shape.y0, row=1, col=target_col, line=shape.line)
+            elif shape.x0 == shape.x1:
+                combined.add_vline(x=shape.x0, row=1, col=target_col, line=shape.line)
+
+    combined.update_layout(width=total_width, height=panel_height, autosize=False)
+    combined.show()
+
+
+def show_stacked(*figs):
+    """
+    Display multiple already-built Plotly figures one per row (plain sequential
+    fig.show() calls) instead of side by side. Used for dendrograms, which are wide and
+    have many small leaf tick labels -- squeezing two into a shared row makes both
+    unreadable, so each gets the page's full width and its own row.
+
+    Any None entries (e.g. a plot_* call that returned None because its input data was
+    missing) are skipped.
+    """
     for fig in figs:
-        fig.update_layout(width=panel_width, height=panel_height, autosize=False)
-        panels.append(go.FigureWidget(fig))
-    display(widgets.HBox(panels))
+        if fig is not None:
+            fig.show()
+
+
+def show_picker(options, description="Select:"):
+    """
+    Display ONE already-built Plotly figure at a time out of `options`
+    ({label: Figure or None}), with an ipywidgets Dropdown to switch between them --
+    e.g. for dendrograms, where showing every score-type/direction/mode combination at
+    once (stacked or side by side) is a lot to scan just to compare two of them, but a
+    single "pick one to look at, then pick another" viewer stays legible. A label whose
+    figure is None (e.g. a direction with no significant residues) shows a plain
+    "not available" message instead of a blank plot.
+    """
+    import ipywidgets as widgets
+
+    def _show(choice):
+        fig = options.get(choice)
+        if fig is not None:
+            fig.show()
+        else:
+            print(f"[not available] {choice}")
+
+    widgets.interact(_show, choice=widgets.Dropdown(options=list(options), description=description))
 
 
 # ── 1. BE-QA hypothesis test scatter ──────────────────────────────────────────
 
-def plot_hypothesis_qa(output_dir, pthr=0.05, test="MannWhitney",
+# stat_prefix: the pipeline names the test-statistic column '{prefix}_{cases}_vs_{controls}',
+# alongside 'p_{cases}_vs_{controls}' for the p-value -- D for Kolmogorov-Smirnov, U for
+# Mann-Whitney (calculate_stats()'s own naming, scipy's ks_2samp/mannwhitneyu statistic names).
+_TEST_INFO = {
+    "MannWhitney": {"stat_prefix": "U", "label": "Mann-Whitney U test"},
+    "KolmogorovSmirnov": {"stat_prefix": "D", "label": "Kolmogorov-Smirnov test"},
+}
+
+
+def plot_hypothesis_qa(output_dir, pthr=0.05, test="MannWhitney", hypothesis=2,
                         width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     """
-    Interactive scatter of hypothesis-test p-values by screen id.
-    Reads `hypothesis_qa/{test}_hypothesis2.tsv` (test = "MannWhitney" or
-    "KolmogorovSmirnov").
+    Interactive scatter of the hypothesis test's own statistic (KS's D, or MW's U) on
+    the x-axis against -log10(p) on the y-axis, one point per screen/gene comparison.
+    Reads `hypothesis_qa/{test}_hypothesis{hypothesis}.tsv` (test = "MannWhitney" or
+    "KolmogorovSmirnov"; hypothesis = 1 or 2).
 
-    The p-value column is named dynamically by the pipeline as
-    `p_{cases}_vs_{controls}` (e.g. `p_Nonsense_vs_No Mutation`), not a
-    fixed `p_CaseVsControl`, so it's detected by prefix instead of a
-    hardcoded name.
+    The p-value and statistic columns are named dynamically by the pipeline as
+    `p_{cases}_vs_{controls}` / `{D,U}_{cases}_vs_{controls}` (e.g.
+    `p_Nonsense_vs_No Mutation`), not a fixed name, so the p column is detected by
+    prefix and the statistic column derived from it rather than hardcoded.
     """
-    path = os.path.join(output_dir, "hypothesis_qa", f"{test}_hypothesis2.tsv")
+    path = os.path.join(output_dir, "hypothesis_qa", f"{test}_hypothesis{hypothesis}.tsv")
     df = _load_tsv(path)
     if df is None:
         _warn(f"Could not find {path}; skipping hypothesis QA plot.")
@@ -146,21 +322,28 @@ def plot_hypothesis_qa(output_dir, pthr=0.05, test="MannWhitney",
     pcol = p_cols[0]
     comp_name = pcol[len("p_"):]
 
+    test_info = _TEST_INFO.get(test, {"stat_prefix": None, "label": test})
+    stat_col = f"{test_info['stat_prefix']}_{comp_name}" if test_info["stat_prefix"] else None
+    if stat_col is None or stat_col not in df.columns:
+        _warn(f"Expected statistic column '{stat_col}' not found in {path}; skipping plot.")
+        return None
+
     df = df.copy()
     df[pcol] = pd.to_numeric(df[pcol], errors="coerce")
+    df[stat_col] = pd.to_numeric(df[stat_col], errors="coerce")
     df["-log10(p)"] = -np.log10(df[pcol].clip(lower=1e-300))
     df["significant"] = np.where(df[pcol] < pthr, f"p < {pthr}", f"p >= {pthr}")
 
-    hover_cols = [c for c in ("gene_name", "num_of_cases", "num_of_controls") if c in df.columns]
+    hover_cols = [c for c in ("screenid", "gene_name", "num_of_cases", "num_of_controls") if c in df.columns]
     fig = px.scatter(
-        df, x="screenid", y="-log10(p)", color="significant",
+        df, x=stat_col, y="-log10(p)", color="significant",
         hover_data=hover_cols + [pcol],
-        title=f"BE-QA: {test} test, {comp_name} by screen",
+        title=f"{test_info['label']} — Hypothesis {hypothesis}",
         color_discrete_map={f"p < {pthr}": COLOR_NEG, f"p >= {pthr}": COLOR_NEG_PALE},
     )
     fig.add_hline(y=-np.log10(pthr), line_dash="dash", line_color="gray",
                    annotation_text=f"p = {pthr}")
-    fig.update_layout(xaxis_title="Screen", yaxis_title="-log10(p-value)",
+    fig.update_layout(xaxis_title=f"{test_info['stat_prefix']} statistic", yaxis_title="-log10(p-value)",
                        width=width, height=height, autosize=False)
     return fig
 
@@ -196,14 +379,55 @@ def plot_violin_by_muttype(screen_dir, screen_file, mut_col="Mut_type", val_col=
     return fig
 
 
+def plot_violin_by_processed_muttype(output_dir, input_gene, screen_name,
+                                      width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+    """
+    Interactive violin plot of the PROCESSED per-guide LFC distribution, split by
+    mutation category -- unlike plot_violin_by_muttype (which reads the raw screen file's
+    mut_col as-is), this reads parse_be_data's own output,
+    `screendata/{input_gene}_{screen_name}_{category}.tsv` (one file per category), so the
+    categories/values shown already reflect mutation_priority collapsing (a guide with a
+    semicolon-joined multi-category edit list resolved to one category) and each
+    category's own filtering (e.g. Missense requires refAA != altAA, Nonsense requires
+    altAA == '*') -- exactly what the rest of the pipeline (parse_be_data onward) sees.
+    """
+    pattern = os.path.join(output_dir, "screendata", f"{input_gene}_{screen_name}_*.tsv")
+    paths = sorted(glob.glob(pattern))
+    prefix = f"{input_gene}_{screen_name}_"
+    rows = []
+    for path in paths:
+        category = os.path.basename(path)[len(prefix):-len(".tsv")]
+        df = _load_tsv(path)
+        if df is None or "LFC" not in df.columns:
+            continue
+        rows.append(pd.DataFrame({"category": category, "LFC": df["LFC"]}))
+    if not rows:
+        _warn(f"Could not find any {pattern}; skipping processed violin plot.")
+        return None
+
+    long_df = pd.concat(rows, ignore_index=True)
+    fig = px.violin(
+        long_df, x="category", y="LFC", color="category", box=True, points="outliers",
+        title=f"{input_gene} processed LFC distribution by mutation category — {screen_name}",
+    )
+    fig.update_layout(xaxis_title="Mutation category", yaxis_title="LFC", showlegend=False,
+                       width=width, height=height, autosize=False)
+    return fig
+
+
 # ── 3. LFC / LFC3D cutoff scatter along sequence position ────────────────────
 
-def plot_score_scatter(output_dir, input_gene, screen_name, score_type="LFC", pthr_str="05",
+def plot_score_scatter(output_dir, input_gene, screen_name, score_type="LFC", direction=None, pthr_str="05",
                         width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     """
     Interactive scatter of per-residue LFC or LFC3D scores along sequence
     position (unipos), colored by significance at the given p-value cutoff.
     Reads `{score_type}/*_{input_gene}_NonAggr_{score_type}.tsv`.
+
+    direction : "positive", "negative", or None (both, the previous default) --
+        BE-Clust3D shows these as two separate plots rather than one combined
+        scatter, so a hit in one direction doesn't visually compete for attention
+        with (or get mistaken for) a hit in the other.
     """
     pattern = os.path.join(output_dir, score_type, f"*_{input_gene}_NonAggr_{score_type}.tsv")
     path = _find_one(pattern)
@@ -229,14 +453,14 @@ def plot_score_scatter(output_dir, input_gene, screen_name, score_type="LFC", pt
 
     rows = []
     for _, r in df.iterrows():
-        if pd.notna(r[pos_val_col]) and r[pos_val_col] != 0:
+        if direction in (None, "positive") and pd.notna(r[pos_val_col]) and r[pos_val_col] != 0:
             rows.append({"unipos": r["unipos"], "value": r[pos_val_col], "direction": "positive",
                           "significant": r[pos_sig_col]})
-        if pd.notna(r[neg_val_col]) and r[neg_val_col] != 0:
+        if direction in (None, "negative") and pd.notna(r[neg_val_col]) and r[neg_val_col] != 0:
             rows.append({"unipos": r["unipos"], "value": -abs(r[neg_val_col]), "direction": "negative",
                          "significant": r[neg_sig_col]})
     if not rows:
-        _warn(f"No non-zero {score_type} values found for {screen_name}; skipping plot.")
+        _warn(f"No non-zero {direction or ''} {score_type} values found for {screen_name}; skipping plot.")
         return None
     long_df = pd.DataFrame(rows)
     long_df["group"] = long_df["direction"] + " / " + long_df["significant"].astype(str)
@@ -244,9 +468,10 @@ def plot_score_scatter(output_dir, input_gene, screen_name, score_type="LFC", pt
     # color_discrete_map keys must match the actual 'p<0.05'/'p>=0.05'
     # label text stored in the psig columns, not the '05' file-name suffix.
     pthr_label = _pthr_label(pthr_str)
+    title_suffix = f" ({direction})" if direction else ""
     fig = px.scatter(
         long_df, x="unipos", y="value", color="group",
-        title=f"{input_gene} {score_type} by sequence position — {screen_name}",
+        title=f"{input_gene} {score_type}{title_suffix} by sequence position — {screen_name}",
         color_discrete_map={
             f"positive / p<{pthr_label}": COLOR_POS, f"positive / p>={pthr_label}": COLOR_POS_PALE,
             f"negative / p<{pthr_label}": COLOR_NEG, f"negative / p>={pthr_label}": COLOR_NEG_PALE,
@@ -261,7 +486,7 @@ def plot_score_scatter(output_dir, input_gene, screen_name, score_type="LFC", pt
 # ── 4. 3-D structural cluster viewer (replaces the static dendrogram) ────────
 
 def plot_cluster_3d(output_dir, input_gene, screen_name, score_type="LFC3D",
-                     direction="Positive", pthr_str="001", dist="6A", column_prefix=None,
+                     direction="Positive", pthr_str="05", dist="6A", column_prefix=None,
                      width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     """
     Interactive 3-D scatter of residues colored by spatial cluster
@@ -382,9 +607,21 @@ def _agglomerative_dendrogram_figure(coords, leaf_labels, dist, title,
         color_threshold=dist, link_color_func=link_color_func,
     )
 
+    # log2 y-axis: dendrogram distances span a wide range where the small, meaningful
+    # merges near the bottom get visually crushed against the near-threshold ones on a
+    # linear axis. log2(0) is undefined (every leaf's own baseline is y=0, and the leaf
+    # marker trace below sits at y=0 too), so floor at 1.0 Å -- any merge/leaf at or under
+    # 1 Å reads as 0, never negative (a tiny data-derived epsilon floor let sub-Ångström
+    # merges swing the axis far below 0, which is more precision than a structural distance
+    # in Å needs to show).
+    floor = 1.0
+
+    def log2_floor(vals):
+        return np.log2(np.maximum(np.asarray(vals, dtype=float), floor))
+
     fig = go.Figure()
     for xs, ys, color in zip(ddata["icoord"], ddata["dcoord"], ddata["color_list"]):
-        fig.add_trace(go.Scatter(x=xs, y=ys, mode="lines", line=dict(color=color, width=1.5),
+        fig.add_trace(go.Scatter(x=xs, y=log2_floor(ys), mode="lines", line=dict(color=color, width=1.5),
                                   hoverinfo="skip", showlegend=False))
 
     # scipy places leaves at x = 5, 15, 25, ... in the order given by ivl
@@ -392,11 +629,52 @@ def _agglomerative_dendrogram_figure(coords, leaf_labels, dist, title,
     # converting a scipy dendrogram result into a custom-drawn plot.
     ivl = ddata["ivl"]
     leaf_x = [5 + 10 * i for i in range(len(ivl))]
-    fig.add_hline(y=dist, line_dash="dash", line_color="red",
+
+    # Each leaf's OWN branch color must come from the same above/below-threshold test as
+    # the lines (link_color_func), not straight from model.labels_ -- a leaf whose very
+    # first (lowest) merge is already above the clustering threshold has a gray branch
+    # (it never joins a below-threshold cluster with anything), but model.labels_ still
+    # assigns it its own singleton cluster id, which would otherwise paint its marker a
+    # "real" cluster color that doesn't match the gray line under it. Building a
+    # leaf -> its-own-first-merge-distance map lets each marker use exactly the color its
+    # branch would use.
+    leaf_first_merge_dist = {}
+    for i, merge in enumerate(model.children_):
+        d = linkage_matrix[i, 2]
+        for child in merge:
+            if child < n and child not in leaf_first_merge_dist:
+                leaf_first_merge_dist[int(child)] = d
+
+    def leaf_marker_color(orig_idx):
+        if leaf_first_merge_dist.get(orig_idx, float("inf")) > dist:
+            return "#CCCCCC"
+        return color_for(cluster_for_node(orig_idx))
+
+    # ddata["leaves"] gives each plotted leaf's ORIGINAL index (same order as ivl/leaf_x),
+    # which is what model.labels_ is indexed by -- add an invisible-line, visible-marker
+    # trace at each leaf position so hovering shows which residue it is and which cluster
+    # it landed in (the line traces above are hoverinfo="skip" since a merge line spans many
+    # residues at once and has no single residue to report). Cluster id shown is still
+    # model.labels_ (the real flat-clustering id) even for gray/ungrouped leaves, since
+    # that's still an accurate singleton "cluster of one" label.
+    leaf_clusters = [int(model.labels_[orig_idx]) for orig_idx in ddata["leaves"]]
+    leaf_colors = [leaf_marker_color(orig_idx) for orig_idx in ddata["leaves"]]
+    fig.add_trace(go.Scatter(
+        x=leaf_x, y=[log2_floor([0])[0]] * len(leaf_x), mode="markers",
+        marker=dict(color=leaf_colors, size=6),
+        customdata=list(zip(ivl, leaf_clusters)),
+        hovertemplate="Residue: %{customdata[0]}<br>Cluster: %{customdata[1]}<extra></extra>",
+        showlegend=False,
+    ))
+
+    fig.add_hline(y=log2_floor([dist])[0], line_dash="dash", line_color="red",
                   annotation_text=f"Threshold: {dist}Å", annotation_position="top left")
-    fig.update_xaxes(tickmode="array", tickvals=leaf_x, ticktext=ivl, tickangle=90,
-                      tickfont=dict(size=7))
-    fig.update_layout(title=title, yaxis_title="Distance (Å)",
+    # Tick text carries residue + cluster visibly (not just on hover) -- "31-B (C15)".
+    ticktext = [f"{label} (C{cluster})" for label, cluster in zip(ivl, leaf_clusters)]
+    fig.update_xaxes(tickmode="array", tickvals=leaf_x, ticktext=ticktext, tickangle=90,
+                      tickfont=dict(size=14))
+    fig.update_yaxes(rangemode="tozero")  # floor is 1.0 Å (log2 = 0) -- never dip below 0
+    fig.update_layout(title=title, yaxis_title="log2(Distance (Å))",
                        width=width, height=height, autosize=False, showlegend=False)
     return fig
 
@@ -415,7 +693,7 @@ def _significant_residue_coords(struc_df, sig_df, sig_col, pthr_label):
 
 
 def plot_dendrogram(output_dir, input_gene, screen_name, score_type="LFC3D",
-                     direction="Positive", pthr_str="001", dist=6.0,
+                     direction="Positive", pthr_str="05", dist=6.0,
                      width=DEFAULT_WIDTH, height=600):
     """
     Interactive Plotly dendrogram of the spatial hierarchical clustering for
@@ -447,7 +725,7 @@ def plot_dendrogram(output_dir, input_gene, screen_name, score_type="LFC3D",
 
 
 def plot_meta_dendrogram(output_dir, input_gene, function_for_meta="SUM", score_type="LFC3D",
-                          direction="Positive", pthr_str="001", dist=6.0,
+                          direction="Positive", pthr_str="05", dist=6.0,
                           conservation_run=False, width=DEFAULT_WIDTH, height=600):
     """Meta-aggregate equivalent of plot_dendrogram."""
     struc_path = _find_one(os.path.join(output_dir, "sequence_structure", "*_coord_struc_features.tsv"))
@@ -475,8 +753,59 @@ def plot_meta_dendrogram(output_dir, input_gene, function_for_meta="SUM", score_
 
 # ── 5a. LFC vs LFC3D scatter ──────────────────────────────────────────────────
 
+def _lfc_lfc3d_two_panel_figure(merged, lfc_col, lfc3d_col, title, width, height):
+    """
+    Shared by plot_lfc_lfc3d_scatter and plot_meta_lfc_lfc3d_scatter: a residue can have
+    an LFC3D value (smoothed over structural neighbors) with no LFC value of its own (no
+    direct screen data at that position) -- plotting it at some fake x position on the
+    main LFC axis (the old approach) is misleading, since it has no real x coordinate at
+    all. Instead it gets its own narrow left-hand panel (a vertical strip, x is just
+    jitter for readability) sharing the main panel's y-axis (LFC3D), so it stays visually
+    comparable without pretending it has an LFC value.
+    """
+    has_lfc = merged[lfc_col].notna()
+    main_df = merged[has_lfc]
+    no_lfc_df = merged[~has_lfc]
+
+    fig = make_subplots(rows=1, cols=2, column_widths=[0.15, 0.85], shared_yaxes=True,
+                         horizontal_spacing=0.03, subplot_titles=["No LFC", ""])
+
+    rng = np.random.default_rng(0)  # fixed seed -- same points land at the same jittered x every call
+    seen_legend_names = set()
+
+    def _add(df_sub, col, x_col):
+        for hit_type, color in _HIT_TYPE_COLORS.items():
+            sub = df_sub[df_sub["hit_type"] == hit_type]
+            if sub.empty:
+                continue
+            if x_col is None:
+                x_vals = rng.uniform(-0.3, 0.3, size=len(sub))
+                hovertemplate = "residue %{customdata[0]}<br>LFC3D: %{y:.3f}<extra></extra>"
+            else:
+                x_vals = sub[x_col]
+                hovertemplate = "residue %{customdata[0]}<br>LFC: %{x:.3f}<br>LFC3D: %{y:.3f}<extra></extra>"
+            fig.add_trace(go.Scatter(
+                x=x_vals, y=sub[lfc3d_col], mode="markers", marker=dict(color=color, size=6),
+                name=hit_type, legendgroup=hit_type, showlegend=hit_type not in seen_legend_names,
+                customdata=sub[["unipos"]], hovertemplate=hovertemplate,
+            ), row=1, col=col)
+            seen_legend_names.add(hit_type)
+
+    _add(no_lfc_df, 1, None)
+    _add(main_df, 2, lfc_col)
+
+    fig.update_xaxes(showticklabels=False, range=[-1, 1], row=1, col=1)
+    fig.update_xaxes(title_text="LFC", row=1, col=2)
+    fig.update_yaxes(title_text="LFC3D", row=1, col=1)
+    fig.update_layout(title=title, width=width, height=height, autosize=False)
+    return fig
+
+
 def plot_lfc_lfc3d_scatter(output_dir, input_gene, screen_name, pthr_str="05",
-                            width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+                            width=DEFAULT_WIDTH // 2, height=DEFAULT_HEIGHT):
+    # Half DEFAULT_WIDTH: unlike the other plots here, this one is normally shown alone
+    # (not through show_side_by_side, since it's already a 2-column figure internally),
+    # so it shouldn't stretch to the same width meant for a side-by-side pair.
     lfc_path = _find_one(os.path.join(output_dir, "LFC", f"*_{input_gene}_LFC_dis_wght.tsv"))
     lfc3d_path = _find_one(os.path.join(output_dir, "LFC3D", f"*_{input_gene}_LFC3D_dis_wght.tsv"))
     psig_path = _find_one(os.path.join(output_dir, "LFC3D", f"*_{input_gene}_NonAggr_LFC3D.tsv"))
@@ -499,7 +828,9 @@ def plot_lfc_lfc3d_scatter(output_dir, input_gene, screen_name, pthr_str="05",
     lfc3d_df[lfc3d_col] = pd.to_numeric(lfc3d_df[lfc3d_col], errors="coerce")
 
     merged = lfc_df[["unipos", lfc_col]].merge(lfc3d_df[["unipos", lfc3d_col]], on="unipos")
-    merged = merged.dropna(subset=[lfc_col, lfc3d_col])
+    # Only LFC3D is required to plot at all -- LFC may legitimately be missing (see
+    # _lfc_lfc3d_two_panel_figure), so don't drop those rows here.
+    merged = merged.dropna(subset=[lfc3d_col])
     if pos_sig_col in psig_df.columns and neg_sig_col in psig_df.columns:
         merged = merged.merge(psig_df[["unipos", pos_sig_col, neg_sig_col]], on="unipos", how="left")
 
@@ -523,15 +854,9 @@ def plot_lfc_lfc3d_scatter(output_dir, input_gene, screen_name, pthr_str="05",
     else:
         merged["hit_type"] = "Not a Hit"
 
-    fig = px.scatter(
-        merged, x=lfc_col, y=lfc3d_col, color="hit_type", hover_data=["unipos"],
-        title=f"{input_gene} LFC vs. LFC3D — {screen_name}",
-        color_discrete_map={"Not a Hit": COLOR_NEUTRAL, "Pos Hit": COLOR_POS,
-                             "Neg Hit": COLOR_NEG, "Pos + Neg Hit": COLOR_COMBINED},
-    )
-    fig.update_layout(xaxis_title="LFC", yaxis_title="LFC3D",
-                       width=width, height=height, autosize=False)
-    return fig
+    return _lfc_lfc3d_two_panel_figure(merged, lfc_col, lfc3d_col,
+                                        title=f"{input_gene} LFC vs. LFC3D — {screen_name}",
+                                        width=width, height=height)
 
 
 # ── 5b. pLDDT vs RSA scatter ──────────────────────────────────────────────────
@@ -552,7 +877,14 @@ def plot_plddt_rsa_scatter(output_dir, input_gene, screen_name,
         return None
 
     # Non-conserved / skipped residues are written as the literal string
-    # '-' rather than NaN in these tables; coerce to numeric.
+    # '-' rather than NaN in these tables; coerce to numeric. bfactor_pLDDT/RSA in
+    # particular must be numeric BEFORE px.scatter sees them, or else the '-' entries
+    # make the whole column dtype=object, which Plotly then treats as a categorical
+    # axis (sorted lexicographically, e.g. "100" before "20") instead of a numeric one.
+    struc_df = struc_df.copy()
+    struc_df["bfactor_pLDDT"] = pd.to_numeric(struc_df["bfactor_pLDDT"], errors="coerce")
+    struc_df["RSA"] = pd.to_numeric(struc_df["RSA"], errors="coerce")
+
     lfc3d_df = lfc3d_df.copy()
     lfc3d_df[lfc3d_col] = pd.to_numeric(lfc3d_df[lfc3d_col], errors="coerce")
     if wght_col in lfc3d_df.columns:
@@ -560,7 +892,7 @@ def plot_plddt_rsa_scatter(output_dir, input_gene, screen_name,
 
     cols = ["unipos"] + [c for c in (lfc3d_col, wght_col) if c in lfc3d_df.columns]
     merged = struc_df[["unipos"] + needed].merge(lfc3d_df[cols], on="unipos")
-    merged = merged.dropna(subset=[lfc3d_col])
+    merged = merged.dropna(subset=["bfactor_pLDDT", "RSA", lfc3d_col])
     merged["direction"] = np.where(merged[lfc3d_col] >= 0, "positive", "negative")
     size_col = None
     if wght_col in merged.columns:
@@ -580,14 +912,33 @@ def plot_plddt_rsa_scatter(output_dir, input_gene, screen_name,
 
 # ── 5c. Hit-count bar plots by domain / pLDDT disorder category ──────────────
 
-def _hit_counts_by_category(output_dir, input_gene, screen_name, category_df, category_col, pthr_str):
+def _hit_counts_by_category(output_dir, input_gene, screen_name, category_df, category_col, pthr_str, label=None):
+    """
+    Returns None (after printing the SPECIFIC reason via _warn) rather than a generic
+    "could not assemble" message, since the actual cause matters to the reader: e.g. a gene
+    with no queried domain annotations at all (category column entirely NaN -- a data
+    availability fact about that gene/UniProt entry, not a bug) looks nothing like a
+    missing NonAggr table or zero residues clearing the significance threshold.
+    """
+    label = label or category_col
     nonaggr_path = _find_one(os.path.join(output_dir, "LFC3D", f"*_{input_gene}_NonAggr_LFC3D.tsv"))
     nonaggr_df = _load_tsv(nonaggr_path)
-    if nonaggr_df is None or category_col not in category_df.columns:
+    if nonaggr_df is None:
+        _warn(f"Could not find NonAggr LFC3D table (pattern: *_{input_gene}_NonAggr_LFC3D.tsv in "
+              f"{output_dir}/LFC3D); skipping {label} barplot.")
+        return None
+    if category_col not in category_df.columns:
+        _warn(f"Column '{category_col}' not found in the structural features table; skipping {label} barplot.")
+        return None
+    if category_df[category_col].nunique(dropna=True) == 0:
+        _warn(f"No {label} annotations available for {input_gene} ('{category_col}' is empty/NaN for every "
+              f"residue -- e.g. UniProt has no queried domain features for this entry) — skipping {label} barplot.")
         return None
 
     pos_sig_col, neg_sig_col = f"{screen_name}_LFC3D_pos_{pthr_str}_psig", f"{screen_name}_LFC3D_neg_{pthr_str}_psig"
     if pos_sig_col not in nonaggr_df.columns or neg_sig_col not in nonaggr_df.columns:
+        _warn(f"Expected columns '{pos_sig_col}'/'{neg_sig_col}' not found in the NonAggr LFC3D table; "
+              f"skipping {label} barplot.")
         return None
 
     merged = category_df[["unipos", category_col]].merge(
@@ -598,6 +949,10 @@ def _hit_counts_by_category(output_dir, input_gene, screen_name, category_df, ca
     pthr_label = _pthr_label(pthr_str)
     pos_hits = merged[merged[pos_sig_col].astype(str).str.startswith(f"p<{pthr_label}")]
     neg_hits = merged[merged[neg_sig_col].astype(str).str.startswith(f"p<{pthr_label}")]
+    if pos_hits.empty and neg_hits.empty:
+        _warn(f"No residues pass p<{pthr_label} (LFC3D, {screen_name}) in either direction; "
+              f"skipping {label} barplot.")
+        return None
 
     counts = pd.concat([
         pos_hits.groupby(category_col).size().rename("count").reset_index().assign(hit_type="POS"),
@@ -619,10 +974,9 @@ def plot_domain_barplot(output_dir, input_gene, input_uniprot, screen_name, pthr
     if "unipos" not in domains_df.columns and "Position" in domains_df.columns:
         domains_df = domains_df.rename(columns={"Position": "unipos"})
 
-    counts = _hit_counts_by_category(output_dir, input_gene, screen_name, domains_df, "Domain", pthr_str)
-    if counts is None or counts.empty:
-        _warn("Could not assemble domain hit counts; skipping domain barplot.")
-        return None
+    counts = _hit_counts_by_category(output_dir, input_gene, screen_name, domains_df, "Domain", pthr_str, label="domain")
+    if counts is None:
+        return None  # _hit_counts_by_category already printed the specific reason
 
     fig = px.bar(
         counts, x="Domain", y="count", color="hit_type", barmode="group",
@@ -642,10 +996,9 @@ def plot_plddt_dis_barplot(output_dir, input_gene, screen_name, pthr_str="05",
         _warn(f"Could not find structural features table; skipping pLDDT-disorder barplot.")
         return None
 
-    counts = _hit_counts_by_category(output_dir, input_gene, screen_name, struc_df, "pLDDT_dis", pthr_str)
-    if counts is None or counts.empty:
-        _warn("Could not assemble pLDDT-disorder hit counts; skipping barplot.")
-        return None
+    counts = _hit_counts_by_category(output_dir, input_gene, screen_name, struc_df, "pLDDT_dis", pthr_str, label="pLDDT-disorder")
+    if counts is None:
+        return None  # _hit_counts_by_category already printed the specific reason
 
     fig = px.bar(
         counts, x="pLDDT_dis", y="count", color="hit_type", barmode="group",
@@ -660,22 +1013,22 @@ def plot_plddt_dis_barplot(output_dir, input_gene, screen_name, pthr_str="05",
 # ── 5d. Enrichment test forest plot ──────────────────────────────────────────
 
 def plot_enrichment_test(output_dir, input_gene, screen_name=None, score_type="LFC3D", pthr_str="05",
-                          width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+                          feature="pLDDT_dis", width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     """
     Reads the enrichment_test() pickle (list of dicts with score_type,
     odds_ratio [log2], ci [log2 low/high], p_value) and renders a forest
     plot with hoverable confidence intervals.
 
-    screen_name : str, optional
-        Per-screen calls (bemetaclust3d_characterization.py excluded) name
-        this pickle '..._{score_type}_{pthr_str}_{screen_name}.pickle'; the
-        meta-aggregate characterization step writes it without any screen
-        suffix at all, so leave this None for the meta case.
+    be3d_local.py's main() runs enrichment_test separately per feature
+    ('Domain' and 'pLDDT_dis'), naming the pickle
+    '{input_gene}_enrichment_test_{screen_name}_{feature}_{score_type}_{pthr_str}.pickle'
+    (per-screen) or '{input_gene}_enrichment_test_{feature}_{score_type}_{pthr_str}.pickle'
+    (meta-aggregate, screen_name=None) -- e.g. 'Domain' is skipped whenever a gene has no
+    queried domain annotations (that feature column ends up single-valued), so feature
+    defaults to 'pLDDT_dis', which is always available.
     """
-    if screen_name:
-        fname = f"{input_gene}_enrichment_test_{score_type}_{pthr_str}_{screen_name}.pickle"
-    else:
-        fname = f"{input_gene}_enrichment_test_{score_type}_{pthr_str}.pickle"
+    screen_part = f"{screen_name}_" if screen_name else ""
+    fname = f"{input_gene}_enrichment_test_{screen_part}{feature}_{score_type}_{pthr_str}.pickle"
     path = os.path.join(output_dir, "characterization", fname)
     if not os.path.exists(path):
         _warn(f"Could not find {path}; skipping enrichment test plot.")
@@ -739,8 +1092,8 @@ def _meta_agg_path(output_dir, input_gene, suffix, conservation_run=False):
     return os.path.join(output_dir, "meta-aggregate", f"{prefix}_{suffix}")
 
 
-def plot_meta_score_scatter(output_dir, input_gene, function_for_meta="SUM", score_type="LFC3D", pthr_str="05",
-                             conservation_run=False, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+def plot_meta_score_scatter(output_dir, input_gene, function_for_meta="SUM", score_type="LFC3D", direction=None,
+                             pthr_str="05", conservation_run=False, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     """
     Meta-aggregate equivalent of plot_score_scatter (per-residue score along
     sequence position, colored by significance). Reads
@@ -748,6 +1101,8 @@ def plot_meta_score_scatter(output_dir, input_gene, function_for_meta="SUM", sco
     columns are prefixed by the aggregation function name (average_split_bin_plots
     builds them as '{func}_{score_type}_pos'/'_neg' when screen_name==''),
     not by a screen name like the per-screen NonAggr table.
+
+    direction : "positive", "negative", or None (both) -- see plot_score_scatter.
     """
     path = _meta_agg_path(output_dir, input_gene, f"MetaAggr_{score_type}.tsv", conservation_run)
     df = _load_tsv(path)
@@ -770,22 +1125,23 @@ def plot_meta_score_scatter(output_dir, input_gene, function_for_meta="SUM", sco
 
     rows = []
     for _, r in df.iterrows():
-        if pd.notna(r[pos_val_col]) and r[pos_val_col] != 0:
+        if direction in (None, "positive") and pd.notna(r[pos_val_col]) and r[pos_val_col] != 0:
             rows.append({"unipos": r["unipos"], "value": r[pos_val_col], "direction": "positive",
                           "significant": r[pos_sig_col]})
-        if pd.notna(r[neg_val_col]) and r[neg_val_col] != 0:
+        if direction in (None, "negative") and pd.notna(r[neg_val_col]) and r[neg_val_col] != 0:
             rows.append({"unipos": r["unipos"], "value": -abs(r[neg_val_col]), "direction": "negative",
                          "significant": r[neg_sig_col]})
     if not rows:
-        _warn(f"No non-zero meta {score_type} values found; skipping plot.")
+        _warn(f"No non-zero meta {direction or ''} {score_type} values found; skipping plot.")
         return None
     long_df = pd.DataFrame(rows)
     long_df["group"] = long_df["direction"] + " / " + long_df["significant"].astype(str)
 
     pthr_label = _pthr_label(pthr_str)
+    title_suffix = f" ({direction})" if direction else ""
     fig = px.scatter(
         long_df, x="unipos", y="value", color="group",
-        title=f"{input_gene} {score_type} by sequence position — Meta ({function_for_meta})",
+        title=f"{input_gene} {score_type}{title_suffix} by sequence position — Meta ({function_for_meta})",
         color_discrete_map={
             f"positive / p<{pthr_label}": COLOR_POS, f"positive / p>={pthr_label}": COLOR_POS_PALE,
             f"negative / p<{pthr_label}": COLOR_NEG, f"negative / p>={pthr_label}": COLOR_NEG_PALE,
@@ -798,7 +1154,7 @@ def plot_meta_score_scatter(output_dir, input_gene, function_for_meta="SUM", sco
 
 
 def plot_meta_lfc_lfc3d_scatter(output_dir, input_gene, function_for_meta="SUM", pthr_str="05",
-                                 conservation_run=False, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+                                 conservation_run=False, width=DEFAULT_WIDTH // 2, height=DEFAULT_HEIGHT):
     """Meta-aggregate equivalent of plot_lfc_lfc3d_scatter."""
     lfc_path = _meta_agg_path(output_dir, input_gene, "LFC_dis_wght.tsv", conservation_run)
     lfc3d_path = _meta_agg_path(output_dir, input_gene, "LFC3D_dis_wght.tsv", conservation_run)
@@ -819,7 +1175,8 @@ def plot_meta_lfc_lfc3d_scatter(output_dir, input_gene, function_for_meta="SUM",
     lfc3d_df[lfc3d_col] = pd.to_numeric(lfc3d_df[lfc3d_col], errors="coerce")
 
     merged = lfc_df[["unipos", lfc_col]].merge(lfc3d_df[["unipos", lfc3d_col]], on="unipos")
-    merged = merged.dropna(subset=[lfc_col, lfc3d_col])
+    # Only LFC3D is required to plot at all -- see _lfc_lfc3d_two_panel_figure.
+    merged = merged.dropna(subset=[lfc3d_col])
     if pos_sig_col in psig_df.columns and neg_sig_col in psig_df.columns:
         merged = merged.merge(psig_df[["unipos", pos_sig_col, neg_sig_col]], on="unipos", how="left")
         pthr_label = _pthr_label(pthr_str)
@@ -839,15 +1196,9 @@ def plot_meta_lfc_lfc3d_scatter(output_dir, input_gene, function_for_meta="SUM",
     else:
         merged["hit_type"] = "Not a Hit"
 
-    fig = px.scatter(
-        merged, x=lfc_col, y=lfc3d_col, color="hit_type", hover_data=["unipos"],
-        title=f"{input_gene} LFC vs. LFC3D — Meta ({function_for_meta})",
-        color_discrete_map={"Not a Hit": COLOR_NEUTRAL, "Pos Hit": COLOR_POS,
-                             "Neg Hit": COLOR_NEG, "Pos + Neg Hit": COLOR_COMBINED},
-    )
-    fig.update_layout(xaxis_title="LFC", yaxis_title="LFC3D",
-                       width=width, height=height, autosize=False)
-    return fig
+    return _lfc_lfc3d_two_panel_figure(merged, lfc_col, lfc3d_col,
+                                        title=f"{input_gene} LFC vs. LFC3D — Meta ({function_for_meta})",
+                                        width=width, height=height)
 
 
 def plot_meta_plddt_rsa_scatter(output_dir, input_gene, function_for_meta="SUM", score_type="LFC3D",
@@ -866,11 +1217,17 @@ def plot_meta_plddt_rsa_scatter(output_dir, input_gene, function_for_meta="SUM",
         _warn(f"Expected columns {needed + [wght_col]} not all found; skipping plot.")
         return None
 
+    # See plot_plddt_rsa_scatter's comment: '-' placeholders make these columns
+    # dtype=object unless coerced, which breaks numeric x-axis ordering in Plotly.
+    struc_df = struc_df.copy()
+    struc_df["bfactor_pLDDT"] = pd.to_numeric(struc_df["bfactor_pLDDT"], errors="coerce")
+    struc_df["RSA"] = pd.to_numeric(struc_df["RSA"], errors="coerce")
+
     wght_df = wght_df.copy()
     wght_df[wght_col] = pd.to_numeric(wght_df[wght_col], errors="coerce")
 
     merged = struc_df[["unipos"] + needed].merge(wght_df[["unipos", wght_col]], on="unipos")
-    merged = merged.dropna(subset=[wght_col])
+    merged = merged.dropna(subset=["bfactor_pLDDT", "RSA", wght_col])
     merged = merged[merged[wght_col] != 0]
     merged["direction"] = np.where(merged[wght_col] > 0, "positive", "negative")
     merged["marker_size"] = merged[wght_col].abs() * 100
@@ -887,14 +1244,27 @@ def plot_meta_plddt_rsa_scatter(output_dir, input_gene, function_for_meta="SUM",
 
 
 def _meta_hit_counts_by_category(output_dir, input_gene, function_for_meta, category_df, category_col,
-                                  pthr_str, score_type="LFC3D", conservation_run=False):
+                                  pthr_str, score_type="LFC3D", conservation_run=False, label=None):
+    """Meta-aggregate equivalent of _hit_counts_by_category -- see its docstring for why
+    each failure mode gets its own specific _warn() rather than one generic message."""
+    label = label or category_col
     psig_path = _meta_agg_path(output_dir, input_gene, f"MetaAggr_{score_type}.tsv", conservation_run)
     psig_df = _load_tsv(psig_path)
-    if psig_df is None or category_col not in category_df.columns:
+    if psig_df is None:
+        _warn(f"Could not find meta-aggregate {score_type} table ({psig_path}); skipping {label} barplot.")
+        return None
+    if category_col not in category_df.columns:
+        _warn(f"Column '{category_col}' not found in the structural features table; skipping {label} barplot.")
+        return None
+    if category_df[category_col].nunique(dropna=True) == 0:
+        _warn(f"No {label} annotations available for {input_gene} ('{category_col}' is empty/NaN for every "
+              f"residue -- e.g. UniProt has no queried domain features for this entry) — skipping {label} barplot.")
         return None
 
     pos_sig_col, neg_sig_col = f"{function_for_meta}_{score_type}_pos_{pthr_str}_psig", f"{function_for_meta}_{score_type}_neg_{pthr_str}_psig"
     if pos_sig_col not in psig_df.columns or neg_sig_col not in psig_df.columns:
+        _warn(f"Expected columns '{pos_sig_col}'/'{neg_sig_col}' not found in the meta-aggregate table; "
+              f"skipping {label} barplot.")
         return None
 
     merged = category_df[["unipos", category_col]].merge(
@@ -902,6 +1272,9 @@ def _meta_hit_counts_by_category(output_dir, input_gene, function_for_meta, cate
     pthr_label = _pthr_label(pthr_str)
     pos_hits = merged[merged[pos_sig_col].astype(str).str.startswith(f"p<{pthr_label}")]
     neg_hits = merged[merged[neg_sig_col].astype(str).str.startswith(f"p<{pthr_label}")]
+    if pos_hits.empty and neg_hits.empty:
+        _warn(f"No residues pass p<{pthr_label} (meta {score_type}) in either direction; skipping {label} barplot.")
+        return None
 
     counts = pd.concat([
         pos_hits.groupby(category_col).size().rename("count").reset_index().assign(hit_type="POS"),
@@ -922,10 +1295,9 @@ def plot_meta_domain_barplot(output_dir, input_gene, input_uniprot, function_for
         domains_df = domains_df.rename(columns={"Position": "unipos"})
 
     counts = _meta_hit_counts_by_category(output_dir, input_gene, function_for_meta, domains_df, "Domain",
-                                           pthr_str, conservation_run=conservation_run)
-    if counts is None or counts.empty:
-        _warn("Could not assemble meta domain hit counts; skipping domain barplot.")
-        return None
+                                           pthr_str, conservation_run=conservation_run, label="domain")
+    if counts is None:
+        return None  # _meta_hit_counts_by_category already printed the specific reason
 
     fig = px.bar(
         counts, x="Domain", y="count", color="hit_type", barmode="group",
@@ -947,10 +1319,9 @@ def plot_meta_plddt_dis_barplot(output_dir, input_gene, function_for_meta="SUM",
         return None
 
     counts = _meta_hit_counts_by_category(output_dir, input_gene, function_for_meta, struc_df, "pLDDT_dis",
-                                           pthr_str, conservation_run=conservation_run)
-    if counts is None or counts.empty:
-        _warn("Could not assemble meta pLDDT-disorder hit counts; skipping barplot.")
-        return None
+                                           pthr_str, conservation_run=conservation_run, label="pLDDT-disorder")
+    if counts is None:
+        return None  # _meta_hit_counts_by_category already printed the specific reason
 
     fig = px.bar(
         counts, x="pLDDT_dis", y="count", color="hit_type", barmode="group",

@@ -35,8 +35,8 @@ def calculate_lfc3d(
     target_gene_chain = 'A',
     ppi_chain_gene_dict = {}, # {'GENE1':'B','GENE2':'C'}
     ppi_gene_edits_dict = {}, # {'GENE1': edits_dict, 'GENE2': edits_dict}
-    func_map={'mean':np.mean, 'median':np.median, 'sum':np.sum, 'min':np.min, 'max':np.max}, 
-): 
+    func_map={'mean':np.mean, 'median':np.median, 'sum':np.sum, 'min':np.min, 'max':np.max},
+):
     """
     Calculates LFC3D scores using structural data. 
 
@@ -259,11 +259,11 @@ def _resolve_neighbor_sources(
     # naa IS NEIGHBORING AMINO ACIDS #
     # taa IS THIS AMINO ACID #
     # VALUE FOR THIS RESIDUE: caller already skips aa entirely when conserved_only excludes it #
+    is_ppi_mode = isinstance(ppi_chain_gene_dict, dict)
     sources = [('local', aa)]
 
     # CHECK NEIGHBORING RESIDUES #
     if isinstance(naa_chain_pos_str, str):  ###
-        is_ppi_mode = isinstance(ppi_chain_gene_dict, dict)
         naa_chain_pos_list = naa_chain_pos_str.split(';') ###
         for naa_chain_pos in naa_chain_pos_list:  ###
             naa_chain, naa_pos = naa_chain_pos.split('_')
@@ -273,9 +273,11 @@ def _resolve_neighbor_sources(
                 if naa_chain == target_gene_chain:
                     if not conserved_only or df_struc_edits_dict[naa_idx] == 'conserved': ###
                         sources.append(('local', naa_idx))
-                else:
+                elif naa_chain in ppi_chain_gene_dict:
                     # CROSS-CHAIN PPI NEIGHBORS ARE NEVER conserved_only-GATED #
                     sources.append(('cross', ppi_chain_gene_dict[naa_chain], naa_idx))
+                # ELSE: naa_chain IS A REAL CHAIN IN THE PDB BUT NOT LISTED IN ppi_chain_gene_dict --
+                # IGNORE IT ENTIRELY RATHER THAN ERROR, SO CALLERS CAN OPT INTO A SUBSET OF CHAINS #
             else: # For Monomer
                 if not conserved_only or df_struc_edits_dict[naa_idx] == 'conserved': ###
                     if naa_chain == target_gene_chain:

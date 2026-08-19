@@ -1,0 +1,10 @@
+# mode: ppi_diff config (score_type/skip_existing) referencing a mode:complex-ready base
+# config (base_config) -- run_ppi_diff_mode runs the PPI leg (mode: complex, covering
+# every target gene) once, the no-PPI leg (mode: monomer, once per target gene), then
+# merges into one noppi/ppi/delta TSV + 3 PDBs.
+mode: ppi_diff
+beclust3d_path: /content/beclust3d-public
+output_dir: /content/BE3D_example/output/ppi_diff_KBTBD4_HDAC1
+score_type: Meta_LFC3D
+skip_existing: true
+base_config: /content/beclust3d-public/examples/yaml/ppi_chain_BC_and_ABC_colab.yaml

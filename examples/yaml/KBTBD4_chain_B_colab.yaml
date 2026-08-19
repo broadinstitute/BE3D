@@ -1,0 +1,53 @@
+mode: monomer # monomer, complex, ppi_diff, blind_target
+beclust3d_path: /content/beclust3d-public
+screen_dir: /content/beclust3d-public/examples/data
+output_dir: /content/BE3D_example/output/KBTBD4_chain_B
+muscle_path: /content/muscle
+input_gene: KBTBD4
+input_uniprot: Q9NVX7-2
+input_chain: B
+screens: YeoKBTBD4HDAC12025-ABE-Screen-PPI.tsv,YeoKBTBD4HDAC12025-CBE-Screen-PPI.tsv
+user_pdb: /content/beclust3d-public/examples/pdb/8voj_KBTBD4_HDAC1_chain_ABC.pdb
+mutation_category:
+  missense: [Missense]
+  silent: [Silent]
+  nonsense: [Nonsense]
+  no_mutation: [No Mutation]
+  splice: [Splice-donor, Splice-acceptor]
+  intron: [Intron]
+# most-to-least-deleterious order for collapsing a guide's semicolon-joined
+# per-edit mutation categories (e.g. 'Silent;Missense;') into a single category;
+# omit/null to use mut_col values as-is (already a single category per guide)
+mutation_priority: [Nonsense, Splice-donor, Splice-acceptor, Missense, Silent, Intron, No Mutation]
+qa:
+  qa_passed_only: false
+  qa_only: false
+  cases: [Nonsense, Splice-donor, Splice-acceptor]
+  controls: [No Mutation]
+conservation:
+  run: false
+  v_score_threshold: 3
+  alt_gene_name: null
+  alt_uniprot_id: null
+  alt_screen_start: null
+database:
+  mut_list_col: null
+  mut_col: Mutation_type
+  val_col: sgRNA_score
+  gene_col: Gene
+  edits_col: Mutation_list
+  mut_delimiter: ;
+  gRNA_col: null
+user_fasta: null
+user_dssp: null
+function_for_lfc: mean
+function_for_lfc3d: mean
+function_for_meta: SUM
+nRandom: 500
+pthr:
+  single_screen: 0.05
+  multi_screen: 0.05
+structure_radius: 6.0
+clustering_radius: 6.0
+priority_on_alternative: false
+atom_level_naa: false
