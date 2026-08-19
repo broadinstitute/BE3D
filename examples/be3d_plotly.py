@@ -338,8 +338,17 @@ def show_figure_dropdown(options, description="Select:", width=None, height=None
         _warn("nothing to show.")
         return
     if len(available) == 1:
+        # width/height must be honored here too, not just on the multi-variant path below:
+        # otherwise a config with a single screen/gene silently falls back to whatever size the
+        # plot_* call defaulted to, so the same plot came out a different size depending on how
+        # many variants happened to exist.
         only = next(iter(available.values()))
-        only.update_layout(title_text=title, margin=dict(t=40 if title else 20))
+        only.update_layout(
+            title_text=title,
+            width=width or only.layout.width or DEFAULT_WIDTH,
+            height=height or only.layout.height or DEFAULT_HEIGHT,
+            autosize=False, margin=dict(t=40 if title else 20),
+        )
         display(only)
         return
 
