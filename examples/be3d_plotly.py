@@ -383,25 +383,26 @@ def show_figure_dropdown(options, description="Select:", width=None, height=None
             if xaxis.tickangle is not None:
                 layout_update["xaxis.tickangle"] = xaxis.tickangle
 
-        buttons.append(dict(label=label, method="update", args=[{"visible": visible}, layout_update]))
+        # The description is folded into each button's own label rather than sitting in a
+        # separate annotation above the menu: that keeps the control one line tall (so it can
+        # sit clear above the plot's title/subplot titles without opening a gap), and the
+        # closed dropdown then reads e.g. "Screen: <value>" and is self-describing.
+        buttons.append(dict(label=f"{description} {label}".strip(), method="update",
+                            args=[{"visible": visible}, layout_update]))
 
-    # Dropdown sits just above the plotting area, top-left, with its label to its left on the
-    # same line -- so it doesn't collide with anything drawn inside the plot, and the top
-    # margin only has to clear the control itself (the earlier taller margin plus a separate
-    # label line above the menu is what left a big empty band between the printed heading and
-    # the plot). The title, when one is asked for, goes to the right of the control.
+    # The control goes ABOVE the figure's title band (title/subplot titles sit just over the
+    # plotting area at paper y ~= 1.0, so the menu is anchored above that), and it's one line
+    # tall because the description rides along in the button labels -- the top margin only has
+    # to clear the menu itself, which is what keeps the gap between the printed heading and
+    # the plot small.
     combined.update_layout(
-        title=dict(text=title, x=0.35, xanchor="left", y=0.99, yanchor="top", font=dict(size=13)),
+        title=dict(text=title, x=0.0, xanchor="left", y=1.0, yanchor="top", font=dict(size=13)),
         updatemenus=[dict(
             active=0, buttons=buttons, direction="down", showactive=True,
-            x=0.0, xanchor="left", y=1.0, yanchor="bottom",
-            pad=dict(t=0, b=2, l=0, r=0), font=dict(size=12),
+            x=0.0, xanchor="left", y=1.11, yanchor="bottom",
+            pad=dict(t=0, b=0, l=0, r=0), font=dict(size=12),
         )],
-        margin=dict(t=46, b=60),
-    )
-    combined.add_annotation(
-        text=f"<b>{description}</b>", showarrow=False, xref="paper", yref="paper",
-        x=0.0, xanchor="left", y=1.1, yanchor="bottom", font=dict(size=12),
+        margin=dict(t=76, b=60),
     )
     display(combined)
 

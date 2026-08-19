@@ -53,8 +53,18 @@ def plot_residue_dot(df, value_col, title):
 
 
 def plot_ppi_vs_noppi_scatter(df, score_label, highlight_list=None, width=560, height=560):
+    """Display what build_ppi_vs_noppi_scatter() builds. Use the build_ variant when the
+    figure is needed as a value, e.g. as one variant behind a show_figure_dropdown()."""
+    fig = build_ppi_vs_noppi_scatter(df, score_label, highlight_list=highlight_list,
+                                     width=width, height=height)
+    if fig is not None:
+        display(fig)
+
+
+def build_ppi_vs_noppi_scatter(df, score_label, highlight_list=None, width=560, height=560):
     """x = no-PPI score, y = PPI score, one point per residue, hover shows unires+unipos+gene;
-    optionally highlights a list of unipos values (e.g. the top-N by |delta|)."""
+    optionally highlights a list of unipos values (e.g. the top-N by |delta|). Returns the
+    figure rather than displaying it."""
     plot_df = df.dropna(subset=['noppi_score', 'ppi_score'])
     highlight_list = highlight_list or []
     is_highlighted = plot_df['unipos'].isin(highlight_list)
@@ -95,7 +105,7 @@ def plot_ppi_vs_noppi_scatter(df, score_label, highlight_list=None, width=560, h
         yaxis=dict(title=f'PPI {score_label}', range=[lo, hi], gridcolor='#e8e8e5', scaleanchor='x', scaleratio=1),
         plot_bgcolor='white', paper_bgcolor='white', width=width, height=height,
     )
-    display(fig)
+    return fig
 
 
 def value_to_rgb(value, vmax=2.0):
@@ -169,6 +179,82 @@ def render_molstar(widget, pdb_path, chain_values, vmax=2.0, highlight_top_n=Non
     load_molstar_pdb(widget, pdb_path)
     color_molstar(widget, chain_values, vmax=vmax, highlight_top_n=highlight_top_n)
     return widget
+
+
+def save_molstar_html(pdb_path, chain_values, out_path, vmax=2.0, highlight_top_n=None,
+                       title='BE3D structure view', height=600):
+    """
+    Write a standalone HTML file with the same structure + per-residue coloring the
+    PDBeMolstar widget shows, to be opened directly in a browser.
+
+    This is a fallback for frontends where the widget itself won't load. In VS Code that
+    shows up as "Failed to load model class 'AnyModel' from module 'anywidget'": ipymolstar
+    is an anywidget, and VS Code only fetches third-party widget JS when
+    "jupyter.widgetScriptSources": ["jsdelivr.com", "unpkg.com"] is set in settings (with
+    anywidget + ipymolstar installed in the kernel env, then a kernel restart). Fixing the
+    setting is the real solution; this file needs no widget layer at all, so it works
+    regardless.
+
+    Uses the same pdbe-molstar plugin the widget wraps, loaded from a CDN, fed the identical
+    color payload color_molstar() builds -- the PDB is inlined as a base64 data URL so the
+    file is self-contained and can be moved/shared.
+    """
+    import base64
+    import json as _json
+
+    with open(pdb_path) as f:
+        pdb_text = f.read()
+    pdb_b64 = base64.b64encode(pdb_text.encode()).decode()
+
+    flat = [(chain, unipos, value)
+            for chain, pos_values in chain_values.items()
+            for unipos, value in pos_values.items()]
+    top_positions = set()
+    if highlight_top_n:
+        ranked = sorted(flat, key=lambda x: abs(x[2]), reverse=True)[:highlight_top_n]
+        top_positions = {(chain, unipos) for chain, unipos, _ in ranked}
+
+    query = []
+    for chain, unipos, value in flat:
+        entry = {'struct_asym_id': chain, 'residue_number': int(unipos),
+                 'color': value_to_rgb(value, vmax=vmax)}
+        if (chain, unipos) in top_positions:
+            entry['representation'] = 'spacefill'
+            entry['representationColor'] = value_to_rgb(value, vmax=vmax)
+        query.append(entry)
+
+    color_data = {'data': query,
+                  'nonSelectedColor': {'r': 220, 'g': 220, 'b': 220},
+                  'keepColors': False, 'keepRepresentations': False}
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>{title}</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pdbe-molstar@3.1.3/build/pdbe-molstar.css">
+<script src="https://cdn.jsdelivr.net/npm/pdbe-molstar@3.1.3/build/pdbe-molstar-plugin.js"></script>
+<style>body{{font-family:sans-serif;margin:16px}}#viewer{{width:100%;height:{height}px;position:relative}}</style>
+</head><body>
+<h3>{title}</h3>
+<p style="color:#555">Blue = positive, red = negative, grey = no value. Spheres mark the top
+{highlight_top_n if highlight_top_n else 0} residues by |value|.</p>
+<div id="viewer"></div>
+<script>
+  const pdbText = atob("{pdb_b64}");
+  const colorData = {_json.dumps(color_data)};
+  const viewerInstance = new PDBeMolstarPlugin();
+  viewerInstance.render(document.getElementById("viewer"), {{
+    customData: {{
+      url: URL.createObjectURL(new Blob([pdbText], {{type: "text/plain"}})),
+      format: "pdb", binary: false
+    }},
+    hideWater: true, visualStyle: "cartoon", sequencePanel: false, bgColor: {{r:255,g:255,b:255}},
+  }});
+  viewerInstance.events.loadComplete.subscribe(() => viewerInstance.visual.select(colorData));
+</script>
+</body></html>
+"""
+    with open(out_path, 'w') as f:
+        f.write(html)
+    return out_path
 
 
 def chain_values_from_df(df, value_col, chain_col='chain', pos_col='unipos'):
