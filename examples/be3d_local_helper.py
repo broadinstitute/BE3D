@@ -225,6 +225,20 @@ def molstar_viewer_html(pdb_path, views, vmax=2.0, highlight_top_n=None,
     import base64
     import json as _json
 
+    # Pinned to a version that exists (checked against jsDelivr's package metadata: 3.12.0 is
+    # current, and the built files are pdbe-molstar-plugin.min.js / pdbe-molstar-light.min.css).
+    # An earlier revision of this page pointed at a made-up 3.1.3 with the non-min filename,
+    # which 404'd and left the viewer blank. Candidates are tried in order at runtime so a
+    # future rename or a jsDelivr outage falls through to unpkg / the unpinned latest rather
+    # than silently showing nothing.
+    MOLSTAR_VERSION = '3.12.0'
+    script_urls = [
+        f'https://cdn.jsdelivr.net/npm/pdbe-molstar@{MOLSTAR_VERSION}/build/pdbe-molstar-plugin.min.js',
+        f'https://unpkg.com/pdbe-molstar@{MOLSTAR_VERSION}/build/pdbe-molstar-plugin.min.js',
+        f'https://cdn.jsdelivr.net/npm/pdbe-molstar@{MOLSTAR_VERSION}/build/pdbe-molstar-plugin.js',
+        'https://cdn.jsdelivr.net/npm/pdbe-molstar/build/pdbe-molstar-plugin.min.js',
+    ]
+
     with open(pdb_path) as f:
         pdb_text = f.read()
     pdb_b64 = base64.b64encode(pdb_text.encode()).decode()
@@ -238,8 +252,8 @@ def molstar_viewer_html(pdb_path, views, vmax=2.0, highlight_top_n=None,
 
     return f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pdbe-molstar@3.1.3/build/pdbe-molstar.css">
-<script src="https://cdn.jsdelivr.net/npm/pdbe-molstar@3.1.3/build/pdbe-molstar-plugin.js"></script>
+<!-- Stylesheet is cosmetic here (the plugin's own controls are hidden), so a miss is harmless. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pdbe-molstar@{MOLSTAR_VERSION}/build/pdbe-molstar-light.min.css">
 <style>
   html,body{{margin:0;padding:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#fff}}
   .wrap{{border:1px solid #d9d9d6;border-radius:6px;overflow:hidden}}
@@ -265,12 +279,30 @@ def molstar_viewer_html(pdb_path, views, vmax=2.0, highlight_top_n=None,
   const statusEl = document.getElementById('status');
   function fail(msg) {{ statusEl.style.display = 'block'; statusEl.textContent = msg; }}
 
-  // Every step reports into #status rather than only the console: this page runs inside an
-  // iframe, so a silent failure here is indistinguishable from "the viewer is just blank"
-  // and the browser console is an extra click away in both Colab and VS Code.
-  if (typeof PDBeMolstarPlugin === 'undefined') {{
-    fail('Could not load the pdbe-molstar plugin from the CDN (https://cdn.jsdelivr.net/npm/pdbe-molstar@3.1.3) -- check network access.');
-  }} else {{
+  // The plugin is loaded by trying a list of CDN URLs in order rather than one hardcoded
+  // script tag: a single wrong path (a version that does not exist, or min/non-min naming
+  // changing between releases) is otherwise indistinguishable from having no network, and
+  // leaves nothing but an empty box. Each candidate is attempted until the global shows up.
+  const SCRIPT_URLS = {_json.dumps(script_urls)};
+
+  function loadPlugin(i) {{
+    if (typeof PDBeMolstarPlugin !== 'undefined') {{ start(); return; }}
+    if (i >= SCRIPT_URLS.length) {{
+      fail('Could not load the pdbe-molstar plugin from any CDN candidate: ' + SCRIPT_URLS.join(', ')
+           + ' -- check network access (a proxy or offline runtime would do this).');
+      return;
+    }}
+    const s = document.createElement('script');
+    s.src = SCRIPT_URLS[i];
+    s.onload = () => {{
+      if (typeof PDBeMolstarPlugin !== 'undefined') {{ start(); }}
+      else {{ console.warn('loaded but no global: ' + SCRIPT_URLS[i]); loadPlugin(i + 1); }}
+    }};
+    s.onerror = () => {{ console.warn('failed to load: ' + SCRIPT_URLS[i]); loadPlugin(i + 1); }};
+    document.head.appendChild(s);
+  }}
+
+  function start() {{
     let ready = false;
     let viewerInstance = null;
 
@@ -307,6 +339,8 @@ def molstar_viewer_html(pdb_path, views, vmax=2.0, highlight_top_n=None,
       console.error(e);
     }}
   }}
+
+  loadPlugin(0);
 </script>
 </body></html>
 """
