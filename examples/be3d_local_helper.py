@@ -52,7 +52,7 @@ def plot_residue_dot(df, value_col, title):
     display(fig)
 
 
-def plot_ppi_vs_noppi_scatter(df, score_label, highlight_list=None):
+def plot_ppi_vs_noppi_scatter(df, score_label, highlight_list=None, width=560, height=560):
     """x = no-PPI score, y = PPI score, one point per residue, hover shows unires+unipos+gene;
     optionally highlights a list of unipos values (e.g. the top-N by |delta|)."""
     plot_df = df.dropna(subset=['noppi_score', 'ppi_score'])
@@ -93,7 +93,7 @@ def plot_ppi_vs_noppi_scatter(df, score_label, highlight_list=None):
         title=f'no-PPI vs. PPI {score_label}',
         xaxis=dict(title=f'no-PPI {score_label}', range=[lo, hi], gridcolor='#e8e8e5'),
         yaxis=dict(title=f'PPI {score_label}', range=[lo, hi], gridcolor='#e8e8e5', scaleanchor='x', scaleratio=1),
-        plot_bgcolor='white', paper_bgcolor='white', width=560, height=560,
+        plot_bgcolor='white', paper_bgcolor='white', width=width, height=height,
     )
     display(fig)
 

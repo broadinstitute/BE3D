@@ -409,7 +409,7 @@ def plot_violin_by_processed_muttype(output_dir, input_gene, screen_name,
     long_df = pd.concat(rows, ignore_index=True)
     fig = px.violin(
         long_df, x="category", y="LFC", color="category", box=True, points="outliers",
-        title=f"{input_gene} processed LFC distribution by mutation category — {screen_name}",
+        title=f"{input_gene} processed LFC distribution by mutation category",
     )
     fig.update_layout(xaxis_title="Mutation category", yaxis_title="LFC", showlegend=False,
                        width=width, height=height, autosize=False)
@@ -472,7 +472,7 @@ def plot_score_scatter(output_dir, input_gene, screen_name, score_type="LFC", di
     title_suffix = f" ({direction})" if direction else ""
     fig = px.scatter(
         long_df, x="unipos", y="value", color="group",
-        title=f"{input_gene} {score_type}{title_suffix} by sequence position — {screen_name}",
+        title=f"{input_gene} {score_type}{title_suffix} by sequence position",
         color_discrete_map={
             f"positive / p<{pthr_label}": COLOR_POS, f"positive / p>={pthr_label}": COLOR_POS_PALE,
             f"negative / p<{pthr_label}": COLOR_NEG, f"negative / p>={pthr_label}": COLOR_NEG_PALE,
@@ -527,7 +527,7 @@ def plot_cluster_3d(output_dir, input_gene, screen_name, score_type="LFC3D",
     fig = px.scatter_3d(
         df, x="x_coord", y="y_coord", z="z_coord", color=cluster_col,
         hover_data=[c for c in ("unipos", "unires", "chain") if c in df.columns],
-        title=f"{input_gene} {direction} {score_type} clusters (p<{pthr_str}, {dist}) — {screen_name}",
+        title=f"{input_gene} {direction} {score_type} clusters (p<{pthr_str}, {dist})",
     )
     fig.update_traces(marker=dict(size=4))
     fig.update_layout(width=width, height=height, autosize=False)
@@ -721,7 +721,7 @@ def plot_dendrogram(output_dir, input_gene, screen_name, score_type="LFC3D",
         _warn(f"No residues pass {sig_col} == p<{pthr_label}; skipping dendrogram.")
         return None
 
-    title = f"{input_gene} {score_type} {direction} Clusters (p<{pthr_label}, {dist}Å) — {screen_name}"
+    title = f"{input_gene} {score_type} {direction} Clusters (p<{pthr_label}, {dist}Å)"
     return _agglomerative_dendrogram_figure(coords, leaf_labels, dist, title, width, height)
 
 
@@ -856,7 +856,7 @@ def plot_lfc_lfc3d_scatter(output_dir, input_gene, screen_name, pthr_str="05",
         merged["hit_type"] = "Not a Hit"
 
     return _lfc_lfc3d_two_panel_figure(merged, lfc_col, lfc3d_col,
-                                        title=f"{input_gene} LFC vs. LFC3D — {screen_name}",
+                                        title=f"{input_gene} LFC vs. LFC3D",
                                         width=width, height=height)
 
 
@@ -903,7 +903,7 @@ def plot_plddt_rsa_scatter(output_dir, input_gene, screen_name,
     fig = px.scatter(
         merged, x="bfactor_pLDDT", y="RSA", color="direction", size=size_col,
         hover_data=["unipos", lfc3d_col],
-        title=f"{input_gene} pLDDT vs. RSA — {screen_name}",
+        title=f"{input_gene} pLDDT vs. RSA",
         color_discrete_map={"positive": COLOR_POS, "negative": COLOR_NEG},
     )
     fig.update_layout(xaxis_title="pLDDT", yaxis_title="RSA",
@@ -981,7 +981,7 @@ def plot_domain_barplot(output_dir, input_gene, input_uniprot, screen_name, pthr
 
     fig = px.bar(
         counts, x="Domain", y="count", color="hit_type", barmode="group",
-        title=f"{input_gene} LFC3D hit count by domain (p<{_pthr_label(pthr_str)}) — {screen_name}",
+        title=f"{input_gene} LFC3D hit count by domain (p<{_pthr_label(pthr_str)})",
         color_discrete_map={"POS": COLOR_POS, "NEG": COLOR_NEG},
     )
     fig.update_layout(xaxis_title="Domain", yaxis_title="Hit count",
@@ -1003,7 +1003,7 @@ def plot_plddt_dis_barplot(output_dir, input_gene, screen_name, pthr_str="05",
 
     fig = px.bar(
         counts, x="pLDDT_dis", y="count", color="hit_type", barmode="group",
-        title=f"{input_gene} LFC3D hit count by pLDDT-disorder category (p<{_pthr_label(pthr_str)}) — {screen_name}",
+        title=f"{input_gene} LFC3D hit count by pLDDT-disorder category (p<{_pthr_label(pthr_str)})",
         color_discrete_map={"POS": COLOR_POS, "NEG": COLOR_NEG},
     )
     fig.update_layout(xaxis_title="pLDDT disorder category", yaxis_title="Hit count",
@@ -1069,9 +1069,8 @@ def plot_enrichment_test(output_dir, input_gene, screen_name=None, score_type="L
         hovertemplate="%{y}: log2(OR) = %{x:.2f}<br>%{text}<extra></extra>",
     ))
     fig.add_vline(x=0, line_dash="dash", line_color="gray")
-    title_suffix = f" — {screen_name}" if screen_name else ""
     fig.update_layout(
-        title=f"{input_gene} enrichment test ({score_type}, p<{_pthr_label(pthr_str)}){title_suffix}",
+        title=f"{input_gene} enrichment test ({score_type}, p<{_pthr_label(pthr_str)})",
         xaxis_title="log2(odds ratio)", yaxis_title="",
         width=width, height=height, autosize=False,
     )
