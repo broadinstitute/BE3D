@@ -286,6 +286,97 @@ def show_picker(options, description="Select:"):
     widgets.interact(_show, choice=widgets.Dropdown(options=list(options), description=description))
 
 
+def show_figure_dropdown(options, description="Select:", width=None, height=None):
+    """
+    Display ONE already-built Plotly figure at a time out of `options`
+    ({label: Figure or None}), with a dropdown to switch between them -- same purpose as
+    show_picker(), but the dropdown is Plotly's OWN layout.updatemenus control rather than
+    an ipywidgets Dropdown, and switching is handled client-side by toggling trace
+    visibility. Nothing is re-executed, so no cell re-run is needed to change the
+    selection.
+
+    This exists because show_picker() (and ipywidgets generally) cannot render Plotly
+    figures in Colab: interact() captures its callback's display() calls into an
+    ipywidgets Output widget, and Colab's Plotly renderer only injects its JS into the
+    cell's normal output stream, never into a widget's separate output area -- so those
+    figures came up blank or flashed once and vanished. An updatemenus dropdown lives
+    inside the figure itself, so it needs no widget frontend at all and behaves the same
+    in Colab, Jupyter, and VS Code.
+
+    All variants' traces are added to one figure up front (only the first visible), so
+    every variant is computed once when this is called. Per-variant layout that actually
+    differs between dendrograms -- title, and the x tick positions/labels, since each
+    score-type/direction has its own set of significant residues as leaves -- is carried
+    in each button's own layout update.
+
+    Labels whose figure is None (e.g. a direction with no significant residues) are left
+    out of the dropdown and reported once in a printed note, rather than being selectable
+    and showing an empty plot.
+    """
+    available = {label: fig for label, fig in options.items() if fig is not None}
+    missing = [label for label, fig in options.items() if fig is None]
+    if missing:
+        _warn(f"not available (no residues pass the significance threshold): {', '.join(missing)}")
+    if not available:
+        _warn("nothing to show.")
+        return
+    if len(available) == 1:
+        display(next(iter(available.values())))
+        return
+
+    labels = list(available)
+    figs = [available[label] for label in labels]
+    trace_counts = [len(fig.data) for fig in figs]
+    total_traces = sum(trace_counts)
+
+    combined = go.Figure()
+    for fig_idx, fig in enumerate(figs):
+        for trace in fig.data:
+            t = trace.__class__(trace.to_plotly_json())  # copy -- don't mutate the caller's figure
+            t.visible = (fig_idx == 0)
+            combined.add_trace(t)
+
+    # Base layout comes from the first variant (shared: axis titles, threshold line/annotation,
+    # size), then each button overrides only what genuinely differs per variant.
+    first = figs[0]
+    combined.update_layout(first.layout)
+    combined.update_layout(
+        width=width or first.layout.width or DEFAULT_WIDTH,
+        height=height or first.layout.height or DEFAULT_HEIGHT,
+        autosize=False, showlegend=False,
+    )
+
+    buttons = []
+    trace_start = 0
+    for fig_idx, (label, fig) in enumerate(zip(labels, figs)):
+        visible = [False] * total_traces
+        for i in range(trace_start, trace_start + trace_counts[fig_idx]):
+            visible[i] = True
+        trace_start += trace_counts[fig_idx]
+
+        layout_update = {"title.text": (fig.layout.title.text or "") if fig.layout.title else ""}
+        xaxis = fig.layout.xaxis
+        if xaxis is not None:
+            if xaxis.tickvals is not None:
+                layout_update["xaxis.tickvals"] = list(xaxis.tickvals)
+            if xaxis.ticktext is not None:
+                layout_update["xaxis.ticktext"] = list(xaxis.ticktext)
+            if xaxis.tickangle is not None:
+                layout_update["xaxis.tickangle"] = xaxis.tickangle
+
+        buttons.append(dict(label=label, method="update", args=[{"visible": visible}, layout_update]))
+
+    combined.update_layout(updatemenus=[dict(
+        active=0, buttons=buttons, direction="down", showactive=True,
+        x=0.0, xanchor="left", y=1.18, yanchor="top",
+    )], margin=dict(t=140))
+    combined.add_annotation(
+        text=description, showarrow=False, xref="paper", yref="paper",
+        x=0.0, xanchor="left", y=1.26, yanchor="bottom", font=dict(size=13),
+    )
+    display(combined)
+
+
 # ── 1. BE-QA hypothesis test scatter ──────────────────────────────────────────
 
 # stat_prefix: the pipeline names the test-statistic column '{prefix}_{cases}_vs_{controls}',
