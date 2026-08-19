@@ -106,8 +106,21 @@ def _fig_ncols(fig):
 
 def show_side_by_side(*figs, width=None, height=None, spacing=0.04):
     """
-    Display multiple already-built Plotly figures in one row, merged into a single
-    make_subplots figure and shown with display() -- deliberately NOT
+    Display (via display()) what combine_side_by_side() builds -- see its docstring for the
+    layout rules. Use combine_side_by_side() directly instead when you need the merged
+    figure as a value rather than shown immediately, e.g. to hand several of them to
+    show_figure_dropdown() as the variants behind one dropdown.
+    """
+    fig = combine_side_by_side(*figs, width=width, height=height, spacing=spacing)
+    if fig is not None:
+        display(fig)
+
+
+def combine_side_by_side(*figs, width=None, height=None, spacing=0.04):
+    """
+    Merge multiple already-built Plotly figures into ONE make_subplots figure laying them
+    out in a single row, and return it (returns None if no figure survives filtering) --
+    deliberately NOT
     go.FigureWidget + ipywidgets.HBox (the previous approach), since FigureWidget
     requires the 'jupyterlab-plotly' comm widget to be registered with the notebook
     frontend; when it isn't (observed failing in a VS Code Jupyter session: "Failed to
@@ -143,13 +156,12 @@ def show_side_by_side(*figs, width=None, height=None, spacing=0.04):
     """
     figs = [f for f in figs if f is not None]
     if not figs:
-        return
+        return None
     if len(figs) == 1:
         figs[0].update_layout(width=width or figs[0].layout.width or DEFAULT_WIDTH,
                                height=height or figs[0].layout.height or DEFAULT_HEIGHT,
                                autosize=False)
-        display(figs[0])
-        return
+        return figs[0]
 
     ncols_list = [_fig_ncols(f) for f in figs]
     n_gaps = len(figs) - 1
@@ -246,7 +258,7 @@ def show_side_by_side(*figs, width=None, height=None, spacing=0.04):
                 combined.add_vline(x=shape.x0, row=1, col=target_col, line=shape.line)
 
     combined.update_layout(width=total_width, height=panel_height, autosize=False)
-    display(combined)
+    return combined
 
 
 def show_stacked(*figs):
