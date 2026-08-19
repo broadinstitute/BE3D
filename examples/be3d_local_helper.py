@@ -181,31 +181,10 @@ def render_molstar(widget, pdb_path, chain_values, vmax=2.0, highlight_top_n=Non
     return widget
 
 
-def save_molstar_html(pdb_path, chain_values, out_path, vmax=2.0, highlight_top_n=None,
-                       title='BE3D structure view', height=600):
-    """
-    Write a standalone HTML file with the same structure + per-residue coloring the
-    PDBeMolstar widget shows, to be opened directly in a browser.
-
-    This is a fallback for frontends where the widget itself won't load. In VS Code that
-    shows up as "Failed to load model class 'AnyModel' from module 'anywidget'": ipymolstar
-    is an anywidget, and VS Code only fetches third-party widget JS when
-    "jupyter.widgetScriptSources": ["jsdelivr.com", "unpkg.com"] is set in settings (with
-    anywidget + ipymolstar installed in the kernel env, then a kernel restart). Fixing the
-    setting is the real solution; this file needs no widget layer at all, so it works
-    regardless.
-
-    Uses the same pdbe-molstar plugin the widget wraps, loaded from a CDN, fed the identical
-    color payload color_molstar() builds -- the PDB is inlined as a base64 data URL so the
-    file is self-contained and can be moved/shared.
-    """
-    import base64
-    import json as _json
-
-    with open(pdb_path) as f:
-        pdb_text = f.read()
-    pdb_b64 = base64.b64encode(pdb_text.encode()).decode()
-
+def _molstar_color_payload(chain_values, vmax=2.0, highlight_top_n=None):
+    """The color_data payload pdbe-molstar's visual.select() expects -- same structure
+    color_molstar() sets on the widget, built here so the widget-free viewer colors
+    identically."""
     flat = [(chain, unipos, value)
             for chain, pos_values in chain_values.items()
             for unipos, value in pos_values.items()]
@@ -223,37 +202,137 @@ def save_molstar_html(pdb_path, chain_values, out_path, vmax=2.0, highlight_top_
             entry['representationColor'] = value_to_rgb(value, vmax=vmax)
         query.append(entry)
 
-    color_data = {'data': query,
-                  'nonSelectedColor': {'r': 220, 'g': 220, 'b': 220},
-                  'keepColors': False, 'keepRepresentations': False}
+    return {'data': query,
+            'nonSelectedColor': {'r': 220, 'g': 220, 'b': 220},
+            'keepColors': False, 'keepRepresentations': False}
 
-    html = f"""<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>{title}</title>
+
+def molstar_viewer_html(pdb_path, views, vmax=2.0, highlight_top_n=None,
+                         title='BE3D structure view', height=460, caption=''):
+    """
+    Build a self-contained HTML page showing `pdb_path` in a pdbe-molstar viewer, with the
+    view selector INSIDE the viewer's own toolbar: `views` is {label: {chain: {unipos: value}}}
+    and every label's color payload is embedded, so switching is a plain JS call
+    (viewerInstance.visual.select) with no kernel round-trip.
+
+    Deliberately uses no ipywidgets/anywidget layer. The widget version (PDBeMolstar +
+    Dropdown.observe) needs a live kernel<->frontend comm, which is exactly what fails in
+    VS Code ("Failed to load model class 'AnyModel' from module 'anywidget'") and what made
+    the selection not take effect. Everything here runs in the browser: the plugin is loaded
+    from a CDN and the PDB is inlined, so the page needs nothing from the kernel once
+    rendered.
+    """
+    import base64
+    import json as _json
+
+    with open(pdb_path) as f:
+        pdb_text = f.read()
+    pdb_b64 = base64.b64encode(pdb_text.encode()).decode()
+
+    payloads = {label: _molstar_color_payload(cv, vmax=vmax, highlight_top_n=highlight_top_n)
+                for label, cv in views.items()}
+    labels = list(payloads)
+    options = '\n'.join(
+        f'<option value="{i}"{" selected" if i == 0 else ""}>{label}</option>'
+        for i, label in enumerate(labels))
+
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pdbe-molstar@3.1.3/build/pdbe-molstar.css">
 <script src="https://cdn.jsdelivr.net/npm/pdbe-molstar@3.1.3/build/pdbe-molstar-plugin.js"></script>
-<style>body{{font-family:sans-serif;margin:16px}}#viewer{{width:100%;height:{height}px;position:relative}}</style>
-</head><body>
-<h3>{title}</h3>
-<p style="color:#555">Blue = positive, red = negative, grey = no value. Spheres mark the top
-{highlight_top_n if highlight_top_n else 0} residues by |value|.</p>
-<div id="viewer"></div>
+<style>
+  html,body{{margin:0;padding:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#fff}}
+  .wrap{{border:1px solid #d9d9d6;border-radius:6px;overflow:hidden}}
+  .bar{{display:flex;align-items:center;gap:10px;padding:7px 10px;background:#f6f6f4;
+        border-bottom:1px solid #e2e2df;font-size:12.5px;color:#333;flex-wrap:wrap}}
+  .bar label{{font-weight:600}}
+  .bar select{{font-size:12.5px;padding:3px 6px;border:1px solid #c4c4c0;border-radius:4px;background:#fff}}
+  .bar .cap{{color:#666}}
+  #viewer{{position:relative;width:100%;height:{height}px}}
+  #status{{padding:6px 10px;font-size:12px;color:#a33;background:#fff4f4;display:none}}
+</style></head><body>
+<div class="wrap">
+  <div class="bar">
+    <label for="viewSel">{title}</label>
+    <select id="viewSel">{options}</select>
+    <span class="cap">{caption}</span>
+  </div>
+  <div id="viewer"></div>
+  <div id="status"></div>
+</div>
 <script>
-  const pdbText = atob("{pdb_b64}");
-  const colorData = {_json.dumps(color_data)};
-  const viewerInstance = new PDBeMolstarPlugin();
-  viewerInstance.render(document.getElementById("viewer"), {{
-    customData: {{
-      url: URL.createObjectURL(new Blob([pdbText], {{type: "text/plain"}})),
-      format: "pdb", binary: false
-    }},
-    hideWater: true, visualStyle: "cartoon", sequencePanel: false, bgColor: {{r:255,g:255,b:255}},
-  }});
-  viewerInstance.events.loadComplete.subscribe(() => viewerInstance.visual.select(colorData));
+  const PAYLOADS = {_json.dumps([payloads[l] for l in labels])};
+  const statusEl = document.getElementById('status');
+  function fail(msg) {{ statusEl.style.display = 'block'; statusEl.textContent = msg; }}
+
+  if (typeof PDBeMolstarPlugin === 'undefined') {{
+    fail('Could not load the pdbe-molstar plugin from the CDN -- check network access.');
+  }} else {{
+    const pdbText = atob("{pdb_b64}");
+    const blobUrl = URL.createObjectURL(new Blob([pdbText], {{type: 'text/plain'}}));
+    const viewerInstance = new PDBeMolstarPlugin();
+    let ready = false;
+
+    const apply = () => {{
+      if (!ready) return;
+      const idx = parseInt(document.getElementById('viewSel').value, 10);
+      try {{ viewerInstance.visual.select(PAYLOADS[idx]); }}
+      catch (e) {{ fail('Could not apply coloring: ' + e.message); }}
+    }};
+
+    viewerInstance.render(document.getElementById('viewer'), {{
+      customData: {{url: blobUrl, format: 'pdb', binary: false}},
+      hideWater: true, visualStyle: 'cartoon', sequencePanel: false,
+      hideControls: true, bgColor: {{r: 255, g: 255, b: 255}},
+    }});
+
+    viewerInstance.events.loadComplete.subscribe(() => {{ ready = true; apply(); }});
+    document.getElementById('viewSel').addEventListener('change', apply);
+  }}
 </script>
 </body></html>
 """
+
+
+def show_molstar_viewer(pdb_path, views, vmax=2.0, highlight_top_n=None,
+                         title='View', height=460, caption='', save_to=None):
+    """
+    Show molstar_viewer_html() inline in the notebook, in an <iframe srcdoc=...>.
+
+    The iframe is what makes this portable: notebook frontends restrict scripts in ordinary
+    HTML output (VS Code especially), but an iframe carrying its own self-contained document
+    renders and runs the same way in Colab, Jupyter and VS Code -- and it needs no widget
+    comm, so the in-viewer selector keeps working even where ipymolstar will not load.
+
+    save_to : optional path to also write the same page as a standalone .html file, handy for
+    sharing or for opening full-screen in a browser.
+    """
+    import html as _html
+
+    from IPython.display import HTML, display as _display
+
+    page = molstar_viewer_html(pdb_path, views, vmax=vmax, highlight_top_n=highlight_top_n,
+                               title=title, height=height, caption=caption)
+    if save_to:
+        with open(save_to, 'w') as f:
+            f.write(page)
+        print(f'[html] standalone viewer: {save_to}')
+
+    _display(HTML(
+        f'<iframe srcdoc="{_html.escape(page, quote=True)}" '
+        f'style="width:100%;height:{height + 90}px;border:0" '
+        f'sandbox="allow-scripts allow-same-origin allow-downloads"></iframe>'
+    ))
+
+
+def save_molstar_html(pdb_path, chain_values, out_path, vmax=2.0, highlight_top_n=None,
+                       title='BE3D structure view', height=600):
+    """Single-view standalone HTML file (kept for callers that want one file per coloring);
+    molstar_viewer_html/show_molstar_viewer take several views plus an in-viewer selector."""
+    page = molstar_viewer_html(pdb_path, {title: chain_values}, vmax=vmax,
+                                highlight_top_n=highlight_top_n, title=title, height=height)
     with open(out_path, 'w') as f:
-        f.write(html)
+        f.write(page)
     return out_path
 
 
