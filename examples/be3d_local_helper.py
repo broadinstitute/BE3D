@@ -8,6 +8,7 @@ Description:
 """
 
 import os
+import yaml
 import pandas as pd
 import plotly.graph_objects as go
 from IPython.display import display, Image, SVG
@@ -177,3 +178,83 @@ def chain_values_from_df(df, value_col, chain_col='chain', pos_col='unipos'):
         sub = df.loc[sub_idx]
         out[chain] = {int(p): float(v) for p, v in zip(sub[pos_col], values.loc[sub_idx]) if pd.notna(v)}
     return out
+
+
+YAML_FIELD_HELP = {
+    'input_gene': 'Gene symbol(s); comma-separated when there is more than one (e.g. PPI mode)',
+    'input_uniprot': 'UniProt accession(s), one per gene, same order as input_gene',
+    'input_chain': 'PDB chain ID(s), one per gene, same order as input_gene',
+    'screen_dir': 'Directory containing the screen data file(s)',
+    'screens': 'Screen data filename(s), comma-separated',
+    'output_dir': 'Directory the pipeline writes its outputs to',
+    'user_pdb': 'Path to a user-supplied PDB structure (blank = fetch automatically)',
+    'user_fasta': 'Path to a user-supplied FASTA sequence (blank = use the UniProt sequence)',
+    'user_dssp': 'Path to a user-supplied DSSP file (blank = compute automatically)',
+    'nRandom': 'Number of random permutations for the null distribution (higher = slower, more precise p-values)',
+    'structure_radius': 'Angstrom radius used to build the structural neighbor graph (LFC3D)',
+    'clustering_radius': 'Angstrom radius used for spatial clustering / dendrograms',
+    'function_for_lfc': 'Aggregation function across guides for LFC (e.g. mean)',
+    'function_for_lfc3d': 'Aggregation function across structural neighbors for LFC3D (e.g. mean)',
+    'function_for_meta': 'Aggregation function across screens for meta-analysis (e.g. SUM)',
+    'score_type': "mode: ppi_diff merge granularity -- 'LFC3D' (per-screen) or 'Meta_LFC3D' (meta-aggregated)",
+    'skip_existing': 'Skip re-running a pipeline leg if its output already exists',
+}
+
+
+def edit_yaml_widgets(yaml_path, editable_keys):
+    """
+    Small per-field ipywidgets form over a subset of a pipeline yaml config's top-level
+    keys -- each edit is written straight back to yaml_path as soon as it changes, so the
+    next run_be3d()/run_be3d_if_needed() call downstream picks it up. Only scalar/list
+    top-level keys are exposed here; nested settings (pthr, database, mutation_category,
+    conservation, qa, partners, ...) are left at the yaml's defaults -- edit the file
+    directly if those need to change.
+    """
+    import ipywidgets as widgets
+
+    with open(yaml_path) as f:
+        config = yaml.safe_load(f)
+
+    value_widgets = {}
+    rows = []
+    for key in editable_keys:
+        if key not in config:
+            continue
+        val = config[key]
+        if isinstance(val, bool):
+            w = widgets.Checkbox(value=val, description=key, indent=False)
+        elif isinstance(val, int):
+            w = widgets.IntText(value=val, description=key)
+        elif isinstance(val, float):
+            w = widgets.FloatText(value=val, description=key)
+        elif isinstance(val, list):
+            w = widgets.Text(value=', '.join(str(v) for v in val), description=key)
+        else:
+            w = widgets.Text(value='' if val is None else str(val), description=key)
+        w.style = {'description_width': '150px'}
+        w.layout = widgets.Layout(width='550px')
+        value_widgets[key] = w
+        help_text = YAML_FIELD_HELP.get(key, '')
+        rows.append(widgets.VBox([
+            w,
+            widgets.HTML(f"<div style='color:#777;font-size:12px;margin:0 0 8px 154px'>{help_text}</div>"),
+        ]))
+
+    def save(change=None):
+        with open(yaml_path) as f:
+            current = yaml.safe_load(f)
+        for key, w in value_widgets.items():
+            orig = config.get(key)
+            v = w.value
+            if isinstance(orig, list):
+                v = [x.strip() for x in v.split(',') if x.strip()]
+            elif orig is None and v == '':
+                v = None
+            current[key] = v
+        with open(yaml_path, 'w') as f:
+            yaml.safe_dump(current, f, sort_keys=False)
+
+    for w in value_widgets.values():
+        w.observe(save, names='value')
+
+    display(widgets.VBox(rows))
