@@ -298,7 +298,7 @@ def show_picker(options, description="Select:"):
     widgets.interact(_show, choice=widgets.Dropdown(options=list(options), description=description))
 
 
-def show_figure_dropdown(options, description="Select:", width=None, height=None):
+def show_figure_dropdown(options, description="Select:", width=None, height=None, title=""):
     """
     Display ONE already-built Plotly figure at a time out of `options`
     ({label: Figure or None}), with a dropdown to switch between them -- same purpose as
@@ -317,9 +317,14 @@ def show_figure_dropdown(options, description="Select:", width=None, height=None
 
     All variants' traces are added to one figure up front (only the first visible), so
     every variant is computed once when this is called. Per-variant layout that actually
-    differs between dendrograms -- title, and the x tick positions/labels, since each
+    differs between dendrograms -- the x tick positions/labels, since each
     score-type/direction has its own set of significant residues as leaves -- is carried
     in each button's own layout update.
+
+    title : the figure's own title, "" (default) for none. Each variant's own title is
+    deliberately dropped: the selection is already named by the dropdown itself and by the
+    line printed above the plot, so repeating it (e.g. the screen name) in a title just
+    duplicates it and collides with the dropdown sitting above the plotting area.
 
     Labels whose figure is None (e.g. a direction with no significant residues) are left
     out of the dropdown and reported once in a printed note, rather than being selectable
@@ -333,7 +338,9 @@ def show_figure_dropdown(options, description="Select:", width=None, height=None
         _warn("nothing to show.")
         return
     if len(available) == 1:
-        display(next(iter(available.values())))
+        only = next(iter(available.values()))
+        only.update_layout(title_text=title, margin=dict(t=40 if title else 20))
+        display(only)
         return
 
     labels = list(available)
@@ -366,7 +373,7 @@ def show_figure_dropdown(options, description="Select:", width=None, height=None
             visible[i] = True
         trace_start += trace_counts[fig_idx]
 
-        layout_update = {"title.text": (fig.layout.title.text or "") if fig.layout.title else ""}
+        layout_update = {}
         xaxis = fig.layout.xaxis
         if xaxis is not None:
             if xaxis.tickvals is not None:
@@ -378,13 +385,23 @@ def show_figure_dropdown(options, description="Select:", width=None, height=None
 
         buttons.append(dict(label=label, method="update", args=[{"visible": visible}, layout_update]))
 
-    combined.update_layout(updatemenus=[dict(
-        active=0, buttons=buttons, direction="down", showactive=True,
-        x=0.0, xanchor="left", y=1.18, yanchor="top",
-    )], margin=dict(t=140))
+    # Dropdown sits just above the plotting area, top-left, with its label to its left on the
+    # same line -- so it doesn't collide with anything drawn inside the plot, and the top
+    # margin only has to clear the control itself (the earlier taller margin plus a separate
+    # label line above the menu is what left a big empty band between the printed heading and
+    # the plot). The title, when one is asked for, goes to the right of the control.
+    combined.update_layout(
+        title=dict(text=title, x=0.35, xanchor="left", y=0.99, yanchor="top", font=dict(size=13)),
+        updatemenus=[dict(
+            active=0, buttons=buttons, direction="down", showactive=True,
+            x=0.0, xanchor="left", y=1.0, yanchor="bottom",
+            pad=dict(t=0, b=2, l=0, r=0), font=dict(size=12),
+        )],
+        margin=dict(t=46, b=60),
+    )
     combined.add_annotation(
-        text=description, showarrow=False, xref="paper", yref="paper",
-        x=0.0, xanchor="left", y=1.26, yanchor="bottom", font=dict(size=13),
+        text=f"<b>{description}</b>", showarrow=False, xref="paper", yref="paper",
+        x=0.0, xanchor="left", y=1.1, yanchor="bottom", font=dict(size=12),
     )
     display(combined)
 
