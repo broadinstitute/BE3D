@@ -265,29 +265,47 @@ def molstar_viewer_html(pdb_path, views, vmax=2.0, highlight_top_n=None,
   const statusEl = document.getElementById('status');
   function fail(msg) {{ statusEl.style.display = 'block'; statusEl.textContent = msg; }}
 
+  // Every step reports into #status rather than only the console: this page runs inside an
+  // iframe, so a silent failure here is indistinguishable from "the viewer is just blank"
+  // and the browser console is an extra click away in both Colab and VS Code.
   if (typeof PDBeMolstarPlugin === 'undefined') {{
-    fail('Could not load the pdbe-molstar plugin from the CDN -- check network access.');
+    fail('Could not load the pdbe-molstar plugin from the CDN (https://cdn.jsdelivr.net/npm/pdbe-molstar@3.1.3) -- check network access.');
   }} else {{
-    const pdbText = atob("{pdb_b64}");
-    const blobUrl = URL.createObjectURL(new Blob([pdbText], {{type: 'text/plain'}}));
-    const viewerInstance = new PDBeMolstarPlugin();
     let ready = false;
+    let viewerInstance = null;
 
     const apply = () => {{
       if (!ready) return;
       const idx = parseInt(document.getElementById('viewSel').value, 10);
       try {{ viewerInstance.visual.select(PAYLOADS[idx]); }}
-      catch (e) {{ fail('Could not apply coloring: ' + e.message); }}
+      catch (e) {{ fail('Coloring failed (visual.select): ' + e.message); console.error(e); }}
     }};
 
-    viewerInstance.render(document.getElementById('viewer'), {{
-      customData: {{url: blobUrl, format: 'pdb', binary: false}},
-      hideWater: true, visualStyle: 'cartoon', sequencePanel: false,
-      hideControls: true, bgColor: {{r: 255, g: 255, b: 255}},
-    }});
+    try {{
+      const pdbText = atob("{pdb_b64}");
+      const blobUrl = URL.createObjectURL(new Blob([pdbText], {{type: 'text/plain'}}));
+      viewerInstance = new PDBeMolstarPlugin();
+      viewerInstance.render(document.getElementById('viewer'), {{
+        customData: {{url: blobUrl, format: 'pdb', binary: false}},
+        hideWater: true, visualStyle: 'cartoon', sequencePanel: false,
+        hideControls: true, bgColor: {{r: 255, g: 255, b: 255}},
+      }});
 
-    viewerInstance.events.loadComplete.subscribe(() => {{ ready = true; apply(); }});
-    document.getElementById('viewSel').addEventListener('change', apply);
+      if (viewerInstance.events && viewerInstance.events.loadComplete) {{
+        viewerInstance.events.loadComplete.subscribe(() => {{ ready = true; apply(); }});
+      }} else {{
+        fail('Plugin loaded but events.loadComplete is missing -- the pdbe-molstar API differs from what this page expects.');
+      }}
+      document.getElementById('viewSel').addEventListener('change', apply);
+
+      // If the structure never finishes loading, say so instead of leaving an empty box.
+      setTimeout(() => {{
+        if (!ready) fail('The structure did not finish loading within 20s -- see the browser console for the underlying error.');
+      }}, 20000);
+    }} catch (e) {{
+      fail('Viewer setup failed: ' + e.message);
+      console.error(e);
+    }}
   }}
 </script>
 </body></html>
