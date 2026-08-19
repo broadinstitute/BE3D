@@ -8,6 +8,7 @@ Description:
 """
 
 import os
+import re
 import yaml
 import pandas as pd
 import plotly.graph_objects as go
@@ -415,79 +416,170 @@ YAML_FIELD_HELP = {
     'function_for_meta': 'Aggregation function across screens for meta-analysis (e.g. SUM)',
     'score_type': "mode: ppi_diff merge granularity -- 'LFC3D' (per-screen) or 'Meta_LFC3D' (meta-aggregated)",
     'skip_existing': 'Skip re-running a pipeline leg if its output already exists',
+    'mut_col': 'Screen column holding each guide\'s mutation type (e.g. Missense, Nonsense)',
+    'val_col': 'Screen column holding each guide\'s score (e.g. sgRNA_score, LFC)',
+    'gene_col': 'Screen column holding the gene symbol each guide targets',
+    'edits_col': 'Screen column holding the (semicolon-joined) per-edit mutation categories',
+    'mutation_category': "Raw mut_col values grouped into categories, as 'category: [raw values]'",
+    'mut_categories': "Raw mut_col values grouped into categories (this partner's own list)",
+    'mutation_priority': 'Most-to-least-deleterious order for collapsing a multi-edit guide to one category',
+    'mut_delimiter': "Delimiter separating multiple edits within edits_col (e.g. ';')",
+    'mut_list_col': 'Optional column listing individual edits separately (blank = derive from edits_col)',
+    'gRNA_col': 'Optional column holding the guide/sgRNA identifier',
 }
 
 
-def edit_yaml_widgets(yaml_path, editable_keys):
+def _get_path(config, path):
+    obj = config
+    for part in path.split('.'):
+        m = re.match(r'^(\w+)\[(\d+)\]$', part)
+        obj = obj[m.group(1)][int(m.group(2))] if m else obj[part]
+    return obj
+
+
+def _set_path(config, path, value):
+    parts = path.split('.')
+    obj = config
+    for part in parts[:-1]:
+        m = re.match(r'^(\w+)\[(\d+)\]$', part)
+        obj = obj[m.group(1)][int(m.group(2))] if m else obj[part]
+    m = re.match(r'^(\w+)\[(\d+)\]$', parts[-1])
+    if m:
+        obj[m.group(1)][int(m.group(2))] = value
+    else:
+        obj[parts[-1]] = value
+
+
+def _flatten_leaf_paths(obj, prefix=''):
     """
-    Small per-field ipywidgets form over a subset of a pipeline yaml config's top-level
-    keys -- each edit is written straight back to yaml_path as soon as it changes, so the
-    next run_be3d()/run_be3d_if_needed() call downstream picks it up. Only scalar/list
-    top-level keys are exposed here; nested settings (pthr, database, mutation_category,
-    conservation, qa, partners, ...) are left at the yaml's defaults -- edit the file
-    directly if those need to change.
+    Every leaf setting in a nested yaml config, as dotted/bracketed paths (e.g.
+    'database.mut_col', 'partners[0].mut_categories') -- a dict recurses key by key, a
+    list of dicts recurses index by index, anything else (scalar, or a plain list of
+    scalars) is a leaf.
+    """
+    if isinstance(obj, dict):
+        paths = []
+        for k, v in obj.items():
+            paths.extend(_flatten_leaf_paths(v, f'{prefix}.{k}' if prefix else k))
+        return paths
+    if isinstance(obj, list) and obj and isinstance(obj[0], dict):
+        paths = []
+        for i, item in enumerate(obj):
+            paths.extend(_flatten_leaf_paths(item, f'{prefix}[{i}]'))
+        return paths
+    return [prefix]
+
+
+def edit_yaml_widgets(yaml_path, key_groups, exclude=('mode',)):
+    """
+    Per-field ipywidgets form over a pipeline yaml config, grouped into labeled sections
+    -- each edit is written straight back to yaml_path as soon as it changes, so the next
+    run_be3d()/run_be3d_if_needed() call downstream picks it up.
+
+    key_groups is a list of (title, keys) pairs. `title` is shown as a header above that
+    group, or omitted for None (used for the top, unlabeled "important fields" group).
+    `keys` is a list of dotted/bracketed paths into the config (e.g. 'database.mut_col',
+    'partners[0].mut_categories'); pass None to mean "every leaf setting not already shown
+    in an earlier group" -- that auto-fills a trailing catch-all group (e.g. "Advanced /
+    other settings") so every field in the yaml ends up exposed somewhere. A dict-valued
+    key (e.g. the whole 'mutation_category') is edited as a small YAML block rather than
+    exploded field by field.
     """
     import ipywidgets as widgets
 
     with open(yaml_path) as f:
         config = yaml.safe_load(f)
 
+    def _excluded(key):
+        head = key.split('.')[0].split('[')[0]
+        return head in exclude
+
+    shown = set()
+    resolved_groups = []
+    for title, keys in key_groups:
+        if keys is None:
+            keys = [p for p in _flatten_leaf_paths(config)
+                    if p not in shown
+                    and not any(p == s or p.startswith(s + '.') or p.startswith(s + '[') for s in shown)]
+        keys = [k for k in keys if not _excluded(k)]
+        resolved_groups.append((title, keys))
+        shown.update(keys)
+
     value_widgets = {}
-    rows = []
-    for key in editable_keys:
-        if key not in config:
+    section_boxes = []
+    for title, keys in resolved_groups:
+        rows = []
+        for key in keys:
+            try:
+                val = _get_path(config, key)
+            except (KeyError, IndexError, TypeError):
+                continue
+            screen_dir_val = config.get('screen_dir')
+            leaf_name = key.split('.')[-1].split('[')[0]
+            if leaf_name == 'screens' and isinstance(val, str) and screen_dir_val and os.path.isdir(screen_dir_val):
+                # Pick from the .tsv files actually present in screen_dir instead of typing
+                # filenames by hand -- a typo here fails silently downstream (parse_be_data
+                # just won't find the file), so a fixed option list is safer than free text.
+                available = sorted(f for f in os.listdir(screen_dir_val) if f.endswith('.tsv'))
+                current_screens = [s.strip() for s in val.split(',') if s.strip()]
+                options = sorted(set(available) | set(current_screens))
+                w = widgets.SelectMultiple(
+                    value=tuple(s for s in current_screens if s in options),
+                    options=options, description=key,
+                    rows=min(6, max(3, len(options))),
+                )
+            elif isinstance(val, dict):
+                # A whole nested mapping (mutation_category, conservation, ppi_chain_gene_dict,
+                # ...) edited as one YAML block rather than exploded field by field.
+                w = widgets.Textarea(
+                    value=yaml.safe_dump(val, sort_keys=False), description=key,
+                    layout=widgets.Layout(width='550px', height='120px'),
+                )
+            elif isinstance(val, bool):
+                w = widgets.Checkbox(value=val, description=key, indent=False)
+            elif isinstance(val, int):
+                w = widgets.IntText(value=val, description=key)
+            elif isinstance(val, float):
+                w = widgets.FloatText(value=val, description=key)
+            elif isinstance(val, list):
+                w = widgets.Text(value=', '.join(str(v) for v in val), description=key)
+            else:
+                w = widgets.Text(value='' if val is None else str(val), description=key)
+            w.style = {'description_width': '150px'}
+            if not isinstance(w, widgets.Textarea):
+                w.layout = widgets.Layout(width='550px')
+            value_widgets[key] = w
+            help_text = YAML_FIELD_HELP.get(leaf_name, '')
+            rows.append(widgets.VBox([
+                w,
+                widgets.HTML(f"<div style='color:#777;font-size:12px;margin:0 0 8px 154px'>{help_text}</div>"),
+            ]))
+        if not rows:
             continue
-        val = config[key]
-        screen_dir_val = config.get('screen_dir')
-        if key == 'screens' and isinstance(val, str) and screen_dir_val and os.path.isdir(screen_dir_val):
-            # Pick from the .tsv files actually present in screen_dir instead of typing
-            # filenames by hand -- a typo here fails silently downstream (parse_be_data
-            # just won't find the file), so a fixed option list is safer than free text.
-            available = sorted(f for f in os.listdir(screen_dir_val) if f.endswith('.tsv'))
-            current_screens = [s.strip() for s in val.split(',') if s.strip()]
-            options = sorted(set(available) | set(current_screens))
-            w = widgets.SelectMultiple(
-                value=tuple(s for s in current_screens if s in options),
-                options=options, description=key,
-                rows=min(6, max(3, len(options))),
-            )
-        elif isinstance(val, bool):
-            w = widgets.Checkbox(value=val, description=key, indent=False)
-        elif isinstance(val, int):
-            w = widgets.IntText(value=val, description=key)
-        elif isinstance(val, float):
-            w = widgets.FloatText(value=val, description=key)
-        elif isinstance(val, list):
-            w = widgets.Text(value=', '.join(str(v) for v in val), description=key)
-        else:
-            w = widgets.Text(value='' if val is None else str(val), description=key)
-        w.style = {'description_width': '150px'}
-        w.layout = widgets.Layout(width='550px')
-        value_widgets[key] = w
-        help_text = YAML_FIELD_HELP.get(key, '')
-        rows.append(widgets.VBox([
-            w,
-            widgets.HTML(f"<div style='color:#777;font-size:12px;margin:0 0 8px 154px'>{help_text}</div>"),
-        ]))
+        if title:
+            section_boxes.append(widgets.HTML(f"<h4 style='margin:12px 0 4px'>{title}</h4>"))
+        section_boxes.append(widgets.VBox(rows))
 
     def save(change=None):
         with open(yaml_path) as f:
             current = yaml.safe_load(f)
         for key, w in value_widgets.items():
-            orig = config.get(key)
+            orig = _get_path(config, key)
             if isinstance(w, widgets.SelectMultiple):
                 v = ', '.join(w.value)
+            elif isinstance(w, widgets.Textarea):
+                v = yaml.safe_load(w.value)
             else:
                 v = w.value
                 if isinstance(orig, list):
                     v = [x.strip() for x in v.split(',') if x.strip()]
                 elif orig is None and v == '':
                     v = None
-            current[key] = v
+            _set_path(current, key, v)
         with open(yaml_path, 'w') as f:
             yaml.safe_dump(current, f, sort_keys=False)
 
     for w in value_widgets.values():
         w.observe(save, names='value')
 
-    display(widgets.VBox(rows))
+    display(widgets.VBox(section_boxes))
