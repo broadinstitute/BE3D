@@ -1,13 +1,15 @@
 mode: blind_target
-beclust3d_path: /content/beclust3d-public
-output_dir: /content/BE3D_example/output/blind_target/KBTBD4_HDAC1
+beclust3d_path: /beclust3d-public
+output_dir: /output/blind_target/KBTBD4_HDAC1
 
 # KBTBD4 does have its own real screen data, but here we deliberately ignore it --
-# LFC3D is computed purely from its structural neighbor HDAC1's real LFC values.
+# LFC3D is computed purely from its structural neighbor HDAC1's real LFC values, since
+# a blind_mode run in be3d_local.py would give the same degenerate (zero-variance)
+# randomization/z-score problem discussed for the UBB case, just less obviously.
 input_gene: KBTBD4
 input_uniprot: Q9NVX7-2
 input_chain: B
-user_pdb: /content/beclust3d-public/examples/pdb/8voj_KBTBD4_HDAC1_chain_ABC.pdb
+user_pdb: /pdbs/8voj_KBTBD4_HDAC1_chain_ABC.pdb
 structure_radius: 6.0
 atom_level_naa: false
 
@@ -15,24 +17,24 @@ function_for_lfc: mean       # aggregation used when HDAC1's own per-residue LFC
 function_for_lfc3d: mean     # how KBTBD4's cross-chain HDAC1 neighbor values are aggregated per screen
 function_for_meta: sum       # how per-screen blind LFC3D values are combined into Meta_LFC3D_blind
 mut_delimiter: ;
-mutation_priority: [Nonsense, Splice-donor, Splice-acceptor, Missense, Silent, Intron, No Mutation]
+mutation_priority: [Nonsense, Splice Site, Missense, Silent, No Mutation, Intron]
 
 partners:
   - gene: HDAC1
     uniprot: Q13547
     chain: C
-    screen_dir: /content/beclust3d-public/examples/data
+    screen_dir: /3_YeoKBTBD4–HDAC12025/PPI
     screens: YeoKBTBD4-HDAC12025-ABE-Screen-PPI.tsv,YeoKBTBD4-HDAC12025-CBE-Screen-PPI.tsv
     mut_col: Mutation_type
     val_col: sgRNA_score
     gene_col: Gene
     edits_col: Mutation_list
     mut_delimiter: ;
-    mut_categories: [Nonsense, Splice-donor, Splice-acceptor, Missense, Silent, Intron, No Mutation]
+    mut_categories:  [Nonsense, Splice-donor, Splice-acceptor, Missense, Silent, Intron, No Mutation]
     mutation_priority: [Nonsense, Splice-donor, Splice-acceptor, Missense, Silent, Intron, No Mutation]
     conservation_run: false
     alt_gene_name: null
     alt_uniprot_id: null
     alt_screen_start: null
     v_score_threshold: 3
-    muscle_path: /content/muscle
+    muscle_path: muscle

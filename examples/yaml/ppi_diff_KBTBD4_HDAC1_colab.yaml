@@ -5,7 +5,7 @@ output_dir: /content/BE3D_example/output/ppi_diff_KBTBD4_HDAC1
 input_gene: KBTBD4, HDAC1
 input_uniprot: Q9NVX7-2, Q13547
 input_chain: B, C
-screens: YeoKBTBD4HDAC12025-ABE-Screen-PPI.tsv,YeoKBTBD4HDAC12025-CBE-Screen-PPI.tsv
+screens: YeoKBTBD4-HDAC12025-ABE-Screen-PPI.tsv,YeoKBTBD4-HDAC12025-CBE-Screen-PPI.tsv
 user_fasta: null
 user_pdb: /content/beclust3d-public/examples/pdb/8voj_KBTBD4_HDAC1_chain_ABC.pdb
 user_dssp: null

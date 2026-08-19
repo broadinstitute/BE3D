@@ -1,13 +1,20 @@
-mode: monomer # monomer, complex, ppi_diff, blind_target
-beclust3d_path: /content/beclust3d-public
-screen_dir: /content/beclust3d-public/examples/data
-output_dir: /content/BE3D_example/output/KBTBD4_chain_B
-muscle_path: /content/muscle
+mode: monomer # monomer, complex
+beclust3d_path: /beclust3d-public
+screen_dir: /3_YeoKBTBD4–HDAC12025/PPI
+output_dir: /KBTBD4_chain_B
+muscle_path: muscle
 input_gene: KBTBD4
 input_uniprot: Q9NVX7-2
 input_chain: B
-screens: YeoKBTBD4-HDAC12025-ABE-Screen-PPI.tsv,YeoKBTBD4-HDAC12025-CBE-Screen-PPI.tsv
-user_pdb: /content/beclust3d-public/examples/pdb/8voj_KBTBD4_HDAC1_chain_ABC.pdb
+screens: YeoKBTBD4-HDAC12025-ABE-Screen.tsv,YeoKBTBD4-HDAC12025-CBE-Screen.tsv
+user_pdb: /pdbs/8voj_KBTBD4_HDAC1_chain_ABC.pdb
+ppi_chain_gene_dict:
+  A: KBTBD4
+  B: KBTBD4
+  C: HDAC1
+ppi_gene_edits_dict: {}
+partner_uniprot: # uniprot IDs for genes that are pure PPI neighbors here (not in input_gene)
+  HDAC1: Q13547
 mutation_category:
   missense: [Missense]
   silent: [Silent]
