@@ -14,7 +14,7 @@ Usage in a notebook cell:
     from be3d_plotly import plot_hypothesis_qa
     fig = plot_hypothesis_qa(output_dir, pthr=0.05)
     if fig is not None:
-        fig.show()
+        display(fig)
 
 To lay two or more already-built figures out side by side instead of
 stacked, use show_side_by_side():
@@ -35,6 +35,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from scipy.cluster.hierarchy import dendrogram as _scipy_dendrogram
 from sklearn.cluster import AgglomerativeClustering
+from IPython.display import display
 
 # Default figure size (px), kept 1:1 square. Plotly figures otherwise
 # auto-fit to the notebook cell/container width, which shrinks/stretches
@@ -106,7 +107,7 @@ def _fig_ncols(fig):
 def show_side_by_side(*figs, width=None, height=None, spacing=0.04):
     """
     Display multiple already-built Plotly figures in one row, merged into a single
-    make_subplots figure and shown with plain fig.show() -- deliberately NOT
+    make_subplots figure and shown with display() -- deliberately NOT
     go.FigureWidget + ipywidgets.HBox (the previous approach), since FigureWidget
     requires the 'jupyterlab-plotly' comm widget to be registered with the notebook
     frontend; when it isn't (observed failing in a VS Code Jupyter session: "Failed to
@@ -147,7 +148,7 @@ def show_side_by_side(*figs, width=None, height=None, spacing=0.04):
         figs[0].update_layout(width=width or figs[0].layout.width or DEFAULT_WIDTH,
                                height=height or figs[0].layout.height or DEFAULT_HEIGHT,
                                autosize=False)
-        figs[0].show()
+        display(figs[0])
         return
 
     ncols_list = [_fig_ncols(f) for f in figs]
@@ -245,13 +246,13 @@ def show_side_by_side(*figs, width=None, height=None, spacing=0.04):
                 combined.add_vline(x=shape.x0, row=1, col=target_col, line=shape.line)
 
     combined.update_layout(width=total_width, height=panel_height, autosize=False)
-    combined.show()
+    display(combined)
 
 
 def show_stacked(*figs):
     """
     Display multiple already-built Plotly figures one per row (plain sequential
-    fig.show() calls) instead of side by side. Used for dendrograms, which are wide and
+    display() calls) instead of side by side. Used for dendrograms, which are wide and
     have many small leaf tick labels -- squeezing two into a shared row makes both
     unreadable, so each gets the page's full width and its own row.
 
@@ -260,7 +261,7 @@ def show_stacked(*figs):
     """
     for fig in figs:
         if fig is not None:
-            fig.show()
+            display(fig)
 
 
 def show_picker(options, description="Select:"):
@@ -278,7 +279,7 @@ def show_picker(options, description="Select:"):
     def _show(choice):
         fig = options.get(choice)
         if fig is not None:
-            fig.show()
+            display(fig)
         else:
             print(f"[not available] {choice}")
 

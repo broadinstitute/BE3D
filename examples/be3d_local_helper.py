@@ -48,7 +48,7 @@ def plot_residue_dot(df, value_col, title):
         title=title, xaxis_title='Residue position', yaxis_title=value_col,
         plot_bgcolor='white', paper_bgcolor='white', width=900, height=320,
     )
-    fig.show()
+    display(fig)
 
 
 def plot_ppi_vs_noppi_scatter(df, score_label, highlight_list=None):
@@ -94,7 +94,7 @@ def plot_ppi_vs_noppi_scatter(df, score_label, highlight_list=None):
         yaxis=dict(title=f'PPI {score_label}', range=[lo, hi], gridcolor='#e8e8e5', scaleanchor='x', scaleratio=1),
         plot_bgcolor='white', paper_bgcolor='white', width=560, height=560,
     )
-    fig.show()
+    display(fig)
 
 
 def value_to_rgb(value, vmax=2.0):
