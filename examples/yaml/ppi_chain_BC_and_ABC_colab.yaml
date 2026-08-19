@@ -1,4 +1,4 @@
-mode: complex # monomer, complex -- this file is also used as ppi_diff's base_config
+mode: complex # monomer, complex
 beclust3d_path: /content/beclust3d-public
 screen_dir: /content/beclust3d-public/examples/data
 output_dir: /content/BE3D_example/output/ppi_mode/chain_BC_and_ABC
