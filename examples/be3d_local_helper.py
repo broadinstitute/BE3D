@@ -221,7 +221,20 @@ def edit_yaml_widgets(yaml_path, editable_keys):
         if key not in config:
             continue
         val = config[key]
-        if isinstance(val, bool):
+        screen_dir_val = config.get('screen_dir')
+        if key == 'screens' and isinstance(val, str) and screen_dir_val and os.path.isdir(screen_dir_val):
+            # Pick from the .tsv files actually present in screen_dir instead of typing
+            # filenames by hand -- a typo here fails silently downstream (parse_be_data
+            # just won't find the file), so a fixed option list is safer than free text.
+            available = sorted(f for f in os.listdir(screen_dir_val) if f.endswith('.tsv'))
+            current_screens = [s.strip() for s in val.split(',') if s.strip()]
+            options = sorted(set(available) | set(current_screens))
+            w = widgets.SelectMultiple(
+                value=tuple(s for s in current_screens if s in options),
+                options=options, description=key,
+                rows=min(6, max(3, len(options))),
+            )
+        elif isinstance(val, bool):
             w = widgets.Checkbox(value=val, description=key, indent=False)
         elif isinstance(val, int):
             w = widgets.IntText(value=val, description=key)
@@ -245,11 +258,14 @@ def edit_yaml_widgets(yaml_path, editable_keys):
             current = yaml.safe_load(f)
         for key, w in value_widgets.items():
             orig = config.get(key)
-            v = w.value
-            if isinstance(orig, list):
-                v = [x.strip() for x in v.split(',') if x.strip()]
-            elif orig is None and v == '':
-                v = None
+            if isinstance(w, widgets.SelectMultiple):
+                v = ', '.join(w.value)
+            else:
+                v = w.value
+                if isinstance(orig, list):
+                    v = [x.strip() for x in v.split(',') if x.strip()]
+                elif orig is None and v == '':
+                    v = None
             current[key] = v
         with open(yaml_path, 'w') as f:
             yaml.safe_dump(current, f, sort_keys=False)
