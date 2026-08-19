@@ -359,10 +359,16 @@ def show_figure_dropdown(options, description="Select:", width=None, height=None
     # size), then each button overrides only what genuinely differs per variant.
     first = figs[0]
     combined.update_layout(first.layout)
+    # Deliberately does NOT force showlegend=False: that suppressed the legend on every plot
+    # shown through here that has one (hit types, direction/significance groups, ...). Whether
+    # a legend appears is left to the variant's own layout, which is already copied above --
+    # dendrograms set showlegend=False themselves, scatters leave it on. Traces belonging to
+    # the non-selected variants are visible=False, and Plotly omits hidden traces from the
+    # legend, so only the active variant's entries are listed.
     combined.update_layout(
         width=width or first.layout.width or DEFAULT_WIDTH,
         height=height or first.layout.height or DEFAULT_HEIGHT,
-        autosize=False, showlegend=False,
+        autosize=False,
     )
 
     buttons = []
