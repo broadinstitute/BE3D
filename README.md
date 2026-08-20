@@ -42,39 +42,39 @@ BE3D enables structure-function analysis of BE tiling mutagenesis data by mappin
 
 BE3D requires the following inputs:
 
-1. **BE Screen Scores (TSV)**: Must include Mutation Category, Amino Acid Edit, Gene Name, and Score. You must indicate column names as part of the input. 
+1. **BE Screen Scores (TSV)**: Must include Mutation_type, Mutation_listt, Gene, and sgRNA_score. You must indicate column names as part of the input. 
 
     Example TSV:
 
     ```tsv
-    Gene	sgRNA_score	mutation	predicted_edits
-    MEN1	-0.18977	Missense	Gly2Arg;Met1Ile
-    MEN1	-0.22247	Silent	Leu10Leu
+    Gene	Mutation_list	Mutation_type	sgRNA_score
+	KBTBD4	A25T;G24K;	Missense;Missense;	1.17806570455113
+	KBTBD4	N34N;Y35Y;	Silent;Silent;	-0.138685212882075
     ```
 
     Example input config (Python):
 
     ```python
-    mut_col   = "mutation"
+    mut_col   = "Mutation_type"
     val_col   = "sgRNA_score"
     gene_col  = "Gene"
-    edits_col = "predicted_edits"
+    edits_col = "Mutation_list"
     ```
 
 2. **Uniprot ID**: Required to fetch an AlphaFold structure. It can fetch other isoforms by providing isoform identifier, `-isoform number`
 
     ```python
-    input_uniprot = "O00255" # for MEN1 canonical isoform
+    input_uniprot = "Q9NVX7-2" # for KBTBD4 canonical isoform
     ```
 	
     ```python
-    input_uniprot = "O00255-3" # for MEN1 isoform-3
+    input_uniprot = "Q9NVX7-1" # for KBTBD4 isoform-1
     ```
 4. **Optional FASTA and PDB**: Provide custom protein sequence and structure files. If these fields are left empty, the pipeline fetches the AlphaFold structure for the given Uniprot ID. 
 
     ```python
-    input_pdb   = 'men1_AF3.pdb'
-    input_fasta = 'men1.fasta'
+    input_pdb   = 'KBTBD4_8voj.pdb'
+    input_fasta = 'KBTBD4_isoform1.fasta'
     ```
 
 ## Features
@@ -149,7 +149,7 @@ We recommend creating a dedicated conda environment before running BE3D locally.
 ## Getting Started Examples
 ### Running BE3D Locally
 
-The script `examples/be3d_local.py` runs BE3D using a YAML
+The scripts `examples/be3d_local.py` and `examples/be3d_local.ipynb` run BE3D using a YAML
 configuration file that specifies:
 
 -   Input screen data
@@ -163,27 +163,16 @@ Example usage:
 conda activate be3d
 cd examples/
 
-# DNMT3A example (Lue et al.)
-python be3d_local.py ./yaml/dnmt3a_local.yaml
+# KBTBD4 example (Yeo et al.)
+python be3d_local.py ./yaml/KBTBD4_chain_B.yaml
 
-# MEN1 example (Perner et al.)
-python be3d_local.py ./yaml/men1_local.yaml
 ```
 
 ## Google Colab Notebooks
 BE3D can also be run directly in Google Colab.
 
-- **Single Screen Notebook Example (DNMT3A)**: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv9_SingleScreen_DNMT3A_Notebook.ipynb)
-
-- **Multi Screen Notebook with Meta-Aggregation Example (MEN1)**: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv9_MultiScreen_MEN1_Notebook.ipynb)
-
-- **Multi Screen Notebook with Meta-Aggregation and Conservation Example (MORC2)** _(currently unavailable due to data confidentiality)_: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv9_MultiScreen_MORC2_Notebook.ipynb)
-
-- **Multi Screen Notebook with Meta-Aggregation and Across Complex Example (KBTBD4)**: 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3Dv9_MultiScreen_KBTBD4_Notebook.ipynb)
+- **Colab Notebook Example (KBTBD4)**: 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3D_Colab.ipynb)
 
 ## Github Structure
 
