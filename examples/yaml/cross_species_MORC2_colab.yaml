@@ -4,14 +4,8 @@ output_dir: /content/BE3D_example/output/MORC2
 input_gene: MORC2
 input_uniprot: Q9Y6X9
 input_chain: A
-screens: Human_InVitro_HS294T_Apobec_D24_Input.txt, Human_InVitro_HS294T_TadA_D14_Input.txt,
-  Human_InVitro_SK-ES_Apobec_D23_Input.txt, Human_InVitro_SK-ES_TadA_D17_Input.txt,
-  Human_InVitro_SW480_Apobec_D14_Input.txt, Human_InVitro_SW480_TadA_D14_Input.txt,
-  Human_InVitro_SW480flow_Apobec_D10_Enriched.txt, Human_InVitro_SW480flow_Apobec_D10_Input1.txt,
-  Human_InVitro_SW480flow_Apobec_Enriched_Input2.txt, Human_InVitro_SW480flow_TadA_D10_Enriched.txt,
-  Human_InVitro_SW480flow_TadA_D10_Input.txt, Human_InVitro_SW480repeat_Apobec_D7_Input.txt,
-  Human_InVitro_SW480repeat_TadA_D7_Input.txt, Mouse_InVitro_B16_TadA_D14-IFNg_Input.txt,
-  Mouse_InVivo_LLC_Apobec_Tx_NSG.txt
+screens: Human_InVitro_HS294T_Apobec_D24_Input.tsv, Human_InVitro_HS294T_TadA_D14_Input.tsv,
+  Mouse_InVitro_B16_TadA_D14-IFNg_Input.tsv,Mouse_InVivo_LLC_Apobec_Tx_NSG.tsv
 user_fasta: null
 user_pdb: /content/beclust3d-public/examples/pdb/MORC2.pdb
 user_dssp: null

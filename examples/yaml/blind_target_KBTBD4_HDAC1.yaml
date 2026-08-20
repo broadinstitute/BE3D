@@ -1,6 +1,6 @@
 mode: blind_target
-beclust3d_path: /beclust3d-public
-output_dir: /output/blind_target/KBTBD4_HDAC1
+beclust3d_path: ../../beclust3d-public
+output_dir: ./output/blind_target/KBTBD4_HDAC1
 
 # KBTBD4 does have its own real screen data, but here we deliberately ignore it --
 # LFC3D is computed purely from its structural neighbor HDAC1's real LFC values, since
@@ -9,7 +9,7 @@ output_dir: /output/blind_target/KBTBD4_HDAC1
 input_gene: KBTBD4
 input_uniprot: Q9NVX7-2
 input_chain: B
-user_pdb: /pdbs/8voj_KBTBD4_HDAC1_chain_ABC.pdb
+user_pdb: ./pdb/8voj_KBTBD4_HDAC1_chain_ABC.pdb
 structure_radius: 6.0
 atom_level_naa: false
 
@@ -23,7 +23,7 @@ partners:
   - gene: HDAC1
     uniprot: Q13547
     chain: C
-    screen_dir: /3_YeoKBTBD4–HDAC12025/PPI
+    screen_dir: ./data/
     screens: YeoKBTBD4-HDAC12025-ABE-Screen-PPI.tsv,YeoKBTBD4-HDAC12025-CBE-Screen-PPI.tsv
     mut_col: Mutation_type
     val_col: sgRNA_score
