@@ -5,7 +5,7 @@
 
 You can run the BE3D pipeline in two ways:
 1. **[Google Colab Notebooks](#google-colab-notebooks)** - no installation required; ideal for quick testing and exploration.
-2. **[Local execution](#running-be3d-locally)** - faster and recommended for large datasets, using `./examples/be3d_local.py`
+2. **[Local execution](#running-be3d-locally)** - faster and recommended for large datasets, using `./examples/be3d_local.py` or `./examples/BE3D_local.ipynb`
 
 ---
 
@@ -149,7 +149,7 @@ We recommend creating a dedicated conda environment before running BE3D locally.
 ## Getting Started Examples
 ### Running BE3D Locally
 
-The scripts `examples/be3d_local.py` and `examples/be3d_local.ipynb` run BE3D using a YAML
+The scripts `examples/be3d_local.py` and `examples/BE3D_local.ipynb` run BE3D using a YAML
 configuration file that specifies:
 
 -   Input screen data
