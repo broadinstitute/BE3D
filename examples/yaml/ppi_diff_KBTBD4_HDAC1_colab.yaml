@@ -34,6 +34,7 @@ conservation:
   alt_gene_name: null
   alt_uniprot_id: null
   alt_screen_start: null
+priority_on_alternative: false
 mutation_category:
   missense: [Missense]
   silent: [Silent]
@@ -47,7 +48,6 @@ qa:
   qa_only: false
   cases: [Nonsense, Splice-donor, Splice-acceptor]
   controls: [No Mutation]
-priority_on_alternative: false
 ppi_chain_gene_dict:
   A: KBTBD4
   B: KBTBD4

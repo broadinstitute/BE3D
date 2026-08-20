@@ -30,6 +30,7 @@ conservation:
   alt_gene_name: null
   alt_uniprot_id: null
   alt_screen_start: null
+priority_on_alternative: false
 database:
   mut_list_col: null
   mut_col: Mutation_type
@@ -49,5 +50,4 @@ pthr:
   multi_screen: 0.05
 structure_radius: 6.0
 clustering_radius: 6.0
-priority_on_alternative: false
 atom_level_naa: false

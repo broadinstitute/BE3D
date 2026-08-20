@@ -31,6 +31,7 @@ conservation:
   alt_gene_name: Morc2a
   alt_uniprot_id: Q69ZX6
   alt_screen_start: Mouse
+priority_on_alternative: false
 mutation_category:
   missense: [Missense]
   silent: [Silent]
@@ -43,7 +44,6 @@ qa:
   qa_only: false
   cases: [Nonsense, Splice Site]
   controls: [No Mutation]
-priority_on_alternative: false
 ppi_chain_gene_dict: null
 ppi_gene_edits_dict: null
 atom_level_naa: false

@@ -429,6 +429,27 @@ YAML_FIELD_HELP = {
     'mut_delimiter': "Delimiter separating multiple edits within edits_col (e.g. ';')",
     'mut_list_col': 'Optional column listing individual edits separately (blank = derive from edits_col)',
     'gRNA_col': 'Optional column holding the guide/sgRNA identifier',
+    'beclust3d_path': 'Path to the beclust3d package checkout (importable pipeline code, not this examples/ folder)',
+    'muscle_path': 'Path to the MUSCLE executable (used by conservation alignment)',
+    'single_screen': 'p-value threshold for per-screen hit calling (e.g. BE-Clust3D)',
+    'multi_screen': 'p-value threshold for meta-aggregated hit calling (e.g. BE-MetaClust3D)',
+    'run': 'Whether to run a cross-species/conservation comparison against an alternative-species ortholog',
+    'alt_gene_name': 'Alternative-species ortholog gene symbol (e.g. Morc2a for a human MORC2 run)',
+    'alt_uniprot_id': "Alternative-species ortholog's UniProt accession",
+    'alt_screen_start': "Prefix identifying which screens belong to the alternative species (e.g. 'Mouse')",
+    'v_score_threshold': 'Minimum conservation score for a residue to be treated as conserved',
+    'priority_on_alternative': 'Treat every screen as the alternative species, instead of only those matching alt_screen_start',
+    'qa_passed_only': 'Restrict the run to screens that passed the hypothesis-test QA gate',
+    'qa_only': 'Run only the QA step, then stop (skips the rest of the pipeline)',
+    'cases': 'Mutation categories treated as the QA hypothesis test\'s "cases" group (e.g. Nonsense)',
+    'controls': 'Mutation categories treated as the QA hypothesis test\'s "controls" group (e.g. No Mutation)',
+    'ppi_chain_gene_dict': 'PDB chain -> gene symbol, covering every chain in the complex (mode: complex/ppi_diff)',
+    'ppi_gene_edits_dict': 'gene identifier -> its preprocessed cross-chain LFC lookup directory (built by the pipeline, not hand-edited)',
+    'gene': "This partner's gene symbol",
+    'uniprot': "This partner's UniProt accession",
+    'chain': "This partner's PDB chain ID",
+    'conservation_run': 'Whether this partner also runs a cross-species/conservation comparison',
+    'atom_level_naa': 'Atom-level (rather than residue-level) structural neighbor detection -- still in development',
 }
 
 
@@ -473,7 +494,7 @@ def _flatten_leaf_paths(obj, prefix=''):
     return [prefix]
 
 
-def edit_yaml_widgets(yaml_path, key_groups, exclude=('mode',)):
+def edit_yaml_widgets(yaml_path, key_groups, exclude=('mode', 'atom_level_naa', 'ppi_gene_edits_dict')):
     """
     Per-field ipywidgets form over a pipeline yaml config, grouped into labeled sections
     -- each edit is written straight back to yaml_path as soon as it changes, so the next
@@ -487,6 +508,13 @@ def edit_yaml_widgets(yaml_path, key_groups, exclude=('mode',)):
     other settings") so every field in the yaml ends up exposed somewhere. A dict-valued
     key (e.g. the whole 'mutation_category') is edited as a small YAML block rather than
     exploded field by field.
+
+    exclude : field names hidden from every group, including the "Advanced / other
+    settings" catch-all -- 'mode' because it's chosen by the mode selector, not hand-edited;
+    'atom_level_naa' because it's still in development and not yet meant to be user-facing;
+    and 'ppi_gene_edits_dict' because its yaml value is never actually read (every mode
+    branch in be3d_local.py overwrites it with a freshly-built dict before calling main()),
+    so exposing it as editable would be pure misdirection.
     """
     import ipywidgets as widgets
 
