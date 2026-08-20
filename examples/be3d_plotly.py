@@ -434,7 +434,7 @@ _TEST_INFO = {
 
 
 def plot_hypothesis_qa(output_dir, pthr=0.05, test="MannWhitney", hypothesis=2,
-                        width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
+                        genes=None, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     """
     Interactive scatter of the hypothesis test's own statistic (KS's D, or MW's U) on
     the x-axis against -log10(p) on the y-axis, one point per screen/gene comparison.
@@ -445,12 +445,31 @@ def plot_hypothesis_qa(output_dir, pthr=0.05, test="MannWhitney", hypothesis=2,
     `p_{cases}_vs_{controls}` / `{D,U}_{cases}_vs_{controls}` (e.g.
     `p_Nonsense_vs_No Mutation`), not a fixed name, so the p column is detected by
     prefix and the statistic column derived from it rather than hardcoded.
+
+    genes : optional list of gene names to restrict the plot to (matched against
+        'gene_name', case-insensitively). The underlying screen data is often a
+        pooled screen covering many genes at once -- e.g. a whole complex, or (in a
+        cross-species/conservation run) the original gene plus its alt-species
+        ortholog -- so without this the plot mixes in every other gene's QA points
+        alongside the one the notebook is actually reporting on.
     """
     path = os.path.join(output_dir, "hypothesis_qa", f"{test}_hypothesis{hypothesis}.tsv")
     df = _load_tsv(path)
     if df is None:
         _warn(f"Could not find {path}; skipping hypothesis QA plot.")
         return None
+
+    if genes and "gene_name" in df.columns:
+        wanted = {g.lower() for g in genes}
+        df = df[df["gene_name"].str.lower().isin(wanted)]
+        if df.empty:
+            _warn(f"No rows for gene(s) {genes} in {path}; skipping hypothesis QA plot.")
+            return None
+
+    # Filtered to a single gene: say so in the title, so a cross-species/pooled-screen run
+    # (where the underlying table can otherwise mix in an ortholog or another gene from the
+    # same screen) visibly reads as "these points are all <gene>", not just "QA".
+    gene_suffix = f" — {genes[0]}" if genes and len(genes) == 1 else ""
 
     p_cols = [c for c in df.columns if c.startswith("p_")]
     if not p_cols:
@@ -475,7 +494,7 @@ def plot_hypothesis_qa(output_dir, pthr=0.05, test="MannWhitney", hypothesis=2,
     fig = px.scatter(
         df, x=stat_col, y="-log10(p)", color="significant",
         hover_data=hover_cols + [pcol],
-        title=f"{test_info['label']} — Hypothesis {hypothesis}",
+        title=f"{test_info['label']}{gene_suffix} — Hypothesis {hypothesis}",
         color_discrete_map={f"p < {pthr}": COLOR_NEG, f"p >= {pthr}": COLOR_NEG_PALE},
     )
     fig.add_hline(y=-np.log10(pthr), line_dash="dash", line_color="gray",
@@ -559,18 +578,21 @@ def plot_score_scatter(output_dir, input_gene, screen_name, score_type="LFC", di
     """
     Interactive scatter of per-residue LFC or LFC3D scores along sequence
     position (unipos), colored by significance at the given p-value cutoff.
-    Reads `{score_type}/*_{input_gene}_NonAggr_{score_type}.tsv`.
+    Reads `{score_type}/{input_gene}_NonAggr_{score_type}.tsv` -- the single-species
+    table merge_two_tsvs() always writes under that exact name, even for a
+    conservation/cross-species run (where 'Original_{input_gene}_...' next to it holds
+    only the original species' half and 'Alternative_{alt_gene}_...' only the alt
+    species' half -- neither is what a plot should read).
 
     direction : "positive", "negative", or None (both, the previous default) --
         BE-Clust3D shows these as two separate plots rather than one combined
         scatter, so a hit in one direction doesn't visually compete for attention
         with (or get mistaken for) a hit in the other.
     """
-    pattern = os.path.join(output_dir, score_type, f"*_{input_gene}_NonAggr_{score_type}.tsv")
-    path = _find_one(pattern)
+    path = os.path.join(output_dir, score_type, f"{input_gene}_NonAggr_{score_type}.tsv")
     df = _load_tsv(path)
     if df is None:
-        _warn(f"Could not find NonAggr {score_type} table ({pattern}); skipping plot.")
+        _warn(f"Could not find NonAggr {score_type} table ({path}); skipping plot.")
         return None
 
     pos_val_col = f"{screen_name}_{score_type}_pos"
@@ -839,7 +861,7 @@ def plot_dendrogram(output_dir, input_gene, screen_name, score_type="LFC3D",
     yaml's clustering_radius, typically 6.0).
     """
     struc_path = _find_one(os.path.join(output_dir, "sequence_structure", "*_coord_struc_features.tsv"))
-    nonaggr_path = _find_one(os.path.join(output_dir, score_type, f"*_{input_gene}_NonAggr_{score_type}.tsv"))
+    nonaggr_path = os.path.join(output_dir, score_type, f"{input_gene}_NonAggr_{score_type}.tsv")
     struc_df, sig_df = _load_tsv(struc_path), _load_tsv(nonaggr_path)
     if struc_df is None or sig_df is None:
         _warn(f"Could not find structural features or NonAggr {score_type} table; skipping dendrogram.")
@@ -943,9 +965,9 @@ def plot_lfc_lfc3d_scatter(output_dir, input_gene, screen_name, pthr_str="05",
     # Half DEFAULT_WIDTH: unlike the other plots here, this one is normally shown alone
     # (not through show_side_by_side, since it's already a 2-column figure internally),
     # so it shouldn't stretch to the same width meant for a side-by-side pair.
-    lfc_path = _find_one(os.path.join(output_dir, "LFC", f"*_{input_gene}_LFC_dis_wght.tsv"))
-    lfc3d_path = _find_one(os.path.join(output_dir, "LFC3D", f"*_{input_gene}_LFC3D_dis_wght.tsv"))
-    psig_path = _find_one(os.path.join(output_dir, "LFC3D", f"*_{input_gene}_NonAggr_LFC3D.tsv"))
+    lfc_path = os.path.join(output_dir, "LFC", f"{input_gene}_LFC_dis_wght.tsv")
+    lfc3d_path = os.path.join(output_dir, "LFC3D", f"{input_gene}_LFC3D_dis_wght.tsv")
+    psig_path = os.path.join(output_dir, "LFC3D", f"{input_gene}_NonAggr_LFC3D.tsv")
     lfc_df, lfc3d_df, psig_df = _load_tsv(lfc_path), _load_tsv(lfc3d_path), _load_tsv(psig_path)
     if lfc_df is None or lfc3d_df is None or psig_df is None:
         _warn("Could not find LFC/LFC3D dis_wght or NonAggr tables; skipping LFC vs LFC3D scatter.")
@@ -1001,7 +1023,7 @@ def plot_lfc_lfc3d_scatter(output_dir, input_gene, screen_name, pthr_str="05",
 def plot_plddt_rsa_scatter(output_dir, input_gene, screen_name,
                             width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
     struc_path = _find_one(os.path.join(output_dir, "sequence_structure", "*_coord_struc_features.tsv"))
-    lfc3d_path = _find_one(os.path.join(output_dir, "LFC3D", f"*_{input_gene}_LFC3D_dis_wght.tsv"))
+    lfc3d_path = os.path.join(output_dir, "LFC3D", f"{input_gene}_LFC3D_dis_wght.tsv")
     struc_df, lfc3d_df = _load_tsv(struc_path), _load_tsv(lfc3d_path)
     if struc_df is None or lfc3d_df is None:
         _warn("Could not find structural features or LFC3D dis_wght tables; skipping pLDDT vs RSA scatter.")
@@ -1058,11 +1080,10 @@ def _hit_counts_by_category(output_dir, input_gene, screen_name, category_df, ca
     missing NonAggr table or zero residues clearing the significance threshold.
     """
     label = label or category_col
-    nonaggr_path = _find_one(os.path.join(output_dir, "LFC3D", f"*_{input_gene}_NonAggr_LFC3D.tsv"))
+    nonaggr_path = os.path.join(output_dir, "LFC3D", f"{input_gene}_NonAggr_LFC3D.tsv")
     nonaggr_df = _load_tsv(nonaggr_path)
     if nonaggr_df is None:
-        _warn(f"Could not find NonAggr LFC3D table (pattern: *_{input_gene}_NonAggr_LFC3D.tsv in "
-              f"{output_dir}/LFC3D); skipping {label} barplot.")
+        _warn(f"Could not find NonAggr LFC3D table ({nonaggr_path}); skipping {label} barplot.")
         return None
     if category_col not in category_df.columns:
         _warn(f"Column '{category_col}' not found in the structural features table; skipping {label} barplot.")

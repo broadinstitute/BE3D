@@ -9,6 +9,9 @@ Description:
 
 import os
 import re
+import subprocess
+import sys
+import time
 import yaml
 import pandas as pd
 import plotly.graph_objects as go
@@ -583,3 +586,79 @@ def edit_yaml_widgets(yaml_path, key_groups, exclude=('mode',)):
         w.observe(save, names='value')
 
     display(widgets.VBox(section_boxes))
+
+
+# The 14 subfolders every be3d_local.py run creates (15 when conservation.run is set,
+# adding 'conservation'); the pipeline has no per-step progress signal of its own, so
+# counting how many of these have appeared under output_dir is a coarse but honest
+# substitute for a bare "please wait" while a run that can take several minutes works.
+BASE_OUTPUT_FOLDERS = [
+    'screendata', 'screendata_rand', 'screendata_sequence', 'screendata_sequence_rand',
+    'LFC', 'LFC3D', 'sequence_structure', 'cluster_LFC', 'cluster_LFC3D', 'cluster_union',
+    'characterization', 'meta-aggregate', 'hypothesis_qa', 'g2p_visualization',
+]
+
+
+def expected_output_folders(config):
+    folders = list(BASE_OUTPUT_FOLDERS)
+    if (config.get('conservation') or {}).get('run'):
+        folders.append('conservation')
+    return folders
+
+
+def pthr_fragment(value):
+    """
+    '0.05' -> '05', '0.001' -> '001' -- the column-name/file-name suffix the pipeline
+    itself derives from a pthr value (see be3d_local.py's single_screen_pthr_str /
+    multi_screen_pthr_str), reproduced here so notebook cells can pass the pthr_str a
+    plot function actually needs instead of relying on its hardcoded '05' default,
+    which silently reads the wrong (or a missing) column/file whenever the yaml's own
+    threshold isn't 0.05.
+    """
+    return str(value).split('.')[1]
+
+
+def run_be3d_with_progress(script, yaml_path):
+    """
+    Runs be3d_local.py as a subprocess and shows a live progress bar while it's
+    working, tracking how many of its known output subfolders (BASE_OUTPUT_FOLDERS)
+    have appeared under the yaml's output_dir so far -- run_be3d() is not "just
+    BE-QA", it's the whole pipeline running (often several minutes), and a bare
+    print gives no sense of whether it's stuck or a third of the way through.
+    """
+    import ipywidgets as widgets
+
+    with open(yaml_path) as f:
+        config = yaml.safe_load(f)
+    output_dir = config['output_dir']
+    folders = expected_output_folders(config)
+    total = len(folders)
+
+    bar = widgets.IntProgress(value=0, min=0, max=total, bar_style='info',
+                               layout=widgets.Layout(width='400px'))
+    label = widgets.HTML(value=f'starting -- 0/{total} output folders created')
+    display(widgets.HBox([bar, label]))
+
+    def count_done():
+        return sum(1 for f in folders if os.path.isdir(os.path.join(output_dir, f)))
+
+    proc = subprocess.Popen([sys.executable, script, yaml_path],
+                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    while proc.poll() is None:
+        done = count_done()
+        bar.value = done
+        label.value = f'running -- {done}/{total} output folders created'
+        time.sleep(2)
+
+    output = proc.stdout.read() if proc.stdout else ''
+    done = count_done()
+    bar.value = done
+    if proc.returncode == 0:
+        bar.bar_style = 'success'
+        label.value = f'done -- {done}/{total} output folders created'
+    else:
+        bar.bar_style = 'danger'
+        label.value = f'FAILED (exit {proc.returncode}) -- {done}/{total} output folders created'
+    print(output)
+    if proc.returncode != 0:
+        raise subprocess.CalledProcessError(proc.returncode, [script, yaml_path], output=output)
