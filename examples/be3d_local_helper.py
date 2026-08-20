@@ -606,6 +606,57 @@ def expected_output_folders(config):
     return folders
 
 
+def _progress_plan(config):
+    """
+    (total, count_done) for run_be3d_with_progress, tailored to what config['mode']
+    actually writes and where -- BASE_OUTPUT_FOLDERS only appears directly under
+    output_dir for a monomer-style run (mode: monomer or cross_species's monomer
+    pipeline); ppi_diff instead writes that same 14/15-folder set once per gene under
+    output_dir/no_ppi/<gene> and output_dir/ppi/<gene> (never directly under output_dir
+    itself, so counting there always read 0, even once the run had finished and written
+    real output). blind_target never calls main() at all -- none of BASE_OUTPUT_FOLDERS
+    applies -- so it gets its own much smaller, real target: each partner's
+    screendata_sequence output plus the final blind LFC3D tsv (this is why blind_target
+    used to always end at a confusing '1/14': only sequence_structure, one of the 14, is
+    ever created directly under its output_dir).
+    """
+    mode = config.get('mode')
+    output_dir = config['output_dir']
+
+    if mode == 'blind_target':
+        partners = config.get('partners') or []
+        partner_dirs = [
+            os.path.join(output_dir, 'ppi_partners', f"{p['gene']}_chain_{p['chain']}", 'screendata_sequence')
+            for p in partners
+        ]
+        final_tsv = os.path.join(output_dir, f"{config['input_gene']}_{config['input_chain']}_blind_LFC3D.tsv")
+        total = len(partner_dirs) + 1
+
+        def count_done():
+            done = sum(1 for d in partner_dirs if os.path.isdir(d) and os.listdir(d))
+            return done + (1 if os.path.exists(final_tsv) else 0)
+
+        return total, count_done
+
+    folders = expected_output_folders(config)
+
+    if mode == 'ppi_diff':
+        gene_names = [g.strip() for g in config['input_gene'].split(',')]
+        target_dirs = [os.path.join(output_dir, leg, g) for g in gene_names for leg in ('no_ppi', 'ppi')]
+    elif mode == 'complex':
+        gene_names = [g.strip() for g in config['input_gene'].split(',')]
+        target_dirs = [os.path.join(output_dir, g) for g in gene_names]
+    else:  # monomer, and cross_species (runs the same monomer pipeline directly on output_dir)
+        target_dirs = [output_dir]
+
+    total = len(folders) * len(target_dirs)
+
+    def count_done():
+        return sum(1 for d in target_dirs for f in folders if os.path.isdir(os.path.join(d, f)))
+
+    return total, count_done
+
+
 def pthr_fragment(value):
     """
     '0.05' -> '05', '0.001' -> '001' -- the column-name/file-name suffix the pipeline
@@ -621,33 +672,29 @@ def pthr_fragment(value):
 def run_be3d_with_progress(script, yaml_path):
     """
     Runs be3d_local.py as a subprocess and shows a live progress bar while it's
-    working, tracking how many of its known output subfolders (BASE_OUTPUT_FOLDERS)
-    have appeared under the yaml's output_dir so far -- run_be3d() is not "just
-    BE-QA", it's the whole pipeline running (often several minutes), and a bare
-    print gives no sense of whether it's stuck or a third of the way through.
+    working, tracking how many of its known output subfolders have appeared so far
+    (see _progress_plan for where those subfolders actually land, which depends on
+    config['mode']) -- run_be3d() is not "just BE-QA", it's the whole pipeline
+    running (often several minutes), and a bare print gives no sense of whether
+    it's stuck or a third of the way through.
     """
     import ipywidgets as widgets
 
     with open(yaml_path) as f:
         config = yaml.safe_load(f)
-    output_dir = config['output_dir']
-    folders = expected_output_folders(config)
-    total = len(folders)
+    total, count_done = _progress_plan(config)
 
     bar = widgets.IntProgress(value=0, min=0, max=total, bar_style='info',
                                layout=widgets.Layout(width='400px'))
-    label = widgets.HTML(value=f'starting -- 0/{total} output folders created')
+    label = widgets.HTML(value=f'starting -- 0/{total}')
     display(widgets.HBox([bar, label]))
-
-    def count_done():
-        return sum(1 for f in folders if os.path.isdir(os.path.join(output_dir, f)))
 
     proc = subprocess.Popen([sys.executable, script, yaml_path],
                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     while proc.poll() is None:
         done = count_done()
         bar.value = done
-        label.value = f'running -- {done}/{total} output folders created'
+        label.value = f'running -- {done}/{total}'
         time.sleep(2)
 
     output = proc.stdout.read() if proc.stdout else ''
@@ -655,10 +702,10 @@ def run_be3d_with_progress(script, yaml_path):
     bar.value = done
     if proc.returncode == 0:
         bar.bar_style = 'success'
-        label.value = f'done -- {done}/{total} output folders created'
+        label.value = f'done -- {done}/{total}'
     else:
         bar.bar_style = 'danger'
-        label.value = f'FAILED (exit {proc.returncode}) -- {done}/{total} output folders created'
+        label.value = f'FAILED (exit {proc.returncode}) -- {done}/{total}'
     print(output)
     if proc.returncode != 0:
         raise subprocess.CalledProcessError(proc.returncode, [script, yaml_path], output=output)
