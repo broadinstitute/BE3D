@@ -14,6 +14,74 @@ import glob, os
 
 # HELPER FUNCTIONS #
 
+def benjamini_hochberg(
+    pvals
+):
+    """
+    Benjamini-Hochberg (BH) step-up false discovery rate (FDR) q-values.
+
+    BE3D calls per-residue significance directly on the raw p-values
+    (e.g. p<0.05/0.01/0.001) with no correction for the many residues tested
+    simultaneously. In practice the fraction of residues flagged at raw p<0.05
+    (the "base rate") has ranged from ~7% to ~50% across targets, so the raw
+    p<0.05 flag over-calls and forces users to rank hits by hand. The standard
+    multiple-testing fix is to report BH/FDR q-values alongside the raw p-values
+    and threshold on those instead. A q-value threshold of q<0.1 (i.e. accepting
+    an expected 10% false discovery rate) is the recommended, multiplicity-aware
+    way to call significant residues.
+
+    The q-value for a p-value p_(i) (with p-values sorted ascending, rank i,
+    m tested) is::
+
+        q_(i) = min_{k >= i} ( m / k * p_(k) )
+
+    capped at 1.0, which makes the sorted q-values monotonically non-decreasing
+    and guarantees q >= p for every entry.
+
+    Parameters
+    ----------
+    pvals : array-like
+        Raw p-values. May contain NaN or the string '-' (BE3D's missing-value
+        marker); those entries are ignored when computing the FDR correction and
+        are returned as NaN in the same position. Order is preserved and ties are
+        handled with a stable sort.
+
+    Returns
+    -------
+    numpy.ndarray
+        Float array of BH q-values, same length and order as ``pvals``, with NaN
+        wherever the input was NaN / '-'.
+    """
+    # COERCE TO FLOAT, TREATING '-' AND None AS MISSING (NaN) #
+    arr = np.array(
+        [np.nan if (v is None or (isinstance(v, str) and v == '-')) else v
+         for v in pvals],
+        dtype=float,
+    )
+
+    q = np.full(arr.shape, np.nan, dtype=float)
+    mask = ~np.isnan(arr)
+    p = arr[mask]
+    m = p.size
+    if m == 0:
+        return q
+
+    # STEP-UP BH: SORT ASCENDING (STABLE), SCALE BY m / rank #
+    order = np.argsort(p, kind='stable')
+    ranked = p[order]
+    ranks = np.arange(1, m + 1)
+    q_sorted = ranked * m / ranks
+
+    # ENFORCE MONOTONICITY (CUMULATIVE MIN FROM THE LARGEST P) AND CAP AT 1 #
+    q_sorted = np.minimum.accumulate(q_sorted[::-1])[::-1]
+    q_sorted = np.minimum(q_sorted, 1.0)
+
+    # UNSORT BACK TO ORIGINAL ORDER, THEN SCATTER INTO NON-MISSING SLOTS #
+    q_valid = np.empty(m, dtype=float)
+    q_valid[order] = q_sorted
+    q[mask] = q_valid
+    return q
+
 def sum_dash(
     values
 ): 
