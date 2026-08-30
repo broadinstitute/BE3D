@@ -186,6 +186,37 @@ The pipeline also automatically uses DSSP to annotate a pdb file for secondary s
 
 The DSSP Web Portal can be found at: https://pdb-redo.eu/dssp
 
+### Validation Shortlist
+
+BE3D over-calls hotspots (a base rate of 7-50% of residues), leaving a bench scientist with a long, unranked list and no easy way to tell which residues are worth scarce wet-lab validation. The additive utility `validation_shortlist` (in `beclust3d/lfc3d/prioritize_report.py`, also exported at the package top level) compresses a per-residue table into one ranked "what-to-validate-next" shortlist by fusing three signals BE3D already produces: statistical significance (FDR q-value, or p-value fallback), structural confidence (AlphaFold `bfactor_pLDDT`), and base-editing reachability.
+
+Each candidate residue gets a `priority_tier` and a numeric `priority_rank`:
+
+- **Tier A** — significant (`q < q_max`, or `p < 0.05` when no q) **and** confident (`pLDDT >= plddt_min`) **and** reachable. Validate these first.
+- **Tier B** — significant but low-confidence **or** unreachable.
+- **Tier C** — everything else.
+
+Within a tier, rows sort by significance (best first) then effect magnitude `|score|`. Optional columns are handled gracefully: no `q_col` falls back to `p_col`; a missing `reachable_col` treats all residues as reachable (and records a note in `result.attrs['notes']`); `'-'`/NaN sentinels are ignored. This is a read-only reporting layer and does not change LFC3D, clustering, or any existing behavior.
+
+```python
+from beclust3d import validation_shortlist
+
+# df is a per-residue table, e.g. a merged hits/structure frame.
+# q_col comes from the FDR PR (#20); reachable_col from the reachability PR (#19).
+shortlist = validation_shortlist(
+    df,
+    score_col="LFC3D",
+    q_col="q_value",             # falls back to p_col if absent
+    plddt_col="bfactor_pLDDT",
+    reachable_col="reachable",
+    plddt_min=70.0,
+    q_max=0.1,
+    top_n=10,
+    out_tsv="results/validation_shortlist.tsv",
+)
+print(shortlist[["priority_rank", "position", "residue", "priority_tier"]])
+```
+
 ### Conservation
 
 For sequence alignment, the pipeline runs MUSCLE locally in order to align 2 sequences in order to compare between isoforms or across species. 
