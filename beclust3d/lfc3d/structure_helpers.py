@@ -276,26 +276,120 @@ def parse_coord(
 # RUN DSSP AND PARSE IT INTO A TSV FILE #
 
 def run_dssp(
-    working_filedir, 
-    af_filename, 
-    dssp_filename, 
-): 
+    working_filedir,
+    af_filename,
+    dssp_filename,
+):
     # os.environ["LIBCIFPP_DATA_DIR"] = "src/helpers/libcifpp_data"
 
-    if not os.path.exists(working_filedir / dssp_filename): 
+    if not os.path.exists(working_filedir / dssp_filename):
         pdb_file_path = str(working_filedir / af_filename)
         out_file_path = str(os.path.join(working_filedir / dssp_filename))
         # dic_file_path = "src/helpers/mmcif_pdbx_v50.dic"
 
         # RUN DSSP COMMAND #
-        if shutil.which('dssp') is None: 
-            subprocess.run(["mkdssp", pdb_file_path, out_file_path, 
-                            "--output-format", "dssp"], 
+        # Prefer the classic ``mkdssp`` binary, then a bare ``dssp`` on PATH.
+        dssp_bin = shutil.which('mkdssp') or shutil.which('dssp')
+        if dssp_bin is not None:
+            subprocess.run([dssp_bin, pdb_file_path, out_file_path,
+                            "--output-format", "dssp"],
                             check=True)
-        else: 
-            subprocess.run(["dssp", pdb_file_path, out_file_path, 
-                            "--output-format", "dssp"], 
-                            check=True)
+        else:
+            # PURE-PYTHON FALLBACK #
+            # Neither ``mkdssp`` nor ``dssp`` is installed and no user DSSP was
+            # supplied (this function is only reached when user_dssp is None).
+            # Rather than aborting the whole run at the structure stage, emit a
+            # minimal but VALID classic-DSSP file straight from the input PDB.
+            # Secondary structure / RSA are PLACEHOLDERS and only affect the
+            # optional characterization step -- LFC3D scoring and clustering do
+            # not use them.
+            warnings.warn(
+                "mkdssp/dssp binary not found on PATH; generating a placeholder "
+                "DSSP file with Biopython. Secondary-structure (SS9/SS3), ACC/RSA "
+                "and phi/psi values are PLACEHOLDERS and only affect the optional "
+                "characterization step (not LFC3D scoring or clustering). Install "
+                "mkdssp or pass a user_dssp file for real secondary-structure data."
+            )
+            write_placeholder_dssp(pdb_file_path, out_file_path)
+
+
+def write_placeholder_dssp(pdb_file_path, out_file_path):
+    """
+    Write a minimal but VALID classic-DSSP file for ``pdb_file_path`` so that
+    ``DSSPparser.parseDSSP`` (used by ``parse_dssp``) can read it WITHOUT the
+    mkdssp binary.
+
+    The parser reads fixed-width columns (0-indexed slices):
+        [0:5]    resnum (sequential)
+        [5:10]   inscode  -> must equal the PDB/uniprot residue number
+        [10:12]  chain
+        [12:14]  aa (1-letter)
+        [14:17]  struct (SS9)  -> left blank (coil) placeholder
+        [34:38]  acc (numeric, float-parseable)
+        [103:109] phi (numeric)
+        [109:115] psi (numeric)
+
+    Only rows for the requested chain are used downstream, and SS/ACC/phi/psi
+    are placeholders because they only feed the final characterization step.
+    """
+    from Bio.PDB import PDBParser
+    from Bio.PDB.Polypeptide import is_aa
+
+    def _build_line(seq, resnum, chain, aa1, acc, phi, psi):
+        line = [" "] * 140
+
+        def put(s, start, end, right=True):
+            s = str(s)
+            width = end - start
+            s = s[:width]
+            s = s.rjust(width) if right else s.ljust(width)
+            for i, ch in enumerate(s):
+                line[start + i] = ch
+
+        put(seq, 0, 5)
+        put(resnum, 5, 10)
+        put(chain, 10, 12)       # e.g. " B"
+        put(aa1, 12, 14)         # e.g. " M"
+        # struct [14:17] left blank -> coil placeholder
+        put(acc, 34, 38)         # numeric ASA placeholder
+        put(f"{phi:.1f}", 103, 109)
+        put(f"{psi:.1f}", 109, 115)
+        return "".join(line).rstrip() + "\n"
+
+    parser = PDBParser(QUIET=True)
+    structure = parser.get_structure("s", pdb_file_path)
+    model = next(iter(structure))
+
+    lines = []
+    # classic-DSSP header line containing '#': parser skips until it sees '#'
+    lines.append(
+        "  #  RESIDUE AA STRUCTURE BP1 BP2  ACC     N-H-->O    O-->H-N    "
+        "N-H-->O    O-->H-N    TCO  KAPPA ALPHA  PHI   PSI    X-CA   Y-CA   Z-CA\n"
+    )
+
+    seq = 0
+    nres = 0
+    for chain in model:
+        cid = chain.id
+        for res in chain:
+            if not is_aa(res, standard=True):
+                continue
+            resnum = res.id[1]
+            try:
+                aa1 = seq1(res.get_resname())
+            except Exception:
+                aa1 = "X"
+            if aa1 == "" or aa1 == "X":
+                continue
+            seq += 1
+            nres += 1
+            # placeholder solvent accessibility + torsions (coil-ish)
+            lines.append(_build_line(seq, resnum, cid, aa1, 100, -60.0, -45.0))
+
+    with open(out_file_path, "w", newline="\n") as fh:
+        fh.writelines(lines)
+
+    return nres
 
 def parse_dssp(
     working_filedir, 

@@ -352,5 +352,5 @@ def znorm_meta(
 
     # SAVE #
     filename = working_filedir / f"meta-aggregate/{input_gene}_MetaAggr_{score_type}.tsv"
-    df_meta_Z.to_csv(filename, "\t", index=False)
+    df_meta_Z.to_csv(filename, sep="\t", index=False)
     return df_meta_Z

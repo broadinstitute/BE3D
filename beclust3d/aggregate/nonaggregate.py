@@ -300,5 +300,5 @@ def znorm_score(
 
     # SAVE #
     filename = working_filedir / f"{score_type}/{gene_type}_{input_gene}_NonAggr_{score_type}.tsv"
-    df_z.to_csv(filename, "\t", index=False)
+    df_z.to_csv(filename, sep="\t", index=False)
     return df_z
