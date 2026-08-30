@@ -12,6 +12,7 @@ from .lfc3d.prioritize_sequence_plot import plot_screendata_sequence
 from .lfc3d.randomize_sequence import randomize_sequence
 
 from .lfc3d.calculate_lfc3d import calculate_lfc3d
+from .lfc3d.local_stats import getis_ord_gi_star, neighbor_lists_from_naa_pos
 from .aggregate.metaaggregate import average_split_meta, bin_meta, znorm_meta
 from .aggregate.nonaggregate import average_split_score, bin_score, znorm_score
 from .aggregate.aggregate_plot import average_split_bin_plots
@@ -38,7 +39,8 @@ __all__ = [
     "plot_screendata_sequence", 
     "randomize_sequence", 
 
-    "calculate_lfc3d", 
+    "calculate_lfc3d",
+    "getis_ord_gi_star", "neighbor_lists_from_naa_pos",
     "average_split_meta", "bin_meta", "znorm_meta", 
     "average_split_score", "bin_score", "znorm_score", 
     "average_split_bin_plots", 

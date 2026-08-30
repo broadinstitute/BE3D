@@ -196,6 +196,23 @@ If MUSCLE or CLUSTAL cannot be run locally, the pipeline queries the MUSCLE API,
 
 Another option to skip MUSCLE and CLUSTAL is for users to run alignment on their own in a CLUSTAL format, and provide the ```sequence.align``` alignment file into the pipeline which is one of the optional inputs. 
 
+### Getis-Ord Gi\* local hotspot statistic (optional, standardized alternative to raw LFC3D)
+
+BE3D's LFC3D score is essentially an *un-standardized* local sum of per-residue LFC values over a hard 6 Å neighborhood. As an opt-in alternative, ```beclust3d.getis_ord_gi_star``` computes the **Getis-Ord Gi\*** local hotspot statistic (Getis & Ord 1992; Ord & Getis 1995): for each residue it compares the (optionally distance-weighted) local sum to the global mean and returns a **standardized z-score** — principled, comparable across proteins, and able to take distance-decay/Gaussian weights instead of a hard cutoff. It is a new utility and does **not** change the existing LFC3D/clustering path.
+
+It runs directly on the neighbor table BE3D already builds (the ```Naa```/```Naa_pos``` columns). For example:
+
+```python
+from beclust3d import getis_ord_gi_star, neighbor_lists_from_naa_pos
+
+# df is BE3D's coordinate DataFrame (has 'unipos' and 'Naa_pos' columns);
+# lfc is a per-residue LFC score aligned to df's rows.
+neighbors = neighbor_lists_from_naa_pos(df['unipos'], df['Naa_pos'])
+gi_star = getis_ord_gi_star(lfc, neighbors)   # standardized per-residue z-scores
+```
+
+Positive Gi\* marks a spatial hotspot (local clustering of high LFC), negative a coldspot, and values near 0 no local structure. NaN / ```'-'``` entries are ignored and divide-by-zero is guarded.
+
 
 
 ## License
