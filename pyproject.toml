@@ -26,5 +26,11 @@ description = "Package for prioritizing and clustering base editing screen score
 readme = "README.md"
 license = {file = "LICENSE.txt"}
 
+[project.optional-dependencies]
+test = ["pytest"]
+
 [tool.setuptools.packages.find]
 exclude = ["data*"]  # excludes data files
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

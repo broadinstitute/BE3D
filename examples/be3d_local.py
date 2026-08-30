@@ -580,9 +580,13 @@ def main(**kwargs):
 	pdb_file = os.path.join(output_dir, "sequence_structure", f"{structureid}_processed.pdb")
 
 	def find_union(input, pthr_str): #TODO: this should be moved to helper
-		if input[0] == f'p<{pthr_str}' or input[1] == f'p<{pthr_str}':
+		# Use positional access that is label-safe under modern pandas: `input`
+		# is a 2-element Series whose index labels are the source column names,
+		# so `input[0]` triggers a KeyError. `list(input)[0]` reads by position.
+		vals = list(input)
+		if vals[0] == f'p<{pthr_str}' or vals[1] == f'p<{pthr_str}':
 			return f'p<{pthr_str}'
-		elif input[0] == f'p>={pthr_str}' or input[1] == f'p>={pthr_str}':
+		elif vals[0] == f'p>={pthr_str}' or vals[1] == f'p>={pthr_str}':
 			return f'p>={pthr_str}'
 		else:
 			return '-'

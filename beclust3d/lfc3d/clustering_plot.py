@@ -20,6 +20,19 @@ from scipy.cluster.hierarchy import dendrogram, set_link_color_palette
 from sklearn.cluster import AgglomerativeClustering
 mpl.rcParams['svg.fonttype'] = 'none'
 
+def sanitize_label(label):
+    """
+    Make a significance label (e.g. ``p<0.05`` / ``p>=0.05``) safe to use as a
+    filename component on Windows, where ``<`` and ``>`` are illegal. The
+    in-DataFrame label values are left unchanged -- only the path spelling is
+    sanitized (``<`` -> ``lt``, ``>=`` -> ``ge``, ``>`` -> ``gt``,
+    ``<=`` -> ``le``).
+    """
+    label = str(label)
+    for bad, good in (('>=', 'ge'), ('<=', 'le'), ('<', 'lt'), ('>', 'gt')):
+        label = label.replace(bad, good)
+    return label
+
 def plot_clustering(
     df_struc, 
     df_pvals, 
@@ -159,9 +172,10 @@ def plot_clustering(
         cluster_dist_list.append([name,pthr,yvalue])
     cluster_dist_pd = pd.DataFrame(cluster_dist_list,columns=['name','pthr','yvalue'])
     
-    for gid, gcont in cluster_dist_pd.groupby('pthr'):    
-        clust_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{gid}_Aggr_Hits_List.tsv" 
-        plot_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{gid}_cluster_distance.{save_type}"
+    for gid, gcont in cluster_dist_pd.groupby('pthr'):
+        gid_safe = sanitize_label(gid)
+        clust_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{gid_safe}_Aggr_Hits_List.tsv"
+        plot_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{gid_safe}_cluster_distance.{save_type}"
 
         _names = gcont['name'].to_list()
         _yvalues = gcont['yvalue'].to_list()
@@ -187,7 +201,8 @@ def plot_clustering(
         func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=dist)
         clustering = func_clustering.fit(np_hits_coord)
 
-        dend_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{name}_Dendrogram_{pthr}_{str(int(dist))}A.{save_type}"
+        pthr_safe = sanitize_label(pthr)
+        dend_filename = working_filedir / f"cluster_{score_type}/plots/{prefix}_{name}_Dendrogram_{pthr_safe}_{str(int(dist))}A.{save_type}"
         title = f'{input_gene} {score_type} {name} Clusters'
         
         # MODIFIED: plot_dendrogram now returns detailed cluster info
@@ -200,7 +215,7 @@ def plot_clustering(
             max_distance=max_distance)
         
         # NEW: Save detailed color mapping with active/inactive status
-        analysis_color_file = working_filedir / f"cluster_{score_type}/{prefix}_{name}_{pthr}_{int(dist)}A_color_mapping.json"
+        analysis_color_file = working_filedir / f"cluster_{score_type}/{prefix}_{name}_{pthr_safe}_{int(dist)}A_color_mapping.json"
         with open(analysis_color_file, 'w') as f:
             json.dump(cluster_info, f, indent=2)
         #print(f"Saved color mapping: {analysis_color_file}")
@@ -209,7 +224,7 @@ def plot_clustering(
         df_pvals_clust_i = df_pvals_clust.loc[(df_pvals_clust[colname] == pthr), ].reset_index(drop=True)
         clust_indices = df_pvals_clust_i[f'{colname}_Clust_{str(int(dist))}A'].unique()
 
-        txt_filename = working_filedir / f"cluster_{score_type}/{prefix}_{name}_Dendrogram_{pthr}_{str(int(dist))}A.txt"
+        txt_filename = working_filedir / f"cluster_{score_type}/{prefix}_{name}_Dendrogram_{pthr_safe}_{str(int(dist))}A.txt"
         with open(txt_filename, "w") as f: 
             for c in clust_indices: 
                 c_data = df_pvals_clust_i.loc[df_pvals_clust_i[f'{colname}_Clust_{str(int(dist))}A'] == c, ].reset_index(drop=True)
