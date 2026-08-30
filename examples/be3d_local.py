@@ -569,6 +569,7 @@ def main(**kwargs):
 	atom_level_naa=kwargs['atom_level_naa']
 	muscle_path=kwargs['muscle_path']
 	mutation_priority=kwargs['mutation_priority']
+	invert_score=kwargs.get('invert_score', False)
 
 	if user_pdb:
 		structureid = f'PDB-{input_uniprot}'
@@ -708,7 +709,8 @@ def main(**kwargs):
 		conserv_dfs = conserv_dfs,
 		conserv_col='alternative_res_pos',
 		gene_list=gene_list,
-		v_score_threshold=v_score_threshold
+		v_score_threshold=v_score_threshold,
+		invert_score=invert_score,
 		)
 
 	# For All
@@ -1547,6 +1549,8 @@ if __name__ == '__main__':
 	muscle_path = config.get('muscle_path', 'muscle')
 	mutation_priority = config.get('mutation_priority') # optional; most-to-least-deleterious order for collapsing
 	                                                      # delimiter-joined multi-category mut_col values (e.g. 'Silent;Missense;')
+	invert_score = config.get('invert_score', False)      # optional; negate val_col for enrichment/activity screens where
+	                                                      # LOF is a POSITIVE score (default False keeps dropout convention)
 
 	# KWARGS SHARED ACROSS EVERY main() CALL, REGARDLESS OF MODE #
 	common_kwargs = dict(
@@ -1558,7 +1562,7 @@ if __name__ == '__main__':
 		alt_screen_start=alt_screen_start, v_score_threshold=v_score_threshold,
 		function_for_meta=function_for_meta, qa_passed_only=qa_passed_only, qa_only=qa_only, qa_controls=qa_controls, qa_cases=qa_cases,
 		priority_on_alternative=priority_on_alternative, config_yaml=config_yaml, atom_level_naa=atom_level_naa, muscle_path=muscle_path,
-		mutation_priority=mutation_priority,
+		mutation_priority=mutation_priority, invert_score=invert_score,
 	)
 
 	if mode == 'monomer':

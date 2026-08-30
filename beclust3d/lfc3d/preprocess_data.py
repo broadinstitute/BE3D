@@ -29,6 +29,7 @@ def parse_be_data(
     v_score_threshold=3, ### conserv_col
     gene_list=False,
     mutation_priority=None,
+    invert_score=False,
 ):
     """
     Parses raw base editing screen data into per-mutation-type DataFrames for each screen.
@@ -87,6 +88,29 @@ def parse_be_data(
         list of per-edit categories (e.g. 'Silent;Missense;'). If None, mut_col
         values are used as-is, assuming they are already single categories.
 
+    invert_score : bool, optional (default=False)
+        If True, negate the numeric value column (val_col) of every screen
+        BEFORE any per-mutation parsing/aggregation, so that the sign of the
+        resulting neg/pos channels reflects the intended biology.
+
+        BE3D assumes a DROPOUT sign convention: loss-of-function (LOF) is
+        expected to produce a NEGATIVE score, so LOF hits land in the negative
+        channel and downstream interpretation treats negative as deleterious.
+        Two classes of screen have the OPPOSITE polarity and should set
+        invert_score=True:
+
+          - Activity-reporter screens (e.g. a methylation->fluorescence
+            reporter) where LOF gives a HIGH / POSITIVE signal.
+          - Drug-resistance / positive-selection ENRICHMENT screens where the
+            hit is enrichment, i.e. a POSITIVE score.
+
+        Fed raw (invert_score=False), these screens silently flip the biology:
+        LOF hits fall into the positive channel. Because the built-in QA uses
+        two-sided tests (Mann-Whitney U / KS), it is unaffected by the sign and
+        will still "pass", hiding the error. Setting invert_score=True fixes the
+        polarity so LOF hits carry a negative score as the rest of the pipeline
+        expects. Default (False) leaves all values unchanged.
+
     Returns
     -------
     mut_dfs : dict
@@ -128,6 +152,12 @@ def parse_be_data(
             conserv_list = [str(x) for x in conserv_df[conserv_df['v_score']>=v_score_threshold][conserv_col].tolist()]
         # NARROW DOWN TO INPUT_GENE #
         df_gene = screen_df.loc[screen_df[gene_col] == input_gene, ]
+        # INVERT SCORE SIGN FOR ENRICHMENT / ACTIVITY SCREENS (OPT-IN) #
+        # Done BEFORE any per-mutation parsing so neg/pos channels carry the
+        # intended biology. QA is two-sided, so it is unaffected by the sign.
+        if invert_score:
+            df_gene = df_gene.copy()
+            df_gene[val_col] = -df_gene[val_col]
         if mutation_priority:
             df_gene = df_gene.copy()
             df_gene[mut_col] = df_gene[mut_col].apply(
