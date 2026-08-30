@@ -18,6 +18,10 @@ clustering_radius: 6.0
 function_for_lfc: mean
 function_for_lfc3d: mean
 function_for_meta: SUM
+# invert_score: negate val_col for enrichment / activity-reporter screens where
+# loss-of-function is a POSITIVE score. Leave false (default) for standard
+# dropout screens where LOF is negative. QA is two-sided, so it is unaffected.
+invert_score: false
 database:
   mut_col: Mutation_type
   val_col: sgRNA_score
