@@ -198,6 +198,46 @@ Another option to skip MUSCLE and CLUSTAL is for users to run alignment on their
 
 
 
+### Editor profiles (reachability for any base / prime editor)
+
+Base editing has moved well beyond the canonical CBE (C→T) / ABE (A→G)
+transitions: C→G / C→A glycosylase editors (CGBE / GBE), adenine transversion
+editors (AYBE, A→C / A→T), dual C+A editors, PAM-flexible editors (SpG / SpRY),
+prime editing (arbitrary substitutions + small indels), and PAM-free
+organelle / dsDNA editors (DdCBE, TALED). BE3D's reachability logic implicitly
+assumed CBE/ABE. The `beclust3d.editors` module makes reachability
+**declarative and per-editor**, so you can ask "which editor class can install
+the fix this residue needs?" — the clinical modality split between an
+ABE-transition correction and a prime-editing indel.
+
+**Editors supported:** CBE, ABE, CGBE, GBE, AYBE, ACBE, DUAL_CBE_ABE, PRIME
+(arbitrary), DdCBE, TALED (each with a source citation in its profile `notes`).
+
+```python
+from beclust3d import amino_acid_reachable, substitution_reachable, get_editor
+
+# Nucleotide-level query
+substitution_reachable("C", "T", "CBE")   # True
+substitution_reachable("A", "G", "CBE")   # False (ABE chemistry)
+
+# Amino-acid-level query (generalizes the reachability report)
+amino_acid_reachable("R", "H", "CBE")     # True  (CGT -> CAT, middle G->A)
+amino_acid_reachable("M", "V", "CBE")     # False (needs an A->G transition)
+amino_acid_reachable("M", "V", "ABE")     # True  (ATG -> GTG)
+amino_acid_reachable("R", "H", "PRIME")   # True  (prime installs anything)
+
+get_editor("CGBE").notes                  # source citation for the chemistry
+```
+
+`amino_acid_reachable(ref_aa, alt_aa, editor)` enumerates the standard-code
+codons for `ref_aa`, applies every single-nucleotide substitution the editor
+can install (on either strand), translates, and returns `True` if any codon
+yields `alt_aa`. It composes with a reachability report: for each residue whose
+required substitution is flagged, call `amino_acid_reachable(...)` per editor to
+label the residue reachable/unreachable and pick the right modality. The module
+is standalone, deterministic and offline, and does not change the LFC3D /
+clustering pipeline.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
