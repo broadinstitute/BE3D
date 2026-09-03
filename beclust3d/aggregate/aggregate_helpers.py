@@ -153,18 +153,28 @@ def pooled_mean_std(
     return pooled_mean, pooled_std
 
 def mu_sigma_screens(
-    workdir, 
+    workdir,
     screen_names,
-): 
+    control_category='No Mutation',
+):
     """
+    Compute per-screen mean/std of the neutral control LFC distribution
+    (split into negative and positive tails).
+
+    control_category : str, optional (default='No Mutation')
+        Category token whose per-screen control file
+        ``*_{screen}_{control_category}.tsv`` holds the neutral control LFC
+        values. Set this to match the token used by non-standard screens
+        (e.g. 'UTR', 'Intron'). The default keeps behavior byte-identical.
     """
-    
+
     neg_stats_list = list()
     pos_stats_list = list()
-    
+    control_token = control_category.replace(' ', '_')
+
     for screen_name in screen_names:
         neg_mean, neg_std, pos_mean, pos_std = float(), float(), float(), float()
-        control_tsv = glob.glob(os.path.join(f'{workdir}/screendata/',f'*_{screen_name}_No_Mutation.tsv'))[0]
+        control_tsv = glob.glob(os.path.join(f'{workdir}/screendata/',f'*_{screen_name}_{control_token}.tsv'))[0]
         df_control = pd.read_csv(control_tsv, sep='\t', index_col=0)        
         neg_mask = df_control['LFC'] < 0.0 # NEG #
         pos_mask = df_control['LFC'] > 0.0 # POS #
@@ -180,16 +190,25 @@ def mu_sigma_screens(
     return (neg_stats_list, pos_stats_list)
 
 def mu_sigma_screens_both(
-    workdir, 
+    workdir,
     screen_names,
-): 
+    control_category='No Mutation',
+):
     """
+    Compute per-screen mean/std of the full (two-tailed) neutral control LFC
+    distribution.
+
+    control_category : str, optional (default='No Mutation')
+        Category token whose per-screen control file
+        ``*_{screen}_{control_category}.tsv`` holds the neutral control LFC
+        values. The default keeps behavior byte-identical.
     """
     stats_list = list()
-    
+    control_token = control_category.replace(' ', '_')
+
     for screen_name in screen_names:
         mean_all, std_all = float(), float()
-        control_tsv = glob.glob(os.path.join(f'{workdir}/screendata/',f'*_{screen_name}_No_Mutation.tsv'))[0]
+        control_tsv = glob.glob(os.path.join(f'{workdir}/screendata/',f'*_{screen_name}_{control_token}.tsv'))[0]
         df_control = pd.read_csv(control_tsv, sep='\t', index_col=0)        
         mu_all = df_control[df_control['LFC']!='-'].mean().values[0]
         sigma_all = df_control[df_control['LFC']!='-'].std().values[0]
