@@ -36,6 +36,7 @@ def calculate_lfc3d(
     ppi_chain_gene_dict = {}, # {'GENE1':'B','GENE2':'C'}
     ppi_gene_edits_dict = {}, # {'GENE1': edits_dict, 'GENE2': edits_dict}
     func_map={'mean':np.mean, 'median':np.median, 'sum':np.sum, 'min':np.min, 'max':np.max},
+    min_neighbors=0,
 ):
     """
     Calculates LFC3D scores using structural data. 
@@ -80,10 +81,37 @@ def calculate_lfc3d(
         If True, calculates LFC3D only for residues marked as 'conserved' in the conservation data.
         Non-conserved residues will be skipped (set to NaN or '-').
 
+    min_neighbors : int, optional (default=0)
+        Minimum number of structural *neighbours* (non-self sources) that must actually
+        contribute a value for a residue's LFC3D to be emitted.
+
+        The LFC3D score for a residue is an aggregation (default: mean) of the residue's OWN
+        1-D LFC together with the LFCs of its structural neighbours. When a residue has NO
+        contributing neighbour (e.g. positions outside the supplied structure, or in a
+        fragment/disordered region with no resolved contacts), the aggregation collapses to a
+        single value -- the residue's own LFC -- so ``LFC3D == LFC`` exactly. Such a "self-leak"
+        residue is really a 1-D measurement masquerading as a 3-D (spatial) one, and it can be
+        spuriously flagged as a 3-D hotspot. Stress-testing on structure-restricted / large
+        proteins showed this produces many false hotspots at out-of-structure and poorly-packed
+        residues.
+
+        ``min_neighbors=0`` (the default) preserves the original behaviour exactly: every residue
+        with at least one contributing source (self is always a source) gets an LFC3D value, and
+        existing LFC3D values are unchanged. Set ``min_neighbors=1`` (or higher) for
+        structure-restricted or large-protein runs so that residues with fewer than
+        ``min_neighbors`` contributing neighbours have their LFC3D set to the missing sentinel
+        ``'-'`` (and their randomised LFC3D likewise), and are therefore NOT emitted as spatial
+        hotspots. The aggregation math for residues that DO have neighbours is never changed.
+
+        Regardless of ``min_neighbors``, an additive per-residue, per-screen column
+        ``{screen}_LFC3D_n_neighbors`` is written recording how many neighbours contributed, so
+        downstream filtering (e.g. a validation-shortlist utility) can always exclude self-only
+        calls even on data generated with the default settings.
+
     Returns
     -------
     df_struct_3d : pd.DataFrame
-        DataFrame containing the structural data, LFC, LFC3D, and randomized scores. 
+        DataFrame containing the structural data, LFC, LFC3D, and randomized scores.
     """
 
     # MKDIR #
@@ -157,22 +185,36 @@ def calculate_lfc3d(
         # CALCULATE LFC3D, IF LFC_only SKIP OVER #
         if not LFC_only:
             aggr_vals = []
+            n_neighbors_vals = []
+            # WHICH RESIDUES FALL BELOW min_neighbors ON THE REAL DATA -- REUSED TO GATE THE #
+            # RANDOMIZED PASSES SO THE NULL STAYS CONSISTENT WITH THE OBSERVED SCORE #
+            aa_below_min = [False] * len(df_edits)
             taa_LFC_dict = df_edits[lfc_colname].to_dict() ###
 
             for aa in range(len(df_edits)): # FOR EVERY RESIDUE # ###
                 # RESIDUE NEEDS TO BE CONSERVED #
                 if not aa_eligible[aa]:  ###
                     aggr_vals.append('-')
+                    n_neighbors_vals.append(0)
                     continue
+                # COUNT CONTRIBUTING (NON-SELF) NEIGHBORS; SELF IS aa_sources[aa][0] #
+                n_neigh = _count_contributing_neighbors(aa_sources[aa], taa_LFC_dict, ppi_edits_dict2)
+                n_neighbors_vals.append(n_neigh)
+                below_min = (min_neighbors >= 1) and (n_neigh < min_neighbors)
+                aa_below_min[aa] = below_min
                 # CALCULATE LFC3D #
                 taa_naa_LFC_vals = _gather_values(aa_sources[aa], taa_LFC_dict, ppi_edits_dict2)
-                if len(taa_naa_LFC_vals) == 0:
+                if len(taa_naa_LFC_vals) == 0 or below_min:
+                    # NO CONTRIBUTING SOURCE, OR TOO FEW NEIGHBORS: NOT A 3-D MEASUREMENT #
                     aggr_vals.append('-')
                 else:
                     aggr_vals.append(str(function_aggr_lfc3d(taa_naa_LFC_vals)))
 
-            df_struct_3d = pd.concat([df_struct_3d, pd.DataFrame({f"{screen_name}_LFC3D": aggr_vals})], axis=1)
-            del taa_LFC_dict, aggr_vals
+            df_struct_3d = pd.concat([df_struct_3d, pd.DataFrame({
+                f"{screen_name}_LFC3D": aggr_vals,
+                f"{screen_name}_LFC3D_n_neighbors": n_neighbors_vals,
+            })], axis=1)
+            del taa_LFC_dict, aggr_vals, n_neighbors_vals
 
         # REPEAT LFC LFC3D CALCULATIONS FOR RANDOMIZED DATA #
 
@@ -189,6 +231,10 @@ def calculate_lfc3d(
                 for aa in range(len(df_rand)): # FOR EVERY RESIDUE # ###
                     # RESIDUE NEEDS TO BE CONSERVED #
                     if not aa_eligible[aa]: ###
+                        aggr_vals.append('-')
+                        continue
+                    # RESIDUE BELOW min_neighbors ON REAL DATA IS EXCLUDED FROM THE NULL TOO #
+                    if aa_below_min[aa]:
                         aggr_vals.append('-')
                         continue
                     # CALCULATE LFC3D RANDOMIZATION #
@@ -284,6 +330,32 @@ def _resolve_neighbor_sources(
                         sources.append(('local', naa_idx))
 
     return sources
+
+def _count_contributing_neighbors(sources, taa_LFC_dict, ppi_edits_dict):
+    """
+    Counts how many NON-SELF neighbor sources actually contribute a value for one residue.
+
+    ``sources`` is the list produced by ``_resolve_neighbor_sources``; by construction its first
+    element is always the residue itself (``('local', aa)``) and every remaining element is a
+    structural neighbor. A neighbor "contributes" only if its looked-up LFC value is not the
+    missing sentinel ``'-'`` (mirroring the filtering done in ``_gather_values``), so a residue
+    surrounded only by missing/undefined neighbors correctly counts as zero.
+
+    A count of 0 means the residue's LFC3D collapses to its own 1-D LFC (a self-leak), i.e. it is
+    not really a 3-D measurement. This is what the ``{screen}_LFC3D_n_neighbors`` column records
+    and what the ``min_neighbors`` gate thresholds on.
+    """
+    count = 0
+    for source in sources[1:]:  # sources[0] IS SELF #
+        if source[0] == 'cross':
+            _, gene_identifier, idx = source
+            val = ppi_edits_dict[gene_identifier][idx]
+        else:
+            _, idx = source
+            val = taa_LFC_dict[idx]
+        if val != '-':
+            count += 1
+    return count
 
 def _gather_values(sources, taa_LFC_dict, ppi_edits_dict):
     """
