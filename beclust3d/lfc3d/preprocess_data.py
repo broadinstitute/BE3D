@@ -22,13 +22,14 @@ def parse_be_data(
     val_col='logFC', 
     gene_col='Target Gene Symbol', 
     edits_col='Amino Acid Edits', 
-    mut_categories=["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"], 
-    mut_delimiter=',', 
+    mut_categories=["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"],
+    mut_delimiter=',',
     conserv_dfs=[],
     conserv_col='mouse_res_pos',
     v_score_threshold=3, ### conserv_col
     gene_list=False,
     mutation_priority=None,
+    control_category='No Mutation',
 ):
     """
     Parses raw base editing screen data into per-mutation-type DataFrames for each screen.
@@ -63,8 +64,35 @@ def parse_be_data(
         Column name specifying the amino acid edits or mutation information in input_dfs.
 
     mut_categories : list of str, optional
-        List of mutation categories to extract separately. 
-        Default includes ["Nonsense", "Splice Site", "Missense", "No Mutation", "Silent"].
+        List of mutation categories to extract separately. Each category is
+        written to its own ``{gene}_{screen}_{category}.tsv`` file, so this list
+        also defines the vocabulary of edit types the parser will keep.
+
+        The default ``["Nonsense", "Splice Site", "Missense", "No Mutation",
+        "Silent"]`` matches classic base-editing dropout screens. Prime editing
+        and other emerging screens install edit types outside this set --
+        insertions, deletions, frameshifts and arbitrary stop-gain
+        substitutions (Anzalone 2019; Erwood 2022; Cirincione 2024). To keep
+        those, pass an extended vocabulary, e.g.
+        ``[..., "Frameshift", "Insertion", "Deletion", "Stop-gain"]``.
+
+        Any category token that appears in the input data but is NOT listed
+        here is dropped -- but the parser now emits a ``warnings.warn`` naming
+        the dropped categories instead of discarding them silently, so
+        unexpected prime-editing categories are visible.
+
+    control_category : str, optional (default='No Mutation')
+        Name of the mutation category that represents the neutral / no-effect
+        control group for this screen. In classic base-editing dropout screens
+        this is guides with no coding consequence (``'No Mutation'``), but
+        differently tokened screens may label their controls otherwise
+        (e.g. ``'UTR'`` or ``'Intron'``). Downstream steps read the control
+        distribution from ``{gene}_{screen}_{control_category}.tsv``; setting
+        this to match your screen's token lets those steps find the control
+        file instead of failing with FileNotFoundError. This category must also
+        appear in ``mut_categories`` so that its file is written; a warning is
+        raised if it does not. When left at the default the behavior is
+        byte-identical to previous releases.
 
     mut_delimiter : str, optional (default=',')
         Delimiter used to separate multiple mutations within the edits_col field.
@@ -118,6 +146,16 @@ def parse_be_data(
 
     assert len(input_dfs) == len(screen_names) == len(conserv_dfs), 'Lengths of [input_dfs] and [screen_names] and [conservation_dfs] must match'
 
+    # THE NEUTRAL CONTROL MUST BE PART OF THE PARSED VOCABULARY SO ITS FILE IS WRITTEN #
+    if control_category not in mut_categories:
+        warnings.warn(
+            f"control_category '{control_category}' is not in mut_categories "
+            f"{mut_categories}; the neutral control file "
+            f"'{{gene}}_{{screen}}_{control_category.replace(' ', '_')}.tsv' "
+            f"will not be written and downstream prioritization may fail with "
+            f"FileNotFoundError. Add '{control_category}' to mut_categories."
+        )
+
     mut_dfs = {}
     # OUTPUT TSV BY INDIVIDUAL SCREENS #
     for input_gene, screen_df, screen_name, conserv_df in zip(gene_list, input_dfs, screen_names, conserv_dfs): 
@@ -132,6 +170,19 @@ def parse_be_data(
             df_gene = df_gene.copy()
             df_gene[mut_col] = df_gene[mut_col].apply(
                 lambda x: reduce_mutation_type(x, mut_delimiter, mutation_priority))
+
+        # WARN (DON'T SILENTLY DROP) CATEGORIES PRESENT IN DATA BUT ABSENT FROM mut_categories #
+        present_categories = set(df_gene[mut_col].dropna().unique())
+        dropped_categories = present_categories - set(mut_categories)
+        if dropped_categories:
+            warnings.warn(
+                f"parse_be_data: categories present in screen '{screen_name}' "
+                f"but not in mut_categories were dropped: "
+                f"{sorted(dropped_categories)}. Add them to mut_categories to "
+                f"retain them (e.g. prime-editing Frameshift/Insertion/Deletion/"
+                f"Stop-gain categories)."
+            )
+
         mut_dfs[screen_name] = {}
 
         # NARROW DOWN TO EACH MUTATION TYPE #
