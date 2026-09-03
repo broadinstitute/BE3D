@@ -24,6 +24,18 @@ from .lfc3d.characterization_plot import plot_enrichment_test, lfc_lfc3d_scatter
 
 from .helpers.visualization.g2p import g2p_formatted_hit_cluster
 
+from .editors import (
+    EditorProfile,
+    BUILTIN_EDITORS,
+    STANDARD_CODON_TABLE,
+    STANDARD,
+    ARBITRARY,
+    get_editor,
+    installable_substitutions,
+    substitution_reachable,
+    amino_acid_reachable,
+)
+
 __all__ = [
     "hypothesis_test", 
 
@@ -52,5 +64,15 @@ __all__ = [
     "pLDDT_RSA_scatter", 
     "hits_feature_barplot",
     
-    "g2p_formatted_hit_cluster"
+    "g2p_formatted_hit_cluster",
+
+    "EditorProfile",
+    "BUILTIN_EDITORS",
+    "STANDARD_CODON_TABLE",
+    "STANDARD",
+    "ARBITRARY",
+    "get_editor",
+    "installable_substitutions",
+    "substitution_reachable",
+    "amino_acid_reachable",
 ]
