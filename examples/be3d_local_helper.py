@@ -436,6 +436,8 @@ YAML_FIELD_HELP = {
     'run': 'Whether to run a cross-species/conservation comparison against an alternative-species ortholog',
     'alt_gene_name': 'Alternative-species ortholog gene symbol (e.g. Morc2a for a human MORC2 run)',
     'alt_uniprot_id': "Alternative-species ortholog's UniProt accession",
+    'alt_user_fasta': 'Local FASTA for the alternative sequence, instead of querying alt_uniprot_id (e.g. a RefSeq-only isoform)',
+    'alignment_filename': 'Precomputed Clustal-format alignment; skips both FASTA fetches and MUSCLE entirely',
     'alt_screen_start': "Prefix identifying which screens belong to the alternative species (e.g. 'Mouse')",
     'v_score_threshold': 'Minimum conservation score for a residue to be treated as conserved',
     'priority_on_alternative': 'Treat every screen as the alternative species, instead of only those matching alt_screen_start',

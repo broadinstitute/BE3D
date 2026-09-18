@@ -20,6 +20,7 @@ def preprocess_ppi_partner(
 	user_fasta, user_pdb, mutation_priority=None,
 	conservation_run=False, alt_gene_name=None, alt_uniprot_id=None, alt_screen_start=None,
 	v_score_threshold=3, muscle_path='muscle', priority_on_alternative=False,
+	cons_user_fasta=None, cons_alt_user_fasta=None, cons_alignment_filename=None,
 ):
 	"""
 	Lightweight preprocessing for a PPI partner chain: only produces
@@ -55,6 +56,8 @@ def preprocess_ppi_partner(
 		_, df_residuemap = conservation(
 			partner_dir, gene, alt_gene_name, uniprot, alt_uniprot_id,
 			muscle_path=muscle_path,
+			user_fasta=cons_user_fasta, alt_user_fasta=cons_alt_user_fasta,
+			alignment_filename=cons_alignment_filename,
 		)
 		conserv_dfs, gene_list = [], []
 		for screen_name in screen_names:
@@ -351,6 +354,9 @@ def run_complex_mode(config, output_dir, common_kwargs, gene_names, uniprot_list
 	alt_gene_name = common_kwargs['alt_gene_name']
 	alt_uniprot_id = common_kwargs['alt_uniprot_id']
 	alt_screen_start = common_kwargs['alt_screen_start']
+	cons_user_fasta = common_kwargs.get('cons_user_fasta')
+	cons_alt_user_fasta = common_kwargs.get('cons_alt_user_fasta')
+	cons_alignment_filename = common_kwargs.get('cons_alignment_filename')
 	v_score_threshold = common_kwargs['v_score_threshold']
 	muscle_path = common_kwargs['muscle_path']
 	priority_on_alternative = common_kwargs['priority_on_alternative']
@@ -387,6 +393,8 @@ def run_complex_mode(config, output_dir, common_kwargs, gene_names, uniprot_list
 				conservation_run=conservation_run, alt_gene_name=alt_gene_name, alt_uniprot_id=alt_uniprot_id,
 				alt_screen_start=alt_screen_start, v_score_threshold=v_score_threshold,
 				muscle_path=muscle_path, priority_on_alternative=priority_on_alternative,
+				cons_user_fasta=cons_user_fasta, cons_alt_user_fasta=cons_alt_user_fasta,
+				cons_alignment_filename=cons_alignment_filename,
 			)
 			ppi_chain_gene_dict[ch] = gene_identifier
 			ppi_gene_edits_dict[gene_identifier] = partner_dir
@@ -545,6 +553,9 @@ def main(**kwargs):
 	alt_gene_name=kwargs['alt_gene_name']
 	alt_uniprot_id=kwargs['alt_uniprot_id']
 	alt_screen_start=kwargs['alt_screen_start']
+	cons_user_fasta=kwargs.get('cons_user_fasta')
+	cons_alt_user_fasta=kwargs.get('cons_alt_user_fasta')
+	cons_alignment_filename=kwargs.get('cons_alignment_filename')
 	
 	## OPTIONAL
 	user_fasta=kwargs['user_fasta']
@@ -610,6 +621,8 @@ def main(**kwargs):
 					input_gene, alt_gene_name,
 					input_uniprot, alt_uniprot_id,
 					muscle_path=muscle_path, 
+					user_fasta=cons_user_fasta, alt_user_fasta=cons_alt_user_fasta,
+					alignment_filename=cons_alignment_filename,
 		)
 
 		if priority_on_alternative:
@@ -1506,6 +1519,13 @@ if __name__ == '__main__':
 	alt_gene_name = conservation_cfg.get('alt_gene_name')
 	alt_uniprot_id = conservation_cfg.get('alt_uniprot_id')
 	alt_screen_start = conservation_cfg.get('alt_screen_start')
+	# OPTIONAL CONSERVATION SEQUENCE OVERRIDES: supply a local FASTA instead of querying
+	# input_uniprot / alt_uniprot_id, or skip alignment entirely with a precomputed file.
+	# alt_user_fasta is the one that matters when the screen numbers residues on a sequence
+	# UniProt has no accession for (e.g. a RefSeq-only isoform) #
+	cons_user_fasta = conservation_cfg.get('user_fasta')
+	cons_alt_user_fasta = conservation_cfg.get('alt_user_fasta')
+	cons_alignment_filename = conservation_cfg.get('alignment_filename')
 
 	database_cfg = config.get('database') or {}
 	mut_col = database_cfg.get('mut_col')
@@ -1556,6 +1576,8 @@ if __name__ == '__main__':
 		structure_radius=structure_radius, clustering_radius=clustering_radius, function_for_lfc=function_for_lfc, function_for_lfc3d=function_for_lfc3d,
 		mut_categories=mut_categories, mut_delimiter=mut_delimiter, conservation_run=conservation_run, alt_gene_name=alt_gene_name, alt_uniprot_id=alt_uniprot_id,
 		alt_screen_start=alt_screen_start, v_score_threshold=v_score_threshold,
+		cons_user_fasta=cons_user_fasta, cons_alt_user_fasta=cons_alt_user_fasta,
+		cons_alignment_filename=cons_alignment_filename,
 		function_for_meta=function_for_meta, qa_passed_only=qa_passed_only, qa_only=qa_only, qa_controls=qa_controls, qa_cases=qa_cases,
 		priority_on_alternative=priority_on_alternative, config_yaml=config_yaml, atom_level_naa=atom_level_naa, muscle_path=muscle_path,
 		mutation_priority=mutation_priority,

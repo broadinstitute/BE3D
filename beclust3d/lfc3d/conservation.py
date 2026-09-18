@@ -24,6 +24,8 @@ def conservation(
     input_uniprot, 
     alt_input_uniprot, 
     alignment_filename=None, 
+    user_fasta=None, 
+    alt_user_fasta=None, 
     mode='run', 
     title=None, 
     email=None, 
@@ -61,6 +63,16 @@ def conservation(
 
     alignment_filename : str or None, optional (default=None)
         Path to a precomputed alignment file. If provided, skips running MUSCLE entirely.
+
+    user_fasta : str or None, optional (default=None)
+        Path to a local FASTA for the primary sequence, used instead of querying
+        input_uniprot from UniProt. Ignored when alignment_filename is given.
+
+    alt_user_fasta : str or None, optional (default=None)
+        Path to a local FASTA for the alternate sequence, used instead of querying
+        alt_input_uniprot from UniProt. Lets the alternate be a sequence UniProt has no
+        accession for -- e.g. a RefSeq-specific isoform whose numbering the screen uses.
+        Ignored when alignment_filename is given.
 
     mode : str, optional (default='run')
         Alignment method. 'run' performs alignment locally using MUSCLE; 
@@ -102,8 +114,8 @@ def conservation(
     # QUERY UNIPROT AND WRITE TO sequences.fasta #
     if alignment_filename is None: 
         request_filename_original, request_filename_alternate = f"{input_uniprot}.fasta", f"{alt_input_uniprot}.fasta"
-        original_seq = query_protein_fasta(working_filedir, request_filename_original)
-        alternate_seq = query_protein_fasta(working_filedir, request_filename_alternate)
+        original_seq = load_or_query_protein_fasta(working_filedir, request_filename_original, user_fasta)
+        alternate_seq = load_or_query_protein_fasta(working_filedir, request_filename_alternate, alt_user_fasta)
         seqs_filename = f"conservation/sequences.fasta"
         with open(working_filedir / seqs_filename, "w") as text_file:
             text_file.write(original_seq)
@@ -125,6 +137,36 @@ def conservation(
     df_alignconserv, df_residuemap = parse_alignment(working_filedir, align_filename, alignconserv_filename, residuemap_filename, cons_dict)
 
     return df_alignconserv, df_residuemap
+
+def load_or_query_protein_fasta(
+    edits_filedir, 
+    request_filename, 
+    user_fasta=None, 
+): 
+    """
+    Description
+        Read a local FASTA when one is supplied, otherwise query UniProt. Either way a copy
+        is written to conservation/<request_filename>, so a run always records the exact
+        sequence it aligned.
+    """
+
+    if user_fasta is None: 
+        return query_protein_fasta(edits_filedir, request_filename)
+
+    if not os.path.isfile(user_fasta): 
+        raise FileNotFoundError(f'user_fasta does not exist: {user_fasta}')
+    with open(user_fasta) as text_file: 
+        response_body = text_file.read()
+    if not response_body.lstrip().startswith('>'): 
+        raise ValueError(f'user_fasta is not FASTA (no ">" header): {user_fasta}')
+    # conservation() concatenates the two records straight into sequences.fasta, so a file
+    # with no trailing newline would put the second header on the first record's last line
+    if not response_body.endswith('\n'): 
+        response_body += '\n'
+
+    with open(edits_filedir / 'conservation' / request_filename, "w") as text_file: 
+        text_file.write(response_body)
+    return response_body
 
 def query_protein_fasta(
     edits_filedir, 
