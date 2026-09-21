@@ -31,6 +31,7 @@ def calculate_lfc3d(
     function_type_lfc3d='mean',
     LFC_only=False, 
     conserved_only=False,
+    skip_no_coords=False,
     gene_type='Human',
     target_gene_chain = 'A',
     ppi_chain_gene_dict = {}, # {'GENE1':'B','GENE2':'C'}
@@ -80,6 +81,19 @@ def calculate_lfc3d(
         If True, calculates LFC3D only for residues marked as 'conserved' in the conservation data.
         Non-conserved residues will be skipped (set to NaN or '-').
 
+    skip_no_coords : bool, optional (default=False)
+        If True, skips LFC3D for residues that have no resolved xyz coordinates in df_struc
+        (x_coord == '-'), setting their LFC3D and every LFC3Dr to '-' instead.
+
+        Such residues have no 3D neighborhood at all, so the neighbor search returns only the
+        residue itself and LFC3D silently collapses to an exact copy of that residue's own 1D
+        LFC -- a sequence-level score carrying a 3D label. Left ungated it propagates into the
+        z-scores, p-values, meta-aggregation and union hit calls. Requires an 'x_coord' column.
+
+        Default is False purely for backwards compatibility with existing runs; new
+        structure-based analyses on experimental PDBs should generally set it True.
+        The 1D LFC columns are never affected by this flag.
+
     Returns
     -------
     df_struct_3d : pd.DataFrame
@@ -107,6 +121,22 @@ def calculate_lfc3d(
 
     df_struct_3d = df_struc[core_columns + structure_columns].copy()
     df_struc = df_struc.fillna('-')
+
+    # RESIDUES WITH NO RESOLVED xyz HAVE NO 3D NEIGHBORHOOD: THEIR Naa_pos IS '-', SO #
+    # _resolve_neighbor_sources RETURNS ONLY THE SELF-ENTRY AND LFC3D DEGENERATES TO AN EXACT #
+    # COPY OF THE RESIDUE'S OWN 1D LFC. GATING THEM HERE MAKES LFC3D (AND EVERY LFC3Dr) '-', #
+    # WHICH PROPAGATES CLEANLY INTO THE z/p, NonAggr, META AND CLUSTERING STAGES. #
+    no_coord_idx = set()
+    if skip_no_coords:
+        if 'x_coord' not in df_struc.columns:
+            raise ValueError(
+                "skip_no_coords=True requires an 'x_coord' column in df_struc; got columns "
+                f"{list(df_struc.columns)}. Pass the full *_coord_struc_features.tsv table."
+            )
+        for _idx, _val in enumerate(df_struc['x_coord']):
+            if str(_val).strip() in ('-', '', 'nan', 'NaN', 'None'):
+                no_coord_idx.add(_idx)
+
     
     naa_pos_chain_dict = dict()
     for idx, row in df_struc.iterrows():
@@ -146,6 +176,10 @@ def calculate_lfc3d(
             aa_sources = [None] * len(df_edits)
             for aa in range(len(df_edits)):
                 if conserved_only and taa_conserv_dict[aa] != 'conserved':  ###
+                    aa_eligible[aa] = False
+                    continue
+                # NO COORDINATES -> NO NEIGHBORHOOD -> NO MEANINGFUL LFC3D #
+                if aa in no_coord_idx:
                     aa_eligible[aa] = False
                     continue
                 aa_sources[aa] = _resolve_neighbor_sources(

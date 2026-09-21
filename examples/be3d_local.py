@@ -578,6 +578,8 @@ def main(**kwargs):
 	ppi_gene_edits_dict=kwargs['ppi_gene_edits_dict']
 	v_score_threshold=kwargs['v_score_threshold']
 	atom_level_naa=kwargs['atom_level_naa']
+	# WHEN True, RESIDUES WITH NO RESOLVED xyz GET '-' FOR LFC3D INSTEAD OF A SELF-COPY OF THEIR 1D LFC #
+	skip_no_coords=kwargs.get('skip_no_coords', False)
 	muscle_path=kwargs['muscle_path']
 	mutation_priority=kwargs['mutation_priority']
 
@@ -838,7 +840,7 @@ def main(**kwargs):
 			nRandom=nRandom,  muttype='Missense',
 			function_type_lfc=function_for_lfc,
 			function_type_lfc3d=function_for_lfc3d,
-			conserved_only=False, gene_type=gene_type,
+			conserved_only=False, skip_no_coords=skip_no_coords, gene_type=gene_type,
 			target_gene_chain=input_chain,
 			ppi_chain_gene_dict=ppi_chain_gene_dict,
 			ppi_gene_edits_dict=ppi_gene_edits_dict,
@@ -1564,6 +1566,9 @@ if __name__ == '__main__':
 	qa_cases = qa_cfg.get('cases', [])
 	priority_on_alternative = config.get('priority_on_alternative', False)
 	atom_level_naa = config.get('atom_level_naa', False)
+	# DROP LFC3D (NOT 1D LFC) AT RESIDUES WITH NO RESOLVED xyz -- SEE calculate_lfc3d'S skip_no_coords.
+	# DEFAULTS False TO KEEP EXISTING RUNS REPRODUCIBLE; SET True FOR NEW EXPERIMENTAL-PDB ANALYSES #
+	skip_no_coords = config.get('skip_no_coords', False)
 	muscle_path = config.get('muscle_path', 'muscle')
 	mutation_priority = config.get('mutation_priority') # optional; most-to-least-deleterious order for collapsing
 	                                                      # delimiter-joined multi-category mut_col values (e.g. 'Silent;Missense;')
@@ -1580,7 +1585,7 @@ if __name__ == '__main__':
 		cons_alignment_filename=cons_alignment_filename,
 		function_for_meta=function_for_meta, qa_passed_only=qa_passed_only, qa_only=qa_only, qa_controls=qa_controls, qa_cases=qa_cases,
 		priority_on_alternative=priority_on_alternative, config_yaml=config_yaml, atom_level_naa=atom_level_naa, muscle_path=muscle_path,
-		mutation_priority=mutation_priority,
+		mutation_priority=mutation_priority, skip_no_coords=skip_no_coords,
 	)
 
 	if mode == 'monomer':
