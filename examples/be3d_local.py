@@ -578,7 +578,8 @@ def main(**kwargs):
 	ppi_gene_edits_dict=kwargs['ppi_gene_edits_dict']
 	v_score_threshold=kwargs['v_score_threshold']
 	atom_level_naa=kwargs['atom_level_naa']
-	# WHEN True, RESIDUES WITH NO RESOLVED xyz GET '-' FOR LFC3D INSTEAD OF A SELF-COPY OF THEIR 1D LFC #
+	# WHEN True, RESIDUES WITH NO RESOLVED xyz GET '-' FOR BOTH ARMS -- LFC/LFC_Z/LFCr AS WELL AS #
+	# LFC3D/LFC3Dr -- SO THEY DROP OUT OF THE LFC, LFC3D AND union/Meta-union HIT LISTS ALIKE #
 	skip_no_coords=kwargs.get('skip_no_coords', False)
 	muscle_path=kwargs['muscle_path']
 	mutation_priority=kwargs['mutation_priority']
@@ -1566,7 +1567,7 @@ if __name__ == '__main__':
 	qa_cases = qa_cfg.get('cases', [])
 	priority_on_alternative = config.get('priority_on_alternative', False)
 	atom_level_naa = config.get('atom_level_naa', False)
-	# DROP LFC3D (NOT 1D LFC) AT RESIDUES WITH NO RESOLVED xyz -- SEE calculate_lfc3d'S skip_no_coords.
+	# DROP BOTH LFC AND LFC3D (AND HENCE union) AT RESIDUES WITH NO RESOLVED xyz -- SEE calculate_lfc3d'S skip_no_coords.
 	# DEFAULTS False TO KEEP EXISTING RUNS REPRODUCIBLE; SET True FOR NEW EXPERIMENTAL-PDB ANALYSES #
 	skip_no_coords = config.get('skip_no_coords', False)
 	muscle_path = config.get('muscle_path', 'muscle')

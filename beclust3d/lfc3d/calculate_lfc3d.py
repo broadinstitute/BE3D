@@ -82,17 +82,28 @@ def calculate_lfc3d(
         Non-conserved residues will be skipped (set to NaN or '-').
 
     skip_no_coords : bool, optional (default=False)
-        If True, skips LFC3D for residues that have no resolved xyz coordinates in df_struc
-        (x_coord == '-'), setting their LFC3D and every LFC3Dr to '-' instead.
+        If True, blanks out both the 1D LFC and the LFC3D arms at residues that have no
+        resolved xyz coordinates in df_struc (x_coord == '-'), setting LFC, LFC_Z, every LFCr,
+        LFC3D and every LFC3Dr to '-' instead. Requires an 'x_coord' column.
 
         Such residues have no 3D neighborhood at all, so the neighbor search returns only the
         residue itself and LFC3D silently collapses to an exact copy of that residue's own 1D
         LFC -- a sequence-level score carrying a 3D label. Left ungated it propagates into the
-        z-scores, p-values, meta-aggregation and union hit calls. Requires an 'x_coord' column.
+        z-scores, p-values, meta-aggregation and union hit calls.
+
+        The LFC arm is gated as well so that a residue absent from the model cannot be called
+        a hit by ANY arm of a structure-based run: with both arms '-' their z/p/psig become
+        '-', find_union returns '-', and they drop out of the per-screen and Meta union hit
+        lists instead of sneaking back in through LFC alone.
+
+        Gating LFC does not perturb any surviving residue's scores. A residue with no xyz
+        never appears in another residue's Naa_pos, so it is never a neighbor and never feeds
+        another residue's LFC3D; and the LFC null (mu, sigma) comes from the No_Mutation
+        controls, not from these columns. Residues that do have coordinates are bit-identical
+        with the flag on and off.
 
         Default is False purely for backwards compatibility with existing runs; new
         structure-based analyses on experimental PDBs should generally set it True.
-        The 1D LFC columns are never affected by this flag.
 
     Returns
     -------
@@ -124,8 +135,10 @@ def calculate_lfc3d(
 
     # RESIDUES WITH NO RESOLVED xyz HAVE NO 3D NEIGHBORHOOD: THEIR Naa_pos IS '-', SO #
     # _resolve_neighbor_sources RETURNS ONLY THE SELF-ENTRY AND LFC3D DEGENERATES TO AN EXACT #
-    # COPY OF THE RESIDUE'S OWN 1D LFC. GATING THEM HERE MAKES LFC3D (AND EVERY LFC3Dr) '-', #
-    # WHICH PROPAGATES CLEANLY INTO THE z/p, NonAggr, META AND CLUSTERING STAGES. #
+    # COPY OF THE RESIDUE'S OWN 1D LFC. WE BLANK BOTH ARMS -- LFC/LFC_Z/LFCr AS WELL AS #
+    # LFC3D/LFC3Dr -- SO SUCH A RESIDUE CANNOT BE CALLED A HIT BY EITHER ARM, AND IN #
+    # PARTICULAR CANNOT RE-ENTER THE union / Meta-union HIT LISTS THROUGH ITS LFC ARM. #
+    # THIS PROPAGATES CLEANLY INTO THE z/p, NonAggr, META AND CLUSTERING STAGES. #
     no_coord_idx = set()
     if skip_no_coords:
         if 'x_coord' not in df_struc.columns:
@@ -136,6 +149,11 @@ def calculate_lfc3d(
         for _idx, _val in enumerate(df_struc['x_coord']):
             if str(_val).strip() in ('-', '', 'nan', 'NaN', 'None'):
                 no_coord_idx.add(_idx)
+    # POSITIONAL MASK FOR THE 1D LFC COLUMNS: df_edits/df_rand ARE ROW-ALIGNED WITH df_struc #
+    # (ASSERTED ABOVE), SO INDEX-FREE POSITIONAL MASKING IS SAFE. EMPTY UNLESS skip_no_coords. #
+    no_coord_mask = np.zeros(len(df_struc), dtype=bool)
+    if no_coord_idx:
+        no_coord_mask[list(no_coord_idx)] = True
 
     
     naa_pos_chain_dict = dict()
@@ -162,8 +180,8 @@ def calculate_lfc3d(
         # ADD LFC COLUMNS FROM DF #
         lfc_colname = f'{function_type_lfc}_{muttype}_LFC'
         df_struct_3d = pd.concat([df_struct_3d, 
-                                  df_edits[[lfc_colname]].rename(columns={lfc_colname: f"{screen_name}_LFC"}), 
-                                  df_edits[[f'{lfc_colname}_Z']].rename(columns={f'{lfc_colname}_Z': f"{screen_name}_LFC_Z"})], axis=1)
+                                  _blank_no_coords(df_edits[lfc_colname], no_coord_mask).rename(f"{screen_name}_LFC"), 
+                                  _blank_no_coords(df_edits[f'{lfc_colname}_Z'], no_coord_mask).rename(f"{screen_name}_LFC_Z")], axis=1)
         if ppi_gene_edits_dict:
             for gene_identifier, be3d_dir in ppi_gene_edits_dict.items():
                 _gene = gene_identifier.split('_')[0]
@@ -213,7 +231,8 @@ def calculate_lfc3d(
         dict_temp = {}
         for r in range(nRandom):
             # ADD LFC RANDOMIZATION COLUMNS FROM DF #
-            dict_temp[f"{screen_name}_LFCr{str(r+1)}"] = df_rand[f'{lfc_colname}r{str(r+1)}']
+            dict_temp[f"{screen_name}_LFCr{str(r+1)}"] = _blank_no_coords(
+                df_rand[f'{lfc_colname}r{str(r+1)}'], no_coord_mask)
 
             # CALCULATE LFC3D RANDOMIZATION, IF LFC_only SKIP OVER #
             if not LFC_only:
@@ -271,6 +290,20 @@ def calculate_lfc3d(
     df_struct_3d.to_csv(out_filename, sep = '\t', index=False, compression="gzip")
 
     return df_struct_3d
+
+def _blank_no_coords(series, no_coord_mask):
+    """
+    Blanks a 1D LFC column at the residues with no resolved xyz coordinates (see
+    calculate_lfc3d's skip_no_coords). Returns the series untouched when nothing is masked,
+    so the default skip_no_coords=False path is a no-op.
+
+    NaN rather than '-' is written because calculate_lfc3d normalizes the whole table with
+    replace('-', nan) -> to_numeric -> fillna('-') later in the same loop iteration; the value
+    reaches the output file as '-' either way.
+    """
+    if not no_coord_mask.any():
+        return series
+    return series.where(~no_coord_mask, np.nan)
 
 def _resolve_neighbor_sources(
     target_gene_chain, # should be main target gene
