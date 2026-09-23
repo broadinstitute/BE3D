@@ -580,7 +580,7 @@ def main(**kwargs):
 	atom_level_naa=kwargs['atom_level_naa']
 	# WHEN True, RESIDUES WITH NO RESOLVED xyz GET '-' FOR BOTH ARMS -- LFC/LFC_Z/LFCr AS WELL AS #
 	# LFC3D/LFC3Dr -- SO THEY DROP OUT OF THE LFC, LFC3D AND union/Meta-union HIT LISTS ALIKE #
-	skip_no_coords=kwargs.get('skip_no_coords', False)
+	skip_no_coords=kwargs.get('skip_no_coords', True)
 	muscle_path=kwargs['muscle_path']
 	mutation_priority=kwargs['mutation_priority']
 
@@ -1568,8 +1568,10 @@ if __name__ == '__main__':
 	priority_on_alternative = config.get('priority_on_alternative', False)
 	atom_level_naa = config.get('atom_level_naa', False)
 	# DROP BOTH LFC AND LFC3D (AND HENCE union) AT RESIDUES WITH NO RESOLVED xyz -- SEE calculate_lfc3d'S skip_no_coords.
-	# DEFAULTS False TO KEEP EXISTING RUNS REPRODUCIBLE; SET True FOR NEW EXPERIMENTAL-PDB ANALYSES #
-	skip_no_coords = config.get('skip_no_coords', False)
+	# DEFAULTS True: AN UNRESOLVED RESIDUE SHOULD NOT BE SCORED OR CALLED A HIT BY ANY ARM.
+	# SET skip_no_coords: false IN THE YAML TO REPRODUCE A RUN MADE BEFORE THIS BECAME THE DEFAULT.
+	# NO-OP ON AlphaFold MODELS, WHERE EVERY RESIDUE IS COORDINATED #
+	skip_no_coords = config.get('skip_no_coords', True)
 	muscle_path = config.get('muscle_path', 'muscle')
 	mutation_priority = config.get('mutation_priority') # optional; most-to-least-deleterious order for collapsing
 	                                                      # delimiter-joined multi-category mut_col values (e.g. 'Silent;Missense;')

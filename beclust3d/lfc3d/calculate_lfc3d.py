@@ -31,7 +31,7 @@ def calculate_lfc3d(
     function_type_lfc3d='mean',
     LFC_only=False, 
     conserved_only=False,
-    skip_no_coords=False,
+    skip_no_coords=True,
     gene_type='Human',
     target_gene_chain = 'A',
     ppi_chain_gene_dict = {}, # {'GENE1':'B','GENE2':'C'}
@@ -81,7 +81,7 @@ def calculate_lfc3d(
         If True, calculates LFC3D only for residues marked as 'conserved' in the conservation data.
         Non-conserved residues will be skipped (set to NaN or '-').
 
-    skip_no_coords : bool, optional (default=False)
+    skip_no_coords : bool, optional (default=True)
         If True, blanks out both the 1D LFC and the LFC3D arms at residues that have no
         resolved xyz coordinates in df_struc (x_coord == '-'), setting LFC, LFC_Z, every LFCr,
         LFC3D and every LFC3Dr to '-' instead. Requires an 'x_coord' column.
@@ -102,8 +102,15 @@ def calculate_lfc3d(
         controls, not from these columns. Residues that do have coordinates are bit-identical
         with the flag on and off.
 
-        Default is False purely for backwards compatibility with existing runs; new
-        structure-based analyses on experimental PDBs should generally set it True.
+        Defaults to True: a residue that is not in the model should not be scored or called
+        a hit by any arm, and the old default silently produced both. Because the gate needs
+        to know which residues have coordinates, df_struc must carry an 'x_coord' column --
+        pass the full *_coord_struc_features.tsv table. Set skip_no_coords=False to reproduce
+        a run made before this became the default, or when df_struc genuinely has no
+        coordinate columns.
+
+        On an AlphaFold model every residue is coordinated, so the flag is a no-op there and
+        only changes results for experimental PDBs with unresolved regions.
 
     Returns
     -------
@@ -144,7 +151,8 @@ def calculate_lfc3d(
         if 'x_coord' not in df_struc.columns:
             raise ValueError(
                 "skip_no_coords=True requires an 'x_coord' column in df_struc; got columns "
-                f"{list(df_struc.columns)}. Pass the full *_coord_struc_features.tsv table."
+                f"{list(df_struc.columns)}. Pass the full *_coord_struc_features.tsv table, "
+                "or set skip_no_coords=False (note: True is the default as of 2026-09-23)."
             )
         for _idx, _val in enumerate(df_struc['x_coord']):
             if str(_val).strip() in ('-', '', 'nan', 'NaN', 'None'):
@@ -295,7 +303,7 @@ def _blank_no_coords(series, no_coord_mask):
     """
     Blanks a 1D LFC column at the residues with no resolved xyz coordinates (see
     calculate_lfc3d's skip_no_coords). Returns the series untouched when nothing is masked,
-    so the default skip_no_coords=False path is a no-op.
+    so the skip_no_coords=False path, and any fully-coordinated model, is a no-op.
 
     NaN rather than '-' is written because calculate_lfc3d normalizes the whole table with
     replace('-', nan) -> to_numeric -> fillna('-') later in the same loop iteration; the value
