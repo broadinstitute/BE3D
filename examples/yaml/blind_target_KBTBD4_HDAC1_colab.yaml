@@ -9,6 +9,7 @@ input_uniprot: Q9NVX7-2
 input_chain: B
 user_pdb: /content/beclust3d-public/examples/pdb/8voj_KBTBD4_HDAC1_chain_ABC.pdb
 structure_radius: 6.0
+skip_no_coords: true
 atom_level_naa: false
 
 function_for_lfc: mean       # aggregation used when HDAC1's own per-residue LFC was computed
