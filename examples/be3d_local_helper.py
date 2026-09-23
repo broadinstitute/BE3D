@@ -451,6 +451,7 @@ YAML_FIELD_HELP = {
     'uniprot': "This partner's UniProt accession",
     'chain': "This partner's PDB chain ID",
     'conservation_run': 'Whether this partner also runs a cross-species/conservation comparison',
+    'skip_no_coords': 'Blank LFC, LFC3D and union at residues with no resolved xyz in the structure, instead of scoring them (no-op on AlphaFold models)',
     'atom_level_naa': 'Atom-level (rather than residue-level) structural neighbor detection -- still in development',
 }
 

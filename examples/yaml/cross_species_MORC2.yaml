@@ -15,6 +15,7 @@ pthr:
   multi_screen: 0.001
 structure_radius: 6.0
 clustering_radius: 6.0
+skip_no_coords: true
 function_for_lfc: mean
 function_for_lfc3d: mean
 function_for_meta: SUM
