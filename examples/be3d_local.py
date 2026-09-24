@@ -1132,6 +1132,9 @@ def main(**kwargs):
 				merged = pd.merge(df1, df2, on=common_cols, how="outer")
 			else:
 				merged = pd.merge(df2, df1, how="outer")
+			# An outer merge sorts rows by the key columns in the order given, and common_cols comes
+			# from a set, so rows could end up ordered by unires before unipos; restore residue order
+			merged = merged.sort_values('unipos').reset_index(drop=True)
 			# Merge on all shared columns
 			if compression:
 				merged.to_csv(os.path.join(results_dir,f'{gene_name}_{file_pattern}.tsv.gz'), sep="\t", index=False, compression='gzip')
