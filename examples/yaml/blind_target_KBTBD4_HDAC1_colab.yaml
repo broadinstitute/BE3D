@@ -22,6 +22,8 @@ partners:
   - gene: HDAC1
     uniprot: Q13547
     chain: C
+    user_fasta: null # blank = query this partner's uniprot
+    user_pdb: null # blank = use the top-level user_pdb
     screen_dir: /content/beclust3d-public/examples/data
     screens: YeoKBTBD4-HDAC12025-ABE-Screen-PPI.tsv,YeoKBTBD4-HDAC12025-CBE-Screen-PPI.tsv
     mut_col: Mutation_type
@@ -37,3 +39,4 @@ partners:
     alt_screen_start: null
     v_score_threshold: 3
     muscle_path: /content/muscle
+    priority_on_alternative: false

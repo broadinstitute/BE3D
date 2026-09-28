@@ -8,13 +8,6 @@ input_uniprot: Q9NVX7-2
 input_chain: B
 screens: YeoKBTBD4-HDAC12025-ABE-Screen.tsv,YeoKBTBD4-HDAC12025-CBE-Screen.tsv
 user_pdb: ./pdb/8voj_KBTBD4_HDAC1_chain_ABC.pdb
-ppi_chain_gene_dict:
-  A: KBTBD4
-  B: KBTBD4
-  C: HDAC1
-ppi_gene_edits_dict: {}
-partner_uniprot: # uniprot IDs for genes that are pure PPI neighbors here (not in input_gene)
-  HDAC1: Q13547
 mutation_category:
   missense: [Missense]
   silent: [Silent]
@@ -37,6 +30,9 @@ conservation:
   alt_gene_name: null
   alt_uniprot_id: null
   alt_screen_start: null
+  user_fasta: null # local FASTA for the primary sequence instead of querying input_uniprot
+  alt_user_fasta: null # local FASTA for the alternative sequence instead of querying alt_uniprot_id
+  alignment_filename: null # precomputed Clustal alignment (primary first); skips both FASTAs and MUSCLE
 priority_on_alternative: false
 database:
   mut_list_col: null

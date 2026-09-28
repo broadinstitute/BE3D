@@ -447,13 +447,33 @@ YAML_FIELD_HELP = {
     'controls': 'Mutation categories treated as the QA hypothesis test\'s "controls" group (e.g. No Mutation)',
     'ppi_chain_gene_dict': 'PDB chain -> gene symbol, covering every chain in the complex (mode: complex/ppi_diff)',
     'ppi_gene_edits_dict': 'gene identifier -> its preprocessed cross-chain LFC lookup directory (built by the pipeline, not hand-edited)',
+    'partner_uniprot': 'Gene symbol -> UniProt accession for complex chains whose gene is a pure PPI neighbor (not in input_gene)',
     'gene': "This partner's gene symbol",
     'uniprot': "This partner's UniProt accession",
     'chain': "This partner's PDB chain ID",
     'conservation_run': 'Whether this partner also runs a cross-species/conservation comparison',
     'skip_no_coords': 'Blank LFC, LFC3D and union at residues with no resolved xyz in the structure, instead of scoring them (no-op on AlphaFold models)',
     'atom_level_naa': 'Atom-level (rather than residue-level) structural neighbor detection -- still in development',
+    # Path-specific entries for field names that mean different things in different sections
+    # (list indices dropped, e.g. 'partners[0].user_pdb' -> 'partners.user_pdb'); see _field_help #
+    'conservation.user_fasta': 'Local FASTA for the primary sequence in the conservation alignment, instead of querying input_uniprot',
+    'partners.user_fasta': "Path to this partner's FASTA (blank = use its UniProt sequence)",
+    'partners.user_pdb': "Path to this partner's PDB structure (blank = use the top-level user_pdb)",
+    'partners.priority_on_alternative': "Treat every one of this partner's screens as the alternative species, instead of only those matching alt_screen_start",
 }
+
+
+def _field_help(key):
+    """
+    Help text for a dotted/bracketed config path: the path-specific entry if there is one,
+    else the leaf field name, else the nearest enclosing field (so the per-key rows a
+    dict like ppi_chain_gene_dict is exploded into still get that dict's description).
+    """
+    parts = re.sub(r'\[\d+\]', '', key).split('.')
+    for candidate in ['.'.join(parts), parts[-1]] + ['.'.join(parts[:i]) for i in range(len(parts) - 1, 0, -1)]:
+        if candidate in YAML_FIELD_HELP:
+            return YAML_FIELD_HELP[candidate]
+    return ''
 
 
 def _get_path(config, path):
@@ -583,7 +603,7 @@ def edit_yaml_widgets(yaml_path, key_groups, exclude=('mode', 'atom_level_naa', 
             if not isinstance(w, widgets.Textarea):
                 w.layout = widgets.Layout(width='550px')
             value_widgets[key] = w
-            help_text = YAML_FIELD_HELP.get(leaf_name, '')
+            help_text = _field_help(key)
             rows.append(widgets.VBox([
                 w,
                 widgets.HTML(f"<div style='color:#777;font-size:12px;margin:0 0 8px 154px'>{help_text}</div>"),
