@@ -18,6 +18,47 @@ import plotly.graph_objects as go
 from IPython.display import display, Image, SVG
 
 
+def show_residue_check(output_dir, max_rows=15):
+    """
+    Show the screen-vs-structure residue guardrail (check_screen_residues) for a run:
+    every sequence_check/*_summary.tsv under output_dir (a ppi_diff / complex run writes
+    one per gene and partner chain), a red banner when any screen edits a residue the PDB
+    or reference sequence disagrees with, and the first discrepant positions. Reads the
+    files rather than the run log, so it works on a skipped (already completed) run too.
+    """
+    from IPython.display import HTML
+    import glob
+
+    summaries = sorted(glob.glob(os.path.join(output_dir, '**', 'sequence_check', '*_summary.tsv'), recursive=True))
+    if not summaries:
+        display(HTML("<div style='padding:6px 10px;border-left:4px solid #999'>No residue check found under "
+                     f"<code>{output_dir}</code> -- this run predates the check; delete RUN_COMPLETED.txt and re-run to create it.</div>"))
+        return None
+
+    df_summary = pd.concat([pd.read_csv(f, sep='\t').assign(report=os.path.relpath(os.path.dirname(os.path.dirname(f)), output_dir))
+                            for f in summaries], ignore_index=True)
+    n_bad = int(pd.to_numeric(df_summary.get('n_discrepant'), errors='coerce').fillna(0).sum())
+    if n_bad:
+        display(HTML("<div style='padding:6px 10px;border-left:4px solid #c0392b;background:#fdecea'>"
+                     f"<b>Residue check: {n_bad} edited position(s) disagree with the PDB / reference sequence.</b> "
+                     "Scores at those positions land on the wrong residue (or none) -- check that the screen library, "
+                     "<code>sequence_source</code>/<code>user_fasta</code> and the structure use the same numbering.</div>"))
+    else:
+        display(HTML("<div style='padding:6px 10px;border-left:4px solid #27ae60;background:#eafaf1'>"
+                     "<b>Residue check passed:</b> every edited residue matches the PDB / reference sequence.</div>"))
+    cols = [c for c in ['report', 'gene', 'chain', 'screen', 'n_positions', 'n_discrepant', 'pdb_mismatch',
+                        'reference_mismatch', 'outside_reference', 'not_in_structure', 'note'] if c in df_summary]
+    display(df_summary[cols])
+
+    if n_bad:
+        details = pd.concat([pd.read_csv(f.replace('_summary.tsv', '.tsv'), sep='\t') for f in summaries], ignore_index=True)
+        details = details[details['status'] != 'not_in_structure']
+        print(f'First {min(max_rows, len(details))} of {len(details)} discrepant positions '
+              f'(full lists: sequence_check/*_screen_vs_structure.tsv):')
+        display(details.head(max_rows))
+    return df_summary
+
+
 def show_svgs(paths):
     for path in paths:
         if os.path.exists(path):
@@ -453,6 +494,7 @@ YAML_FIELD_HELP = {
     'uniprot': "This partner's UniProt accession",
     'chain': "This partner's PDB chain ID",
     'conservation_run': 'Whether this partner also runs a cross-species/conservation comparison',
+    'on_residue_mismatch': "When a screen edits a residue the PDB / reference sequence disagrees with: 'warn' (report and continue) or 'error' (stop the run)",
     'skip_no_coords': 'Blank LFC, LFC3D and union at residues with no resolved xyz in the structure, instead of scoring them (no-op on AlphaFold models)',
     'atom_level_naa': 'Atom-level (rather than residue-level) structural neighbor detection -- still in development',
     # Path-specific entries for field names that mean different things in different sections

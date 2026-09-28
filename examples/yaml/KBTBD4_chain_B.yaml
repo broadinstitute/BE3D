@@ -9,6 +9,7 @@ input_chain: B
 screens: YeoKBTBD4-HDAC12025-ABE-Screen.tsv,YeoKBTBD4-HDAC12025-CBE-Screen.tsv
 user_pdb: ./pdb/8voj_KBTBD4_HDAC1_chain_ABC.pdb
 sequence_source: structure # structure (default): sequence from the AF model / user_pdb, UniProt fallback on gaps or length mismatch; uniprot: always UniProt; user_fasta overrides both
+on_residue_mismatch: warn # warn (default): report screen edits whose residue disagrees with the PDB/reference and continue; error: stop the run
 mutation_category:
   missense: [Missense]
   silent: [Silent]

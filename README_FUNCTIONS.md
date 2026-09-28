@@ -701,7 +701,31 @@ No files are written.
 
 ---
 
-### 27. `reduce_mutation_type`
+### 27. `check_screen_residues`
+
+**Description:** \
+Guardrail comparing every reference residue/position the screens edit (e.g. the `I257` of `I257V`) against the residue the PDB has at that position on `target_chainid`, and against the reference sequence. Any disagreement is printed as a `WARNING` per screen and written to a report; unresolved positions are listed but not counted as discrepancies. be3d_local.py runs it in every mode after `parse_be_data()`, controlled by the yaml key `on_residue_mismatch` (`warn` or `error`), and the notebooks display its reports with `show_residue_check()`.
+
+```python
+check_screen_residues(
+    workdir = 'PATH/TO/WORKING/DIRECTORY', # output directory parse_be_data() wrote screendata/ into
+    input_gene = 'GENE_NAME',              # gene whose own-species screens are checked
+    screen_names = ['screen_name_1'],      # screen identifiers, as passed to parse_be_data()
+    pdb_processed_file = 'PATH/TO/[structureid]_processed.pdb', # processed PDB from sequence_structural_features()
+    target_chainid = 'A',                  # chain ID of input_gene in the PDB structure
+    df_struc = pd.DataFrame(),             # residue table with 'unipos' and 'unires' (the reference sequence)
+    # Optional
+    gene_list = None,                      # per-screen gene symbol; screens not numbered on input_gene are skipped
+    mut_categories = ('Missense', 'Silent', 'Nonsense'), # parse_be_data() tables with per-edit refAA/edit_pos
+    on_mismatch = 'warn',                  # 'warn' reports and continues; 'error' raises ValueError after writing the report
+)
+```
+
+Status per edited position: `pdb_mismatch` (PDB residue differs), `reference_mismatch` (unresolved in the PDB and the reference residue differs), `outside_reference` (beyond the reference sequence), `not_in_structure` (reference agrees, PDB has no residue; reported only). Files are output to ```'[workdir]/sequence_check'```
+
+---
+
+### 28. `reduce_mutation_type`
 
 **Description:** \
 Collapses a delimiter-joined multi-category mutation type (e.g., `'Silent;Missense;'`, one category per edit in the guide) into a single category, keeping whichever appears first in `priority_order`. Categories not in `priority_order` fall back to the first token; single-category values are returned unchanged. Typically applied per value to `mut_col` before `parse_be_data()`.
@@ -718,7 +742,7 @@ No files are written.
 
 ---
 
-### 28. `g2p_formatted_hit_cluster`
+### 29. `g2p_formatted_hit_cluster`
 
 **Description:** \
 Gathers LFC, LFC3D, and union hit and cluster labels (and scores) into TSVs formatted for hit cluster visualization on G2P.

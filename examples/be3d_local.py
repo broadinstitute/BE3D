@@ -29,7 +29,7 @@ def preprocess_ppi_partner(
 	conservation_run=False, alt_gene_name=None, alt_uniprot_id=None, alt_screen_start=None,
 	v_score_threshold=3, muscle_path='muscle', priority_on_alternative=False,
 	cons_user_fasta=None, cons_alt_user_fasta=None, cons_alignment_filename=None,
-	sequence_source='structure',
+	sequence_source='structure', on_residue_mismatch='warn',
 ):
 	"""
 	Lightweight preprocessing for a PPI partner chain: only produces
@@ -88,6 +88,13 @@ def preprocess_ppi_partner(
 		mut_categories=mut_categories, mut_delimiter=mut_delimiter,
 		conserv_dfs=conserv_dfs, conserv_col='alternative_res_pos',
 		gene_list=gene_list, v_score_threshold=v_score_threshold,
+	)
+
+	# GUARDRAIL: EDITED RESIDUES vs THE PDB / REFERENCE SEQUENCE (OWN-SPECIES SCREENS ONLY) #
+	check_screen_residues(
+		partner_dir, gene, screen_names,
+		os.path.join(partner_dir, 'sequence_structure', f'{structureid}_processed.pdb'), chain,
+		df_struc_lite, gene_list=gene_list, on_mismatch=on_residue_mismatch,
 	)
 
 	for screen_name, screen_gene, df_consrv in zip(screen_names, gene_list, conserv_dfs):
@@ -209,7 +216,7 @@ def run_blind_target(
 	user_pdb=None, user_fasta=None, user_dssp=None,
 	structure_radius=6.0, atom_level_naa=False,
 	function_for_lfc='mean', function_for_lfc3d='mean', function_for_meta='mean',
-	mut_delimiter_default=';', mutation_priority=None, sequence_source='structure',
+	mut_delimiter_default=';', mutation_priority=None, sequence_source='structure', on_residue_mismatch='warn',
 ):
 	"""
 	Computes a purely partner-derived ("blind") LFC3D signal at the residues of
@@ -279,6 +286,7 @@ def run_blind_target(
 			muscle_path=partner.get('muscle_path', 'muscle'),
 			priority_on_alternative=partner.get('priority_on_alternative', False),
 			sequence_source=partner.get('sequence_source', sequence_source),
+			on_residue_mismatch=on_residue_mismatch,
 		)
 
 		ppi_chain_gene_dict[chain] = gene_identifier
@@ -375,6 +383,7 @@ def run_complex_mode(config, output_dir, common_kwargs, gene_names, uniprot_list
 	user_fasta = common_kwargs['user_fasta']
 	user_pdb = common_kwargs['user_pdb']
 	sequence_source = common_kwargs['sequence_source']
+	on_residue_mismatch = common_kwargs['on_residue_mismatch']
 
 	assert len(gene_names) == len(uniprot_list) == len(chain_list), \
 		'input_gene, input_uniprot, input_chain must list the same number of comma-separated entries in complex mode'
@@ -408,6 +417,7 @@ def run_complex_mode(config, output_dir, common_kwargs, gene_names, uniprot_list
 				muscle_path=muscle_path, priority_on_alternative=priority_on_alternative,
 				cons_user_fasta=cons_user_fasta, cons_alt_user_fasta=cons_alt_user_fasta,
 				cons_alignment_filename=cons_alignment_filename, sequence_source=sequence_source,
+				on_residue_mismatch=on_residue_mismatch,
 			)
 			ppi_chain_gene_dict[ch] = gene_identifier
 			ppi_gene_edits_dict[gene_identifier] = partner_dir
@@ -597,6 +607,7 @@ def main(**kwargs):
 	muscle_path=kwargs['muscle_path']
 	mutation_priority=kwargs['mutation_priority']
 	sequence_source=kwargs.get('sequence_source', 'structure')
+	on_residue_mismatch=kwargs.get('on_residue_mismatch', 'warn')
 
 	if user_pdb:
 		structureid = f'PDB-{input_uniprot}'
@@ -761,9 +772,12 @@ def main(**kwargs):
 	]
 	
 	df_struc = pd.read_csv(f'{output_dir}/sequence_structure/{structureid}_coord_struc_features.tsv', sep='\t')
-	# CROSS-SPECIES SCREENS ARE STILL IN THE OTHER SPECIES' NUMBERING HERE, SO ONLY CHECK input_gene'S OWN #
-	own = [i for i, gene in enumerate(gene_list) if gene == input_gene]
-	sanitary_check(df_struc, [df_missense_list[i] for i in own], screen_names=[screen_names[i] for i in own])
+	# GUARDRAIL: EVERY EDITED REFERENCE RESIDUE/POSITION vs THE PDB AND THE REFERENCE SEQUENCE.
+	# CROSS-SPECIES SCREENS ARE STILL IN THE OTHER SPECIES' NUMBERING HERE, SO ONLY input_gene'S OWN ARE CHECKED #
+	check_screen_residues(
+		output_dir, input_gene, screen_names, pdb_file, input_chain, df_struc,
+		gene_list=gene_list, on_mismatch=on_residue_mismatch,
+	)
 	
 	# For All
 	for df_missense, screen_name, gene in zip(df_missense_list, screen_names, gene_list):
@@ -1500,7 +1514,7 @@ if __name__ == '__main__':
 	sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), beclust3d_path)))
 
 	from beclust3d.lfc3d.structure import sequence_structural_features, sequence_structural_features_lite
-	from beclust3d.lfc3d.preprocess_data import parse_be_data, sanitary_check
+	from beclust3d.lfc3d.preprocess_data import parse_be_data, sanitary_check, check_screen_residues
 	from beclust3d.lfc3d.preprocess_data_helpers import reduce_mutation_type
 	from beclust3d.lfc3d.preprocess_data_plot import plot_rawdata
 	from beclust3d.qa.hypothesis_tests import hypothesis_test
@@ -1599,6 +1613,9 @@ if __name__ == '__main__':
 	# input_chain FROM THE AF MODEL / user_pdb, FALLING BACK TO UNIPROT WHEN THAT CHAIN HAS GAPS OR A DIFFERENT
 	# LENGTH FROM UNIPROT; 'uniprot' ALWAYS QUERIES UNIPROT (THE BEHAVIOR BEFORE THIS OPTION EXISTED) #
 	sequence_source = config.get('sequence_source', 'structure')
+	# WHAT TO DO WHEN A SCREEN EDITS A RESIDUE THE PDB / REFERENCE SEQUENCE DISAGREES WITH (SEE check_screen_residues):
+	# 'warn' (DEFAULT) PRINTS AND WRITES sequence_check/ REPORTS; 'error' ALSO STOPS THE RUN #
+	on_residue_mismatch = config.get('on_residue_mismatch', 'warn')
 
 	# KWARGS SHARED ACROSS EVERY main() CALL, REGARDLESS OF MODE #
 	common_kwargs = dict(
@@ -1613,6 +1630,7 @@ if __name__ == '__main__':
 		function_for_meta=function_for_meta, qa_passed_only=qa_passed_only, qa_only=qa_only, qa_controls=qa_controls, qa_cases=qa_cases,
 		priority_on_alternative=priority_on_alternative, config_yaml=config_yaml, atom_level_naa=atom_level_naa, muscle_path=muscle_path,
 		mutation_priority=mutation_priority, skip_no_coords=skip_no_coords, sequence_source=sequence_source,
+		on_residue_mismatch=on_residue_mismatch,
 	)
 
 	if mode == 'monomer':
@@ -1655,7 +1673,7 @@ if __name__ == '__main__':
 			structure_radius=structure_radius, atom_level_naa=atom_level_naa,
 			function_for_lfc=function_for_lfc, function_for_lfc3d=function_for_lfc3d, function_for_meta=function_for_meta,
 			mut_delimiter_default=mut_delimiter, mutation_priority=mutation_priority,
-			sequence_source=sequence_source,
+			sequence_source=sequence_source, on_residue_mismatch=on_residue_mismatch,
 		)
 
 	else:
