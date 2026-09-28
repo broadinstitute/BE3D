@@ -102,6 +102,150 @@ def parse_uniprot(
     uFasta_list.close()
     return None
 
+def read_fasta_sequence(
+    fasta_file,
+):
+    """
+    Description
+        Sequence of the first record in a FASTA file, as one string
+    """
+
+    seq_lines = []
+    with open(fasta_file) as f:
+        f.readline() # skip header
+        for line in f:
+            if line.startswith('>'):
+                break
+            seq_lines.append(line.strip())
+    return ''.join(seq_lines)
+
+def extract_sequence_from_pdb(
+    pdb_path,
+    target_chainid,
+):
+    """
+    Description
+        One-letter sequence of target_chainid from the CA atoms of its ATOM records,
+        in residue-number order. Returns (resnums, sequence, has_insertion_codes).
+        Alternate locations keep the first; residue names seq1 cannot map become 'X'.
+    """
+
+    atom_df = PandasPdb().read_pdb(str(pdb_path)).df['ATOM']
+    ca = atom_df[(atom_df['atom_name'] == 'CA') & (atom_df['chain_id'] == target_chainid)]
+    has_insertion_codes = bool(ca['insertion'].astype(str).str.strip().ne('').any())
+    ca = ca.drop_duplicates(subset=['residue_number', 'insertion'], keep='first')
+    ca = ca.sort_values('residue_number', kind='stable')
+
+    resnums = ca['residue_number'].astype(int).tolist()
+    sequence = ''.join(seq1(str(name)) or 'X' for name in ca['residue_name'])
+    return resnums, sequence, has_insertion_codes
+
+def _gap_ranges(resnums):
+    """
+    Description
+        Missing residue-number ranges between 1 and max(resnums), as 'start-end' strings
+    """
+
+    present, gaps, start = set(resnums), [], None
+    for pos in range(1, max(resnums) + 1):
+        if pos not in present and start is None:
+            start = pos
+        elif pos in present and start is not None:
+            gaps.append(f'{start}-{pos - 1}' if pos - 1 > start else str(start))
+            start = None
+    return gaps
+
+def resolve_sequence_fasta(
+    working_filedir,
+    input_gene,
+    input_uniprot,
+    structureid,
+    target_chainid,
+    pdb_processed_filename,
+    user_fasta=None,
+    sequence_source='structure',
+):
+    """
+    Description
+        Choose the reference sequence that numbers the residue table (unipos 1..N) and
+        copy it to sequence_structure/{structureid}_used_sequence.fasta, so downstream
+        steps (e.g. conservation) can align exactly the sequence the table was built on.
+
+        Priority: user_fasta, then the structure's own target chain (sequence_source=
+        'structure'), then UniProt (sequence_source='uniprot', or as a fallback).
+
+        The structure sequence is only used when the chain is numbered 1..N with no
+        gaps or insertion codes and, when UniProt can be reached, has UniProt's length
+        -- a gap-free but shorter chain (e.g. an AlphaFold fragment of a >2700 aa
+        protein, or a trimmed model) would otherwise silently drop the missing residues
+        from every downstream table. Otherwise it falls back to UniProt with a warning.
+        Warnings are printed rather than raised through `warnings`, since several pipeline
+        modules turn all warnings off at import.
+    """
+
+    used_fasta = working_filedir / f"sequence_structure/{structureid}_used_sequence.fasta"
+
+    if user_fasta is not None: # USER INPUT FOR SEQUENCE #
+        assert os.path.isfile(user_fasta), f'{user_fasta} does not exist'
+        chosen, source = user_fasta, 'user_fasta'
+    elif sequence_source == 'uniprot': # QUERY DATABASE #
+        chosen, source = query_uniprot(working_filedir, input_uniprot), 'UniProt'
+    elif sequence_source == 'structure': # EXTRACT FROM STRUCTURE, CHECKED AGAINST UNIPROT #
+        resnums, sequence, has_insertion_codes = extract_sequence_from_pdb(
+            working_filedir / pdb_processed_filename, target_chainid)
+
+        problems = []
+        if not resnums:
+            problems.append(f'no CA atoms for chain {target_chainid}')
+        else:
+            if has_insertion_codes:
+                problems.append('residue insertion codes present')
+            if resnums[0] < 1:
+                problems.append(f'numbering starts at {resnums[0]}')
+            elif resnums != list(range(1, len(resnums) + 1)):
+                gaps = _gap_ranges(resnums)
+                problems.append(f'unresolved residues {", ".join(gaps[:5])}{" ..." if len(gaps) > 5 else ""}')
+
+        uniprot_fasta, uniprot_seq = None, None
+        try:
+            uniprot_fasta = query_uniprot(working_filedir, input_uniprot)
+            uniprot_seq = read_fasta_sequence(uniprot_fasta)
+        except Exception as e:
+            print(f'WARNING: {input_gene}: could not fetch UniProt {input_uniprot} ({e}); '
+                  'structure sequence length is not checked')
+
+        if uniprot_seq and resnums and len(sequence) != len(uniprot_seq):
+            problems.append(f'{len(sequence)} residues vs {len(uniprot_seq)} in UniProt {input_uniprot}')
+
+        if problems:
+            if uniprot_fasta is None:
+                raise ValueError(f'{input_gene} chain {target_chainid}: cannot use the structure sequence '
+                                 f'({"; ".join(problems)}) and UniProt {input_uniprot} is unavailable -- '
+                                 'set user_fasta, or sequence_source: uniprot')
+            print(f'WARNING: {input_gene} chain {target_chainid}: structure sequence not used '
+                  f'({"; ".join(problems)}); falling back to UniProt {input_uniprot}')
+            chosen, source = uniprot_fasta, 'UniProt (fallback)'
+        else:
+            chosen = working_filedir / f"sequence_structure/{structureid}_from_structure.fasta"
+            with open(chosen, 'w') as f:
+                f.write(f'>{input_gene}|{input_uniprot}|chain {target_chainid} of {structureid}\n')
+                for i in range(0, len(sequence), 60):
+                    f.write(sequence[i:i+60] + '\n')
+            source = 'structure'
+            if uniprot_seq:
+                n_diff = sum(a != b for a, b in zip(sequence, uniprot_seq))
+                if n_diff:
+                    print(f'{input_gene}: structure sequence differs from UniProt {input_uniprot} '
+                          f'at {n_diff} position(s); using the structure sequence')
+    else:
+        raise ValueError(f"sequence_source must be 'structure' or 'uniprot', got '{sequence_source}'")
+
+    if Path(chosen).resolve() != used_fasta.resolve():
+        shutil.copy2(chosen, used_fasta)
+    print(f'{input_gene} chain {target_chainid}: reference sequence from {source} '
+          f'({len(read_fasta_sequence(used_fasta))} aa) -> {used_fasta}')
+    return used_fasta
+
 # QUERY PDB FILE AND PARSE IT INTO A TSV FILE #
 
 def query_af(

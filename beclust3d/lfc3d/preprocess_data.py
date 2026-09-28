@@ -190,7 +190,7 @@ def parse_be_data(
 
     return mut_dfs
 
-def sanitary_check(df_struc, df_missense_list, mute=True):
+def sanitary_check(df_struc, df_missense_list, mute=True, screen_names=None, warn_fraction=0.05):
     """
         Check how the number of missense edits mapped to the target protein.
 
@@ -200,18 +200,193 @@ def sanitary_check(df_struc, df_missense_list, mute=True):
             Dataframe for target structure-sequence information.
 
         df_missense_list : list of pd.DataFrame
-            List of missense dataframes, one for each screen.
+            List of missense dataframes, one for each screen. Screens numbered on another
+            species' sequence (cross-species) should be left out, since they are only mapped
+            onto df_struc later, in prioritize_by_sequence.
+
+        mute : bool, optional (default=True)
+            If False, prints the mapped / unmapped counts for every screen.
+
+        screen_names : list of str or None, optional
+            Names for df_missense_list, used in the printed report and warnings.
+
+        warn_fraction : float, optional (default=0.05)
+            Warn when more than this fraction of a screen's distinct missense edits have a
+            reference residue/position that is not in df_struc -- usually a sign that the
+            reference sequence (structure/UniProt/user_fasta) is not the one the screen
+            library was designed on.
 
         Returns
         -------
         """    
-    struc_refAA_pos_list = (df_struc['unires']+df_struc['unipos'].astype(str)).to_list()
+    struc_refAA_pos_set = set((df_struc['unires']+df_struc['unipos'].astype(str)).to_list())
+    if screen_names is None: 
+        screen_names = [f'screen {i+1}' for i in range(len(df_missense_list))]
 
-    for each_df_missense in df_missense_list:
-        missense_refAA_pos_list = each_df_missense['this_edit'].str[:-1].to_list()
+    for screen_name, each_df_missense in zip(screen_names, df_missense_list):
+        missense_refAA_pos_set = set(each_df_missense['this_edit'].str[:-1].to_list())
+        not_mapped = missense_refAA_pos_set.difference(struc_refAA_pos_set)
         if not mute: 
             print('-----[SANITARY CHECK]-----')
-            print(f'#of missense edits:{len(set(missense_refAA_pos_list))},\
-                  #of mapped missense edits:{len(set(missense_refAA_pos_list).intersection(set(struc_refAA_pos_list)))},\
-                  #of not mapped missense edits:{len(set(missense_refAA_pos_list).difference(set(struc_refAA_pos_list)))},\
-                  list of not mapped missense edits: {list(set(missense_refAA_pos_list).difference(set(struc_refAA_pos_list)))}')
+            print(f'{screen_name}: #of missense edits:{len(missense_refAA_pos_set)},\
+                  #of mapped missense edits:{len(missense_refAA_pos_set) - len(not_mapped)},\
+                  #of not mapped missense edits:{len(not_mapped)},\
+                  list of not mapped missense edits: {list(not_mapped)}')
+        if missense_refAA_pos_set and len(not_mapped) / len(missense_refAA_pos_set) > warn_fraction: 
+            # PRINTED, NOT warnings.warn: SEVERAL PIPELINE MODULES TURN ALL WARNINGS OFF AT IMPORT #
+            print(f'WARNING: {screen_name}: {len(not_mapped)}/{len(missense_refAA_pos_set)} missense edits do not match '
+                  f'the reference sequence (e.g. {sorted(not_mapped)[:5]}); check that the reference '
+                  'sequence (see sequence_source / user_fasta) matches the screen library numbering')
+
+def check_screen_residues(
+    workdir, 
+    input_gene, 
+    screen_names, 
+    pdb_processed_file, 
+    target_chainid, 
+    df_struc, 
+    gene_list=None, 
+    mut_categories=('Missense', 'Silent', 'Nonsense'), 
+    on_mismatch='warn', 
+): 
+    """
+    Description
+        Guardrail comparing every reference residue/position a screen edits (e.g. the 'I257'
+        of I257V, from parse_be_data's screendata/ tables) against the residue the PDB has at
+        that position on target_chainid, and against the reference sequence in df_struc.
+        Any disagreement means the screen library, the reference sequence and the structure
+        are not numbered on the same sequence, and those edits' scores land on the wrong
+        residues (or on none).
+
+        Writes sequence_check/{input_gene}_screen_vs_structure.tsv (every edited position
+        that is not a clean match) and sequence_check/{input_gene}_screen_vs_structure_summary.tsv
+        (per-screen counts), and prints a WARNING per screen with any discrepancy.
+
+    Parameters
+    ----------
+    workdir : str
+        Output directory parse_be_data wrote screendata/ into.
+
+    input_gene : str
+        Gene whose own-species screens are checked.
+
+    screen_names : list of str
+        Screen identifiers, as passed to parse_be_data.
+
+    pdb_processed_file : str
+        Processed PDB from sequence_structural_features(_lite) (sequence_structure/{structureid}_processed.pdb).
+
+    target_chainid : str
+        Chain ID of input_gene in the PDB structure.
+
+    df_struc : pd.DataFrame
+        Residue table with 'unipos' and 'unires' (the reference sequence).
+
+    gene_list : list of str or None, optional
+        Per-screen gene symbol, as passed to parse_be_data. Screens whose entry is not
+        input_gene (cross-species screens, still in the other species' numbering here) are
+        listed in the summary as skipped. None checks every screen.
+
+    mut_categories : list of str, optional (default=('Missense', 'Silent', 'Nonsense'))
+        parse_be_data categories whose tables carry per-edit refAA/edit_pos columns.
+
+    on_mismatch : str, optional (default='warn')
+        'warn' prints a warning and continues; 'error' raises ValueError after writing the report.
+
+    Returns
+    -------
+    df_summary : pd.DataFrame
+        One row per screen with match / discrepancy counts.
+
+    Status values in the detailed table
+    -----------------------------------
+    pdb_mismatch       : the PDB has a different residue at this position
+    reference_mismatch : the position is not resolved in the PDB, and the reference sequence
+                         has a different residue there
+    outside_reference  : the position is beyond the end of the reference sequence
+    not_in_structure   : the reference sequence agrees but the PDB has no residue there
+                         (reported, not counted as a discrepancy)
+    """
+    from .structure_helpers import extract_sequence_from_pdb
+
+    assert on_mismatch in ('warn', 'error'), f"on_mismatch must be 'warn' or 'error', got '{on_mismatch}'"
+    working_filedir = Path(workdir)
+    os.makedirs(working_filedir / 'sequence_check', exist_ok=True)
+    if gene_list is None: 
+        gene_list = [input_gene] * len(screen_names)
+
+    resnums, pdb_seq, _ = extract_sequence_from_pdb(pdb_processed_file, target_chainid)
+    pdb_res = dict(zip(resnums, pdb_seq))
+    if 'chain' in df_struc.columns: # A COMPLEX'S TABLE ALSO CARRIES THE OTHER CHAINS' RESIDUES #
+        df_struc = df_struc[df_struc['chain'].astype(str) == str(target_chainid)]
+    ref_res = dict(zip(df_struc['unipos'].astype(int), df_struc['unires'].astype(str)))
+    ref_len = max(ref_res) if ref_res else 0
+
+    detail_rows, summary_rows = [], []
+    for screen_name, screen_gene in zip(screen_names, gene_list): 
+        if screen_gene != input_gene: 
+            summary_rows.append({'gene': input_gene, 'chain': target_chainid, 'screen': screen_name,
+                                 'checked': False, 'note': f'skipped: numbered on {screen_gene}'})
+            continue
+
+        # DISTINCT (refAA, position) PAIRS THIS SCREEN EDITS, OVER EVERY PER-EDIT CATEGORY TABLE #
+        edits = {}
+        for mut in mut_categories: 
+            path = working_filedir / f"screendata/{screen_gene}_{screen_name.replace(' ', '_')}_{mut.replace(' ', '_')}.tsv"
+            if not os.path.exists(path): 
+                continue
+            df = pd.read_csv(path, sep='\t')
+            if not {'this_edit', 'edit_pos', 'refAA'}.issubset(df.columns): 
+                continue
+            df = df.dropna(subset=['edit_pos', 'refAA'])
+            for edit, pos, ref in zip(df['this_edit'], df['edit_pos'], df['refAA']): 
+                edits.setdefault((str(ref), int(pos)), set()).add(str(edit))
+
+        counts = dict.fromkeys(['match', 'pdb_mismatch', 'reference_mismatch', 'outside_reference', 'not_in_structure', 'stop_codon'], 0)
+        for (ref, pos), edit_set in sorted(edits.items(), key=lambda x: x[0][1]): 
+            if ref == '*': # STOP-LOSS EDITS (e.g. *1033R) SIT ON THE STOP CODON, WHICH HAS NO RESIDUE #
+                counts['stop_codon'] += 1
+                continue
+            if pos in pdb_res: 
+                status = 'match' if pdb_res[pos] == ref else 'pdb_mismatch'
+            elif pos > ref_len: 
+                status = 'outside_reference'
+            elif ref_res.get(pos) != ref: 
+                status = 'reference_mismatch'
+            else: 
+                status = 'not_in_structure'
+            counts[status] += 1
+            if status != 'match': 
+                detail_rows.append({'gene': input_gene, 'chain': target_chainid, 'screen': screen_name,
+                                    'position': pos, 'screen_res': ref, 'pdb_res': pdb_res.get(pos, '-'),
+                                    'reference_res': ref_res.get(pos, '-'), 'status': status,
+                                    'edits': ';'.join(sorted(edit_set))})
+
+        n_discrepant = counts['pdb_mismatch'] + counts['reference_mismatch'] + counts['outside_reference']
+        summary_rows.append({'gene': input_gene, 'chain': target_chainid, 'screen': screen_name, 'checked': True,
+                             'n_positions': len(edits), 'n_discrepant': n_discrepant, **counts, 'note': ''})
+        if n_discrepant: 
+            examples = [f"{r['screen_res']}{r['position']} (PDB {r['pdb_res']}, reference {r['reference_res']})"
+                        for r in detail_rows if r['screen'] == screen_name and r['status'] != 'not_in_structure'][:5]
+            # PRINTED, NOT warnings.warn: SEVERAL PIPELINE MODULES TURN ALL WARNINGS OFF AT IMPORT #
+            print(f'WARNING: {input_gene} chain {target_chainid}, {screen_name}: {n_discrepant}/{len(edits)} edited '
+                  f'positions disagree with the structure/reference residue '
+                  f'(pdb_mismatch={counts["pdb_mismatch"]}, reference_mismatch={counts["reference_mismatch"]}, '
+                  f'outside_reference={counts["outside_reference"]}); e.g. {", ".join(examples)}')
+
+    detail_cols = ['gene', 'chain', 'screen', 'position', 'screen_res', 'pdb_res', 'reference_res', 'status', 'edits']
+    detail_file = working_filedir / f'sequence_check/{input_gene}_screen_vs_structure.tsv'
+    summary_file = working_filedir / f'sequence_check/{input_gene}_screen_vs_structure_summary.tsv'
+    pd.DataFrame(detail_rows, columns=detail_cols).to_csv(detail_file, sep='\t', index=False)
+    df_summary = pd.DataFrame(summary_rows)
+    df_summary.to_csv(summary_file, sep='\t', index=False)
+
+    n_total = int(df_summary['n_discrepant'].sum()) if 'n_discrepant' in df_summary else 0
+    if n_total: 
+        print(f'WARNING: {input_gene}: see {detail_file} for every discrepant position')
+        if on_mismatch == 'error': 
+            raise ValueError(f'{input_gene} chain {target_chainid}: {n_total} edited position(s) disagree with the '
+                             f'structure/reference residue (on_residue_mismatch: error); see {detail_file}')
+    else: 
+        print(f'{input_gene} chain {target_chainid}: every edited residue matches the structure/reference sequence')
+    return df_summary

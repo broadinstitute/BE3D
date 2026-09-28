@@ -40,7 +40,7 @@ Files are output to ```'[workdir]/hypothesis_qa'```
 ### 2. `sequence_structural_features`
 
 **Description:** \
-Queries UniProt, AlphaFold, and DSSP to generate a combined sequence-structure feature table.
+Queries AlphaFold (or reads a user PDB), UniProt, and DSSP to generate a combined sequence-structure feature table. By default the reference sequence (`unipos` 1..N) is taken from `target_chainid` in the structure itself, falling back to UniProt when that chain has gaps, does not start at residue 1, or differs in length from UniProt. The sequence used is saved to `sequence_structure/[structureid]_used_sequence.fasta`.
 
 ```python
 sequence_structural_features(
@@ -51,11 +51,12 @@ sequence_structural_features(
     target_chainid = 'A',                    # chain ID of input_gene in the PDB structure
     # Optional
     radius = 6.0,                            # neighbor count radius in Angstroms
-    user_fasta = None,                       # path to user-supplied FASTA file; skips UniProt query
+    user_fasta = None,                       # path to user-supplied FASTA file; overrides sequence_source
     user_pdb = None,                         # path to user-supplied PDB file; skips AlphaFold query
     user_dssp = None,                        # path to user-supplied DSSP file; skips DSSP locally
     domains_dict = None,                     # domain annotations e.g. {'ZnF': (1, 100), ...}
     atom_level_naa = False,                  # if True, counts neighbors at atom level rather than residue level
+    sequence_source = 'structure',           # 'structure' (from target_chainid, UniProt fallback) or 'uniprot'
 )
 ```
 
@@ -78,6 +79,7 @@ conservation(
     # Optional
     alignment_filename = None,               # path to precomputed Clustal-format alignment (primary sequence first); skips UniProt query and MUSCLE entirely
     user_fasta = None,                       # path to local FASTA for input_gene; skips UniProt query; ignored if alignment_filename is given
+                                             # (be3d_local.py passes the structure table's [structureid]_used_sequence.fasta here by default)
     alt_user_fasta = None,                   # path to local FASTA for alt_input_gene (e.g., RefSeq-only isoform); ignored if alignment_filename is given
     mode = 'run',                            # 'run' uses local MUSCLE; 'query' uses remote MUSCLE API
     title = None,                            # job title for remote API request; required if mode='query'
@@ -669,8 +671,9 @@ sequence_structural_features_lite(
     structureid = 'UNIQUE-ID',               # identifier used for naming output files
     target_chainid = 'B',                    # chain ID of input_gene in the shared PDB structure
     # Optional
-    user_fasta = None,                       # path to user-supplied FASTA file; skips UniProt query
+    user_fasta = None,                       # path to user-supplied FASTA file; overrides sequence_source
     user_pdb = None,                         # path to user-supplied PDB/complex file; skips AlphaFold query
+    sequence_source = 'structure',           # 'structure' or 'uniprot'; see sequence_structural_features()
 )
 ```
 
@@ -681,7 +684,7 @@ Returns a DataFrame with columns ```['unipos', 'unires', 'chain']```. Files are 
 ### 26. `sanitary_check`
 
 **Description:** \
-Reports how many missense edits in each screen map onto the residues in the structure-sequence table.
+Reports how many missense edits in each screen map onto the residues in the structure-sequence table, and warns when too many do not (usually a reference-sequence / screen-numbering mismatch).
 
 ```python
 sanitary_check(
@@ -689,6 +692,8 @@ sanitary_check(
     df_missense_list,                      # list of missense DataFrames from parse_be_data(), one per screen
     # Optional
     mute = True,                           # if False, prints mapped / unmapped missense edit counts and the unmapped edits
+    screen_names = None,                   # screen identifiers for df_missense_list, used in the report and warnings
+    warn_fraction = 0.05,                  # warn when more than this fraction of a screen's missense edits are unmapped
 )
 ```
 
@@ -696,7 +701,31 @@ No files are written.
 
 ---
 
-### 27. `reduce_mutation_type`
+### 27. `check_screen_residues`
+
+**Description:** \
+Guardrail comparing every reference residue/position the screens edit (e.g. the `I257` of `I257V`) against the residue the PDB has at that position on `target_chainid`, and against the reference sequence. Any disagreement is printed as a `WARNING` per screen and written to a report; unresolved positions are listed but not counted as discrepancies. be3d_local.py runs it in every mode after `parse_be_data()`, controlled by the yaml key `on_residue_mismatch` (`warn` or `error`), and the notebooks display its reports with `show_residue_check()`.
+
+```python
+check_screen_residues(
+    workdir = 'PATH/TO/WORKING/DIRECTORY', # output directory parse_be_data() wrote screendata/ into
+    input_gene = 'GENE_NAME',              # gene whose own-species screens are checked
+    screen_names = ['screen_name_1'],      # screen identifiers, as passed to parse_be_data()
+    pdb_processed_file = 'PATH/TO/[structureid]_processed.pdb', # processed PDB from sequence_structural_features()
+    target_chainid = 'A',                  # chain ID of input_gene in the PDB structure
+    df_struc = pd.DataFrame(),             # residue table with 'unipos' and 'unires' (the reference sequence)
+    # Optional
+    gene_list = None,                      # per-screen gene symbol; screens not numbered on input_gene are skipped
+    mut_categories = ('Missense', 'Silent', 'Nonsense'), # parse_be_data() tables with per-edit refAA/edit_pos
+    on_mismatch = 'warn',                  # 'warn' reports and continues; 'error' raises ValueError after writing the report
+)
+```
+
+Status per edited position: `pdb_mismatch` (PDB residue differs), `reference_mismatch` (unresolved in the PDB and the reference residue differs), `outside_reference` (beyond the reference sequence), `not_in_structure` (reference agrees, PDB has no residue; reported only). Files are output to ```'[workdir]/sequence_check'```
+
+---
+
+### 28. `reduce_mutation_type`
 
 **Description:** \
 Collapses a delimiter-joined multi-category mutation type (e.g., `'Silent;Missense;'`, one category per edit in the guide) into a single category, keeping whichever appears first in `priority_order`. Categories not in `priority_order` fall back to the first token; single-category values are returned unchanged. Typically applied per value to `mut_col` before `parse_be_data()`.
@@ -713,7 +742,7 @@ No files are written.
 
 ---
 
-### 28. `g2p_formatted_hit_cluster`
+### 29. `g2p_formatted_hit_cluster`
 
 **Description:** \
 Gathers LFC, LFC3D, and union hit and cluster labels (and scores) into TSVs formatted for hit cluster visualization on G2P.

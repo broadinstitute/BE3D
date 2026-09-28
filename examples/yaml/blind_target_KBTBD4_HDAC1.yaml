@@ -10,6 +10,8 @@ input_gene: KBTBD4
 input_uniprot: Q9NVX7-2
 input_chain: B
 user_pdb: ./pdb/8voj_KBTBD4_HDAC1_chain_ABC.pdb
+sequence_source: structure # structure (default): sequence from the AF model / user_pdb, UniProt fallback on gaps or length mismatch; uniprot: always UniProt; user_fasta overrides both
+on_residue_mismatch: warn # warn (default): report screen edits whose residue disagrees with the PDB/reference and continue; error: stop the run
 structure_radius: 6.0
 skip_no_coords: true
 atom_level_naa: false
