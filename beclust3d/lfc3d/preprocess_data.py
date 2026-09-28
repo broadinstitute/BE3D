@@ -190,7 +190,7 @@ def parse_be_data(
 
     return mut_dfs
 
-def sanitary_check(df_struc, df_missense_list, mute=True):
+def sanitary_check(df_struc, df_missense_list, mute=True, screen_names=None, warn_fraction=0.05):
     """
         Check how the number of missense edits mapped to the target protein.
 
@@ -200,18 +200,40 @@ def sanitary_check(df_struc, df_missense_list, mute=True):
             Dataframe for target structure-sequence information.
 
         df_missense_list : list of pd.DataFrame
-            List of missense dataframes, one for each screen.
+            List of missense dataframes, one for each screen. Screens numbered on another
+            species' sequence (cross-species) should be left out, since they are only mapped
+            onto df_struc later, in prioritize_by_sequence.
+
+        mute : bool, optional (default=True)
+            If False, prints the mapped / unmapped counts for every screen.
+
+        screen_names : list of str or None, optional
+            Names for df_missense_list, used in the printed report and warnings.
+
+        warn_fraction : float, optional (default=0.05)
+            Warn when more than this fraction of a screen's distinct missense edits have a
+            reference residue/position that is not in df_struc -- usually a sign that the
+            reference sequence (structure/UniProt/user_fasta) is not the one the screen
+            library was designed on.
 
         Returns
         -------
         """    
-    struc_refAA_pos_list = (df_struc['unires']+df_struc['unipos'].astype(str)).to_list()
+    struc_refAA_pos_set = set((df_struc['unires']+df_struc['unipos'].astype(str)).to_list())
+    if screen_names is None: 
+        screen_names = [f'screen {i+1}' for i in range(len(df_missense_list))]
 
-    for each_df_missense in df_missense_list:
-        missense_refAA_pos_list = each_df_missense['this_edit'].str[:-1].to_list()
+    for screen_name, each_df_missense in zip(screen_names, df_missense_list):
+        missense_refAA_pos_set = set(each_df_missense['this_edit'].str[:-1].to_list())
+        not_mapped = missense_refAA_pos_set.difference(struc_refAA_pos_set)
         if not mute: 
             print('-----[SANITARY CHECK]-----')
-            print(f'#of missense edits:{len(set(missense_refAA_pos_list))},\
-                  #of mapped missense edits:{len(set(missense_refAA_pos_list).intersection(set(struc_refAA_pos_list)))},\
-                  #of not mapped missense edits:{len(set(missense_refAA_pos_list).difference(set(struc_refAA_pos_list)))},\
-                  list of not mapped missense edits: {list(set(missense_refAA_pos_list).difference(set(struc_refAA_pos_list)))}')
+            print(f'{screen_name}: #of missense edits:{len(missense_refAA_pos_set)},\
+                  #of mapped missense edits:{len(missense_refAA_pos_set) - len(not_mapped)},\
+                  #of not mapped missense edits:{len(not_mapped)},\
+                  list of not mapped missense edits: {list(not_mapped)}')
+        if missense_refAA_pos_set and len(not_mapped) / len(missense_refAA_pos_set) > warn_fraction: 
+            # PRINTED, NOT warnings.warn: SEVERAL PIPELINE MODULES TURN ALL WARNINGS OFF AT IMPORT #
+            print(f'WARNING: {screen_name}: {len(not_mapped)}/{len(missense_refAA_pos_set)} missense edits do not match '
+                  f'the reference sequence (e.g. {sorted(not_mapped)[:5]}); check that the reference '
+                  'sequence (see sequence_source / user_fasta) matches the screen library numbering')

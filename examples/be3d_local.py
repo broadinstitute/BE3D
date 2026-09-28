@@ -13,6 +13,14 @@ def load_config(config_yaml):
 
 	return config
 
+def used_sequence_fasta(workdir, structureid):
+	"""
+	FASTA of the reference sequence sequence_structural_features(_lite) numbered the
+	residue table on (written by resolve_sequence_fasta), so conservation aligns the same
+	sequence and its residue map lines up with df_struc row for row.
+	"""
+	return os.path.join(workdir, 'sequence_structure', f'{structureid}_used_sequence.fasta')
+
 def preprocess_ppi_partner(
 	partner_dir, gene, uniprot, chain,
 	screens, screen_dir, screen_names,
@@ -21,6 +29,7 @@ def preprocess_ppi_partner(
 	conservation_run=False, alt_gene_name=None, alt_uniprot_id=None, alt_screen_start=None,
 	v_score_threshold=3, muscle_path='muscle', priority_on_alternative=False,
 	cons_user_fasta=None, cons_alt_user_fasta=None, cons_alignment_filename=None,
+	sequence_source='structure',
 ):
 	"""
 	Lightweight preprocessing for a PPI partner chain: only produces
@@ -44,6 +53,7 @@ def preprocess_ppi_partner(
 		partner_dir, gene, uniprot, structureid,
 		target_chainid=chain,
 		user_fasta=user_fasta, user_pdb=user_pdb,
+		sequence_source=sequence_source,
 	)
 
 	input_dfs = [pd.read_csv(os.path.join(screen_dir, s), sep='\t') for s in screens]
@@ -53,10 +63,11 @@ def preprocess_ppi_partner(
 
 	# SPECIES-AWARE GENE NAME PER SCREEN, MIRRORING main()'s CONSERVATION SETUP #
 	if conservation_run and alt_gene_name:
+		# ALIGN THE SAME SEQUENCE THE RESIDUE TABLE WAS BUILT ON, UNLESS OVERRIDDEN #
 		_, df_residuemap = conservation(
 			partner_dir, gene, alt_gene_name, uniprot, alt_uniprot_id,
 			muscle_path=muscle_path,
-			user_fasta=cons_user_fasta, alt_user_fasta=cons_alt_user_fasta,
+			user_fasta=cons_user_fasta or used_sequence_fasta(partner_dir, structureid), alt_user_fasta=cons_alt_user_fasta,
 			alignment_filename=cons_alignment_filename,
 		)
 		conserv_dfs, gene_list = [], []
@@ -198,7 +209,7 @@ def run_blind_target(
 	user_pdb=None, user_fasta=None, user_dssp=None,
 	structure_radius=6.0, atom_level_naa=False,
 	function_for_lfc='mean', function_for_lfc3d='mean', function_for_meta='mean',
-	mut_delimiter_default=';', mutation_priority=None,
+	mut_delimiter_default=';', mutation_priority=None, sequence_source='structure',
 ):
 	"""
 	Computes a purely partner-derived ("blind") LFC3D signal at the residues of
@@ -230,7 +241,7 @@ def run_blind_target(
 		target_chainid=target_chain,
 		radius=structure_radius,
 		user_fasta=user_fasta, user_pdb=user_pdb, user_dssp=user_dssp,
-		atom_level_naa=atom_level_naa,
+		atom_level_naa=atom_level_naa, sequence_source=sequence_source,
 	)
 
 	lfc_colname = f'{function_for_lfc}_Missense_LFC'
@@ -267,6 +278,7 @@ def run_blind_target(
 			v_score_threshold=partner.get('v_score_threshold', 3),
 			muscle_path=partner.get('muscle_path', 'muscle'),
 			priority_on_alternative=partner.get('priority_on_alternative', False),
+			sequence_source=partner.get('sequence_source', sequence_source),
 		)
 
 		ppi_chain_gene_dict[chain] = gene_identifier
@@ -362,6 +374,7 @@ def run_complex_mode(config, output_dir, common_kwargs, gene_names, uniprot_list
 	priority_on_alternative = common_kwargs['priority_on_alternative']
 	user_fasta = common_kwargs['user_fasta']
 	user_pdb = common_kwargs['user_pdb']
+	sequence_source = common_kwargs['sequence_source']
 
 	assert len(gene_names) == len(uniprot_list) == len(chain_list), \
 		'input_gene, input_uniprot, input_chain must list the same number of comma-separated entries in complex mode'
@@ -394,7 +407,7 @@ def run_complex_mode(config, output_dir, common_kwargs, gene_names, uniprot_list
 				alt_screen_start=alt_screen_start, v_score_threshold=v_score_threshold,
 				muscle_path=muscle_path, priority_on_alternative=priority_on_alternative,
 				cons_user_fasta=cons_user_fasta, cons_alt_user_fasta=cons_alt_user_fasta,
-				cons_alignment_filename=cons_alignment_filename,
+				cons_alignment_filename=cons_alignment_filename, sequence_source=sequence_source,
 			)
 			ppi_chain_gene_dict[ch] = gene_identifier
 			ppi_gene_edits_dict[gene_identifier] = partner_dir
@@ -583,6 +596,7 @@ def main(**kwargs):
 	skip_no_coords=kwargs.get('skip_no_coords', True)
 	muscle_path=kwargs['muscle_path']
 	mutation_priority=kwargs['mutation_priority']
+	sequence_source=kwargs.get('sequence_source', 'structure')
 
 	if user_pdb:
 		structureid = f'PDB-{input_uniprot}'
@@ -615,6 +629,19 @@ def main(**kwargs):
 		for df in input_dfs:
 			df[mut_col] = df[mut_col].apply(lambda x: reduce_mutation_type(x, mut_delimiter, mutation_priority))
 
+	# Only for original Gene -- RUN BEFORE conservation SO IT CAN ALIGN THE SAME REFERENCE SEQUENCE #
+	sequence_structural_features(
+		output_dir,
+		input_gene, input_uniprot, structureid,
+		user_fasta=user_fasta,
+		user_pdb=user_pdb,
+		user_dssp=user_dssp,
+		target_chainid=input_chain,
+		radius=structure_radius,
+		atom_level_naa=atom_level_naa,
+		sequence_source=sequence_source,
+		)
+
 	df_residuemap = pd.DataFrame()
 	conserv_dfs = list()
 	gene_list = list()
@@ -624,7 +651,7 @@ def main(**kwargs):
 					input_gene, alt_gene_name,
 					input_uniprot, alt_uniprot_id,
 					muscle_path=muscle_path, 
-					user_fasta=cons_user_fasta, alt_user_fasta=cons_alt_user_fasta,
+					user_fasta=cons_user_fasta or used_sequence_fasta(output_dir, structureid), alt_user_fasta=cons_alt_user_fasta,
 					alignment_filename=cons_alignment_filename,
 		)
 
@@ -644,18 +671,6 @@ def main(**kwargs):
 		for screen_name in screen_names:
 			conserv_dfs.append(None)
 			gene_list.append(input_gene)
-
-	# Only for original Gene
-	sequence_structural_features(
-		output_dir,
-		input_gene, input_uniprot, structureid,
-		user_fasta=user_fasta,
-		user_pdb=user_pdb,
-		user_dssp=user_dssp,
-		target_chainid=input_chain,
-		radius=structure_radius,
-		atom_level_naa=atom_level_naa
-		)
 
 	# For All gene
 	hypothesis_test(
@@ -746,7 +761,9 @@ def main(**kwargs):
 	]
 	
 	df_struc = pd.read_csv(f'{output_dir}/sequence_structure/{structureid}_coord_struc_features.tsv', sep='\t')
-	sanitary_check(df_struc, df_missense_list)
+	# CROSS-SPECIES SCREENS ARE STILL IN THE OTHER SPECIES' NUMBERING HERE, SO ONLY CHECK input_gene'S OWN #
+	own = [i for i, gene in enumerate(gene_list) if gene == input_gene]
+	sanitary_check(df_struc, [df_missense_list[i] for i in own], screen_names=[screen_names[i] for i in own])
 	
 	# For All
 	for df_missense, screen_name, gene in zip(df_missense_list, screen_names, gene_list):
@@ -1578,6 +1595,10 @@ if __name__ == '__main__':
 	muscle_path = config.get('muscle_path', 'muscle')
 	mutation_priority = config.get('mutation_priority') # optional; most-to-least-deleterious order for collapsing
 	                                                      # delimiter-joined multi-category mut_col values (e.g. 'Silent;Missense;')
+	# WHERE THE REFERENCE SEQUENCE (unipos 1..N) COMES FROM WHEN user_fasta IS NOT SET: 'structure' (DEFAULT) TAKES
+	# input_chain FROM THE AF MODEL / user_pdb, FALLING BACK TO UNIPROT WHEN THAT CHAIN HAS GAPS OR A DIFFERENT
+	# LENGTH FROM UNIPROT; 'uniprot' ALWAYS QUERIES UNIPROT (THE BEHAVIOR BEFORE THIS OPTION EXISTED) #
+	sequence_source = config.get('sequence_source', 'structure')
 
 	# KWARGS SHARED ACROSS EVERY main() CALL, REGARDLESS OF MODE #
 	common_kwargs = dict(
@@ -1591,7 +1612,7 @@ if __name__ == '__main__':
 		cons_alignment_filename=cons_alignment_filename,
 		function_for_meta=function_for_meta, qa_passed_only=qa_passed_only, qa_only=qa_only, qa_controls=qa_controls, qa_cases=qa_cases,
 		priority_on_alternative=priority_on_alternative, config_yaml=config_yaml, atom_level_naa=atom_level_naa, muscle_path=muscle_path,
-		mutation_priority=mutation_priority, skip_no_coords=skip_no_coords,
+		mutation_priority=mutation_priority, skip_no_coords=skip_no_coords, sequence_source=sequence_source,
 	)
 
 	if mode == 'monomer':
@@ -1634,6 +1655,7 @@ if __name__ == '__main__':
 			structure_radius=structure_radius, atom_level_naa=atom_level_naa,
 			function_for_lfc=function_for_lfc, function_for_lfc3d=function_for_lfc3d, function_for_meta=function_for_meta,
 			mut_delimiter_default=mut_delimiter, mutation_priority=mutation_priority,
+			sequence_source=sequence_source,
 		)
 
 	else:

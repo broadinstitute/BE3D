@@ -73,3 +73,4 @@ structure_radius: 6.0
 user_dssp: null
 user_fasta: null
 user_pdb: ./pdb/8voj_KBTBD4_HDAC1_chain_ABC.pdb
+sequence_source: structure # structure (default): sequence from the AF model / user_pdb, UniProt fallback on gaps or length mismatch; uniprot: always UniProt; user_fasta overrides both

@@ -409,7 +409,8 @@ YAML_FIELD_HELP = {
     'screens': 'Screen data filename(s), comma-separated',
     'output_dir': 'Directory the pipeline writes its outputs to',
     'user_pdb': 'Path to a user-supplied PDB structure (blank = fetch automatically)',
-    'user_fasta': 'Path to a user-supplied FASTA sequence (blank = use the UniProt sequence)',
+    'user_fasta': 'Path to a user-supplied FASTA sequence; overrides sequence_source (blank = use sequence_source)',
+    'sequence_source': "Reference sequence when user_fasta is blank: 'structure' (from the AF model / user_pdb chain, UniProt fallback on gaps or length mismatch) or 'uniprot'",
     'user_dssp': 'Path to a user-supplied DSSP file (blank = compute automatically)',
     'nRandom': 'Number of random permutations for the null distribution (higher = slower, more precise p-values)',
     'structure_radius': 'Angstrom radius used to build the structural neighbor graph (LFC3D)',
@@ -456,8 +457,9 @@ YAML_FIELD_HELP = {
     'atom_level_naa': 'Atom-level (rather than residue-level) structural neighbor detection -- still in development',
     # Path-specific entries for field names that mean different things in different sections
     # (list indices dropped, e.g. 'partners[0].user_pdb' -> 'partners.user_pdb'); see _field_help #
-    'conservation.user_fasta': 'Local FASTA for the primary sequence in the conservation alignment, instead of querying input_uniprot',
-    'partners.user_fasta': "Path to this partner's FASTA (blank = use its UniProt sequence)",
+    'conservation.user_fasta': 'Local FASTA for the primary sequence in the conservation alignment (blank = the reference sequence the structure table was built on)',
+    'partners.user_fasta': "Path to this partner's FASTA; overrides sequence_source (blank = use sequence_source)",
+    'partners.sequence_source': "This partner's reference sequence source, 'structure' or 'uniprot' (blank = the top-level sequence_source)",
     'partners.user_pdb': "Path to this partner's PDB structure (blank = use the top-level user_pdb)",
     'partners.priority_on_alternative': "Treat every one of this partner's screens as the alternative species, instead of only those matching alt_screen_start",
 }

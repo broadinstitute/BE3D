@@ -3,7 +3,7 @@ File: structure.py
 Author: Calvin XiaoYang Hu, Yoochan Myung, Surya Kiran Mani, Sumaiya Iqbal
 Date: 2024-06-18
 Description: 
-    Queries UniProt, AlphaFold, and DSSP to generate a combined sequence-structure feature table.
+    Queries AlphaFold (or reads a user PDB), UniProt, and DSSP to generate a combined sequence-structure feature table.
 """
 
 import os
@@ -24,10 +24,11 @@ def sequence_structural_features(
     user_pdb=None, 
     user_dssp=None, 
     domains_dict=None,
-    atom_level_naa=False
+    atom_level_naa=False,
+    sequence_source='structure',
 ): 
     """
-    Queries UniProt, AlphaFold, and DSSP to generate a combined sequence-structure feature table.
+    Queries AlphaFold (or reads a user PDB), UniProt, and DSSP to generate a combined sequence-structure feature table.
 
     Parameters
     ----------
@@ -50,10 +51,17 @@ def sequence_structural_features(
         Radius in Angstroms used when counting neighboring amino acids.
 
     user_fasta : str or None, optional
-        Path to a user-supplied UniProt FASTA file. If provided, skips querying UniProt online.
+        Path to a user-supplied FASTA file for the reference sequence. If provided, overrides sequence_source.
 
     user_pdb : str or None, optional
         Path to a user-supplied AlphaFold PDB file. If provided, skips querying AlphaFold online.
+
+    sequence_source : str, optional (default='structure')
+        Where the reference sequence (unipos 1..N) comes from when user_fasta is None.
+        'structure' takes target_chainid's sequence from the structure itself, falling back
+        to UniProt when that chain has gaps, does not start at residue 1, or differs in
+        length from UniProt; 'uniprot' always queries UniProt. The sequence used is saved
+        to sequence_structure/{structureid}_used_sequence.fasta.
 
     user_dssp : str or None, optional
         Path to a user-supplied DSSP secondary structure file. If provided, skips running DSSP locally.
@@ -78,23 +86,7 @@ def sequence_structural_features(
     if not os.path.exists(working_filedir / 'sequence_structure'):
         os.mkdir(working_filedir / 'sequence_structure')
     
-    # UNIPROT #
-    out_fasta = working_filedir / f"sequence_structure/{input_gene}_{input_uniprot}.tsv"
-    if user_fasta is not None: # USER INPUT FOR UNIPROT #
-        assert os.path.isfile(user_fasta), f'{user_fasta} does not exist'
-        uFasta_file = user_fasta
-    else: # QUERY DATABASE #
-        uFasta_file = query_uniprot(working_filedir, input_uniprot)
-    parse_uniprot(uFasta_file, out_fasta)
-
-    # DOMAINS #
-    domains_filename = f"sequence_structure/{input_gene}_{input_uniprot}_domains.tsv"
-    if domains_dict is not None: 
-        parse_domains(working_filedir, out_fasta, domains_filename, domains_dict)
-    else: 
-        query_domains(working_filedir, input_uniprot, domains_filename)
-
-    # STRUCTURE #
+    # STRUCTURE (FIRST, SO THE REFERENCE SEQUENCE CAN BE TAKEN FROM IT) #
     pdb_filename = f"sequence_structure/{input_uniprot}.pdb"
     pdb_processed_filename = f"sequence_structure/{structureid}_processed.pdb"
     if user_pdb is not None: # USER INPUT FOR ALPHAFOLD #
@@ -104,7 +96,20 @@ def sequence_structural_features(
         query_af(working_filedir, pdb_filename, structureid)
     parse_af(working_filedir, pdb_filename, pdb_processed_filename)
     update_pdb_element_symbols(os.path.join(working_filedir, pdb_processed_filename),os.path.join(working_filedir, pdb_processed_filename))
-    
+
+    # REFERENCE SEQUENCE: user_fasta, ELSE THE STRUCTURE'S TARGET CHAIN, ELSE UNIPROT #
+    out_fasta = working_filedir / f"sequence_structure/{input_gene}_{input_uniprot}.tsv"
+    uFasta_file = resolve_sequence_fasta(working_filedir, input_gene, input_uniprot, structureid, target_chainid,
+                                         pdb_processed_filename, user_fasta=user_fasta, sequence_source=sequence_source)
+    parse_uniprot(uFasta_file, out_fasta)
+
+    # DOMAINS #
+    domains_filename = f"sequence_structure/{input_gene}_{input_uniprot}_domains.tsv"
+    if domains_dict is not None: 
+        parse_domains(working_filedir, out_fasta, domains_filename, domains_dict)
+    else: 
+        query_domains(working_filedir, input_uniprot, domains_filename)
+
     coord_filename = f"sequence_structure/{structureid}_coord.tsv"
     parse_coord(working_filedir, pdb_processed_filename, out_fasta, coord_filename, target_chainid)
 
@@ -143,12 +148,13 @@ def sequence_structural_features_lite(
     target_chainid,
     user_fasta=None,
     user_pdb=None,
+    sequence_source='structure',
 ):
     """
     Lightweight variant of sequence_structural_features for PPI partner chains
     that are only ever used as a cross-chain LFC lookup (see calculate_lfc3d).
     Produces just the unipos/unires/chain residue table by aligning the gene's
-    own UniProt sequence to its chain in the shared PDB structure, skipping
+    reference sequence to its chain in the shared PDB structure, skipping
     domains, DSSP, neighbor/radius counting, and burial degree entirely.
 
     Parameters
@@ -169,10 +175,13 @@ def sequence_structural_features_lite(
         Chain ID of input_gene in the PDB structure. Only residues from this chain are included.
 
     user_fasta : str or None, optional
-        Path to a user-supplied UniProt FASTA file. If provided, skips querying UniProt online.
+        Path to a user-supplied FASTA file for the reference sequence. If provided, overrides sequence_source.
 
     user_pdb : str or None, optional
         Path to a user-supplied AlphaFold/complex PDB file. If provided, skips querying AlphaFold online.
+
+    sequence_source : str, optional (default='structure')
+        'structure' or 'uniprot'; see sequence_structural_features.
 
     Returns
     -------
@@ -187,16 +196,7 @@ def sequence_structural_features_lite(
     if not os.path.exists(working_filedir / 'sequence_structure'):
         os.mkdir(working_filedir / 'sequence_structure')
 
-    # UNIPROT #
-    out_fasta = working_filedir / f"sequence_structure/{input_gene}_{input_uniprot}.tsv"
-    if user_fasta is not None: # USER INPUT FOR UNIPROT #
-        assert os.path.isfile(user_fasta), f'{user_fasta} does not exist'
-        uFasta_file = user_fasta
-    else: # QUERY DATABASE #
-        uFasta_file = query_uniprot(working_filedir, input_uniprot)
-    parse_uniprot(uFasta_file, out_fasta)
-
-    # STRUCTURE #
+    # STRUCTURE (FIRST, SO THE REFERENCE SEQUENCE CAN BE TAKEN FROM IT) #
     pdb_filename = f"sequence_structure/{input_uniprot}.pdb"
     pdb_processed_filename = f"sequence_structure/{structureid}_processed.pdb"
     if user_pdb is not None: # USER INPUT FOR ALPHAFOLD/COMPLEX #
@@ -206,6 +206,12 @@ def sequence_structural_features_lite(
         query_af(working_filedir, pdb_filename, structureid)
     parse_af(working_filedir, pdb_filename, pdb_processed_filename)
     update_pdb_element_symbols(os.path.join(working_filedir, pdb_processed_filename), os.path.join(working_filedir, pdb_processed_filename))
+
+    # REFERENCE SEQUENCE: user_fasta, ELSE THE STRUCTURE'S TARGET CHAIN, ELSE UNIPROT #
+    out_fasta = working_filedir / f"sequence_structure/{input_gene}_{input_uniprot}.tsv"
+    uFasta_file = resolve_sequence_fasta(working_filedir, input_gene, input_uniprot, structureid, target_chainid,
+                                         pdb_processed_filename, user_fasta=user_fasta, sequence_source=sequence_source)
+    parse_uniprot(uFasta_file, out_fasta)
 
     coord_filename = f"sequence_structure/{structureid}_coord.tsv"
     parse_coord(working_filedir, pdb_processed_filename, out_fasta, coord_filename, target_chainid)
