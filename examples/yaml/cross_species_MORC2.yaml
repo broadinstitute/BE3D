@@ -32,6 +32,9 @@ conservation:
   alt_gene_name: Morc2a
   alt_uniprot_id: Q69ZX6
   alt_screen_start: Mouse
+  user_fasta: null # local FASTA for the primary sequence instead of querying input_uniprot
+  alt_user_fasta: null # local FASTA for the alternative sequence instead of querying alt_uniprot_id
+  alignment_filename: null # precomputed Clustal alignment (primary first); skips both FASTAs and MUSCLE
 priority_on_alternative: false
 mutation_category:
   missense: [Missense]

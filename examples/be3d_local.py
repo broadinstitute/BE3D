@@ -258,7 +258,7 @@ def run_blind_target(
 			partner.get('mut_col', 'Mutation_type'), partner.get('val_col', 'sgRNA_score'),
 			partner.get('gene_col', 'Gene'), partner.get('edits_col', 'Mutation_list'),
 			mut_categories, mut_delimiter,
-			partner.get('user_fasta'), partner.get('user_pdb', user_pdb),
+			partner.get('user_fasta'), partner.get('user_pdb') or user_pdb,
 			mutation_priority=partner.get('mutation_priority', mutation_priority),
 			conservation_run=partner.get('conservation_run', False),
 			alt_gene_name=partner.get('alt_gene_name'),
