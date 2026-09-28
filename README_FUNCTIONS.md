@@ -76,7 +76,9 @@ conservation(
     input_uniprot = 'Q12345',                # UniProt accession ID for input_gene
     alt_input_uniprot = 'P12345',            # UniProt accession ID for alt_input_gene
     # Optional
-    alignment_filename = None,               # path to precomputed alignment file; skips MUSCLE entirely
+    alignment_filename = None,               # path to precomputed Clustal-format alignment (primary sequence first); skips UniProt query and MUSCLE entirely
+    user_fasta = None,                       # path to local FASTA for input_gene; skips UniProt query; ignored if alignment_filename is given
+    alt_user_fasta = None,                   # path to local FASTA for alt_input_gene (e.g., RefSeq-only isoform); ignored if alignment_filename is given
     mode = 'run',                            # 'run' uses local MUSCLE; 'query' uses remote MUSCLE API
     title = None,                            # job title for remote API request; required if mode='query'
     email = None,                            # email for remote API request; required if mode='query'
@@ -111,9 +113,11 @@ parse_be_data(
     mut_categories = ["Nonsense", "Splice Site", ...],  # mutation categories to extract from mut_col
     mut_delimiter = ',',                                # delimiter used within edits_col
     conserv_dfs = [],                                   # conservation DataFrames from conservation()
-    conserv_col = 'alt_res_pos',                        # residue position column in conserv_dfs to filter on
+    conserv_col = 'mouse_res_pos',                      # residue position column in conserv_dfs to filter on
     v_score_threshold = 3,                              # minimum conservation score (-1, 1, 2, or 3)
     gene_list = False,                                  # if True, processes a list of genes
+    mutation_priority = None,                           # most-to-least deleterious category order used to collapse multi-category mut_col values (e.g., 'Silent;Missense;'); None uses mut_col as-is
+)
 ```
 
 Files are output to ```'[workdir]/screendata'```
@@ -264,8 +268,9 @@ calculate_lfc3d(
     function_type_lfc3d = 'mean',          # LFC3D aggregation function name; must be a key in func_map
     LFC_only = False,                      # if True, skips LFC3D calculation and outputs LFC scores only
     conserved_only = False,                # if True, aggregates conserved residues only; match randomize_sequence()
+    skip_no_coords = True,                 # if True, sets LFC/LFC3D (and randomized) scores to '-' at residues without xyz coordinates (x_coord == '-')
     gene_type = 'Human',                   # species or gene type label used in output naming
-    target_gene_chain = 'A',              # chain ID of the target gene in the PDB structure
+    target_gene_chain = 'A',               # chain ID of the target gene in the PDB structure
     ppi_chain_gene_dict = {},              # interacting gene to chain ID mapping (e.g., {'GENE1': 'B', ...})
     ppi_gene_edits_dict = {},              # interacting gene to edits dict mapping (e.g., {'GENE1': edits_dict, ...})
     func_map = {'mean': np.mean, ...},     # function name to callable mapping for LFC3D aggregation
@@ -313,6 +318,7 @@ bin_score(
     # Optional
     score_type = 'LFC3D',                  # score type to bin; 'LFC' or 'LFC3D'
     gene_type = 'Human',                   # species or gene type label used in output naming
+    quantiles = {'NEG 10th v': 0.1, ...},  # percentile label to threshold value mapping
 )
 ```
 
@@ -386,7 +392,7 @@ clustering(
     screen_name = 'Meta',                  # screen identifier for output filenames
     score_type = 'LFC3D',                  # score type to cluster; 'LFC' or 'LFC3D'
     merge_cols = ['unipos', 'chain'],      # columns used to merge clustering results
-    clustering_kwargs = {'n_clusters': None, 'metric': 'euclidean', 'linkage': 'single'} # None enables distance-threshold clustering
+    clustering_kwargs = {'n_clusters': None, 'metric': 'euclidean', 'linkage': 'single'}, # None enables distance-threshold clustering
     atom_level = False,                    # if True, clusters at atom level rather than residue level
 )
 ```
@@ -417,11 +423,12 @@ plot_clustering(
     screen_name = 'Meta',                  # screen identifier for output filenames
     score_type = 'LFC3D',                  # score type to plot; 'LFC' or 'LFC3D'
     merge_col = ['unipos', 'chain'],       # columns used to merge clustering results
-    clustering_kwargs = {'n_clusters': None, 'metric': 'euclidean', 'linkage': 'single'} # AgglomerativeClustering kwargs; match clustering()
+    clustering_kwargs = {'n_clusters': None, 'metric': 'euclidean', 'linkage': 'single'}, # AgglomerativeClustering kwargs; match clustering()
     horizontal = False,                    # if True, renders plots with a horizontal layout
-    line_subplots_kwargs = {'figsize': (10, 7)},       # kwargs for line plot figure
-    dendrogram_subplots_kwargs = {'figsize': (15, 12)}, # kwargs for dendrogram figure
+    line_subplots_kwargs = {'figsize': (6, 5)},        # kwargs for line plot figure
+    dendrogram_subplots_kwargs = {'figsize': (12, 10)}, # kwargs for dendrogram figure
     save_type = 'png',                     # plot format ('png', 'pdf', 'svg', etc.)
+    max_distance = None,                   # caps the dendrogram distance axis; cosmetic only, does not affect clustering
 )
 ```
 
@@ -469,6 +476,7 @@ plot_enrichment_test(
     # Optional
     padding = 0.5,                         # Y-axis padding above and below plotted points
     save_type = 'png',                     # plot format ('png', 'pdf', 'svg', etc.)
+    log2 = False,                          # if True, plots odds ratios and confidence intervals on the log2 scale
 )
 ```
 
@@ -483,13 +491,14 @@ Generates a scatter plot of LFC vs LFC3D scores, color-coded by significance.
 
 ```python
 lfc_lfc3d_scatter(
-    df_input,
-    workdir = 'PATH/TO/WORKING/DIRECTORY',
-    input_gene = 'GENE_NAME', # DNMT3A, MEN1, etc
-    screen_name = 'screen_name_1', # UNIQUE SCREEN IDENTIFIER FOR df_input
+    df_input,                              # DataFrame containing per-residue LFC, LFC3D, and significance columns
+    workdir = 'PATH/TO/WORKING/DIRECTORY', # output directory
+    input_gene = 'GENE_NAME',              # gene name (e.g., 'DNMT3A', 'MEN1')
+    screen_name = 'screen_name_1',         # screen identifier for df_input
     # Optional
-    pthr = 0.05, # P-VALUE CUTOFF TO Z-SCORE ON
-    save_type = 'png', # OUTPUT GRAPH SAVE TYPE (ie 'png', 'pdf', 'svg', etc)
+    pthr = 0.05,                           # p-value threshold for significance labeling
+    save_type = 'png',                     # plot format ('png', 'pdf', 'svg', etc.)
+    custom_palette = {'Not LFC3D Hit': 'grey', 'LFC3D Pos Hit': 'blue', ...}, # significance label to color mapping
 )
 ```
 
@@ -532,12 +541,13 @@ hits_feature_barplot(
     workdir = 'PATH/TO/WORKING/DIRECTORY', # output directory
     input_gene = 'GENE_NAME',              # gene name (e.g., 'DNMT3A', 'MEN1')
     category_col,                          # feature category column in df_input to group by
+    score_type,                            # score type label used in the plot title; 'LFC' or 'LFC3D'
     values_cols,                           # hit direction columns in df_input to plot
     values_vals,                           # values within values_cols that define a hit
     value_names,                           # display names for each hit category in the legend
     # Optional
     plot_type = 'Count',                   # 'Count' for raw counts or 'Fraction' for proportions
-    colors = ['darkred', 'darkblue'],      # colors for each hit category
+    color_map = {'NEG': 'darkred', 'POS': 'darkblue'}, # hit category to color mapping
     save_type = 'png',                     # plot format ('png', 'pdf', 'svg', etc.)
 )
 ```
@@ -588,7 +598,7 @@ bin_meta(
     # Optional
     score_type = 'LFC3D',                  # score type to bin; 'LFC' or 'LFC3D'
     aggr_func_name = 'SUM',                # aggregation function name used in average_split_meta()
-    quantiles = {'NEG_10p_v': 0.1, ...},  # percentile label to threshold value mapping
+    quantiles = {'NEG 10th v': 0.1, ...},  # percentile label to threshold value mapping
 )
 ```
 
@@ -639,6 +649,92 @@ average_split_bin_plots(
 ```
 
 Files are output to ```'[workdir]/meta-aggregate/plots'```
+
+---
+
+# Helpers
+
+## Structure, Preprocessing, and Visualization
+
+### 25. `sequence_structural_features_lite`
+
+**Description:** \
+Lightweight variant of `sequence_structural_features()` for PPI partner chains used only as a cross-chain LFC lookup in `calculate_lfc3d()`. Maps the gene's UniProt sequence to its chain in the shared PDB structure and skips domains, DSSP, neighbor counting, and burial degree.
+
+```python
+sequence_structural_features_lite(
+    workdir = 'PATH/TO/WORKING/DIRECTORY',   # output directory
+    input_gene = 'GENE_NAME',                # gene name of the PPI partner
+    input_uniprot = 'Q12345',                # UniProt accession ID for input_gene
+    structureid = 'UNIQUE-ID',               # identifier used for naming output files
+    target_chainid = 'B',                    # chain ID of input_gene in the shared PDB structure
+    # Optional
+    user_fasta = None,                       # path to user-supplied FASTA file; skips UniProt query
+    user_pdb = None,                         # path to user-supplied PDB/complex file; skips AlphaFold query
+)
+```
+
+Returns a DataFrame with columns ```['unipos', 'unires', 'chain']```. Files are output to ```'[workdir]/sequence_structure'```
+
+---
+
+### 26. `sanitary_check`
+
+**Description:** \
+Reports how many missense edits in each screen map onto the residues in the structure-sequence table.
+
+```python
+sanitary_check(
+    df_struc,                              # structural feature DataFrame from sequence_structural_features()
+    df_missense_list,                      # list of missense DataFrames from parse_be_data(), one per screen
+    # Optional
+    mute = True,                           # if False, prints mapped / unmapped missense edit counts and the unmapped edits
+)
+```
+
+No files are written.
+
+---
+
+### 27. `reduce_mutation_type`
+
+**Description:** \
+Collapses a delimiter-joined multi-category mutation type (e.g., `'Silent;Missense;'`, one category per edit in the guide) into a single category, keeping whichever appears first in `priority_order`. Categories not in `priority_order` fall back to the first token; single-category values are returned unchanged. Typically applied per value to `mut_col` before `parse_be_data()`.
+
+```python
+df[mut_col] = df[mut_col].apply(lambda x: reduce_mutation_type(
+    x,                                     # mutation type string from mut_col
+    mut_delimiter = ';',                   # delimiter between per-edit categories
+    priority_order = ['Nonsense', 'Splice Site', 'Missense', 'Silent', ...], # categories ordered most to least deleterious
+))
+```
+
+No files are written.
+
+---
+
+### 28. `g2p_formatted_hit_cluster`
+
+**Description:** \
+Gathers LFC, LFC3D, and union hit and cluster labels (and scores) into TSVs formatted for hit cluster visualization on G2P.
+
+```python
+g2p_formatted_hit_cluster(
+    results_dir = 'PATH/TO/WORKING/DIRECTORY', # output directory containing cluster_LFC, cluster_LFC3D, cluster_union, LFC, LFC3D
+    gene_list = ['GENE_NAME'],             # gene name for each screen in screen_names
+    screen_names = ['screen_name_1'],      # screen identifiers; paired with gene_list
+    # Optional
+    lfc_pthr = '05',                       # p-value threshold suffix for LFC hits ('05', '01', or '001')
+    lfc3d_pthr = '05',                     # p-value threshold suffix for LFC3D hits ('05', '01', or '001')
+    meta_pthr = '001',                     # p-value threshold suffix for meta-aggregate hits ('05', '01', or '001')
+    dist = 6,                              # clustering radius in Angstroms whose cluster labels are exported
+    function_for_meta = False,             # aggr_func_name from average_split_meta() (e.g., 'SUM', 'mean') to include meta-aggregate hits; False skips
+    conservation = False,                  # if True, reads meta-aggregate files under gene name 'Merged'
+    input_gene = None,                     # currently unused
+)
+```
+
+Files are output to ```'[results_dir]/g2p_visualization'```
 
 ---
 
