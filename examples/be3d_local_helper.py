@@ -20,43 +20,49 @@ from IPython.display import display, Image, SVG
 
 def show_residue_check(output_dir, max_rows=15):
     """
-    Show the screen-vs-structure residue guardrail (check_screen_residues) for a run:
-    every sequence_check/*_summary.tsv under output_dir (a ppi_diff / complex run writes
-    one per gene and partner chain), a red banner when any screen edits a residue the PDB
-    or reference sequence disagrees with, and the first discrepant positions. Reads the
-    files rather than the run log, so it works on a skipped (already completed) run too.
+    Print the screen-vs-structure residue guardrail (check_screen_residues) for a run: one
+    line per screen with how many edited positions matched the PDB residue, mismatched it
+    (or the reference sequence), or were unmatched (no PDB residue at that position), then
+    the mismatched positions themselves. Covers every sequence_check/*_summary.tsv under
+    output_dir (a ppi_diff / complex run writes one per gene and partner chain), and reads
+    the files rather than the run log, so it works on a skipped (already completed) run too.
     """
-    from IPython.display import HTML
     import glob
 
     summaries = sorted(glob.glob(os.path.join(output_dir, '**', 'sequence_check', '*_summary.tsv'), recursive=True))
     if not summaries:
-        display(HTML("<div style='padding:6px 10px;border-left:4px solid #999'>No residue check found under "
-                     f"<code>{output_dir}</code> -- this run predates the check; delete RUN_COMPLETED.txt and re-run to create it.</div>"))
+        print(f'No residue check found under {output_dir} -- this run predates the check; '
+              'delete RUN_COMPLETED.txt and re-run to create it.')
         return None
 
-    df_summary = pd.concat([pd.read_csv(f, sep='\t').assign(report=os.path.relpath(os.path.dirname(os.path.dirname(f)), output_dir))
-                            for f in summaries], ignore_index=True)
-    n_bad = int(pd.to_numeric(df_summary.get('n_discrepant'), errors='coerce').fillna(0).sum())
-    if n_bad:
-        display(HTML("<div style='padding:6px 10px;border-left:4px solid #c0392b;background:#fdecea'>"
-                     f"<b>Residue check: {n_bad} edited position(s) disagree with the PDB / reference sequence.</b> "
-                     "Scores at those positions land on the wrong residue (or none) -- check that the screen library, "
-                     "<code>sequence_source</code>/<code>user_fasta</code> and the structure use the same numbering.</div>"))
-    else:
-        display(HTML("<div style='padding:6px 10px;border-left:4px solid #27ae60;background:#eafaf1'>"
-                     "<b>Residue check passed:</b> every edited residue matches the PDB / reference sequence.</div>"))
-    cols = [c for c in ['report', 'gene', 'chain', 'screen', 'n_positions', 'n_discrepant', 'pdb_mismatch',
-                        'reference_mismatch', 'outside_reference', 'not_in_structure', 'note'] if c in df_summary]
-    display(df_summary[cols])
+    n_mismatched_total, mismatched_rows = 0, []
+    for f in summaries:
+        run = os.path.relpath(os.path.dirname(os.path.dirname(f)), output_dir)
+        prefix = '' if run == '.' else f'{run} | '
+        for row in pd.read_csv(f, sep='\t').to_dict('records'):
+            label = f"{prefix}{row['gene']} chain {row['chain']} | {row['screen']}"
+            if not row.get('checked', True):
+                print(f"{label}: {row.get('note')}")
+                continue
+            n_mismatched = int(row['n_discrepant'])
+            n_mismatched_total += n_mismatched
+            print(f"{label}: matched {int(row['match'])}, mismatched {n_mismatched}, "
+                  f"unmatched (no PDB residue) {int(row['not_in_structure'])}")
+        if os.path.exists(f.replace('_summary.tsv', '.tsv')):
+            details = pd.read_csv(f.replace('_summary.tsv', '.tsv'), sep='\t')
+            mismatched_rows += [(prefix, r) for r in details[details['status'] != 'not_in_structure'].to_dict('records')]
 
-    if n_bad:
-        details = pd.concat([pd.read_csv(f.replace('_summary.tsv', '.tsv'), sep='\t') for f in summaries], ignore_index=True)
-        details = details[details['status'] != 'not_in_structure']
-        print(f'First {min(max_rows, len(details))} of {len(details)} discrepant positions '
-              f'(full lists: sequence_check/*_screen_vs_structure.tsv):')
-        display(details.head(max_rows))
-    return df_summary
+    if n_mismatched_total:
+        print(f'\nWARNING: {n_mismatched_total} mismatched position(s) -- scores there land on the wrong residue (or none); '
+              'check that the screen library, sequence_source/user_fasta and the structure use the same numbering:')
+        for prefix, r in mismatched_rows[:max_rows]:
+            print(f"  {prefix}{r['screen']}: {r['screen_res']}{r['position']} (PDB {r['pdb_res']}, "
+                  f"reference {r['reference_res']}, {r['status']}) -- edits {r['edits']}")
+        if len(mismatched_rows) > max_rows:
+            print(f'  ... {len(mismatched_rows) - max_rows} more in sequence_check/*_screen_vs_structure.tsv')
+    else:
+        print('\nResidue check passed: no mismatched positions.')
+    return n_mismatched_total
 
 
 def show_svgs(paths):
