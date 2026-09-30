@@ -276,7 +276,7 @@ def run_blind_target(
 			partner.get('mut_col', 'Mutation_type'), partner.get('val_col', 'sgRNA_score'),
 			partner.get('gene_col', 'Gene'), partner.get('edits_col', 'Mutation_list'),
 			mut_categories, mut_delimiter,
-			partner.get('user_fasta'), partner.get('user_pdb') or user_pdb,
+			partner.get('user_fasta') or None, partner.get('user_pdb') or user_pdb,
 			mutation_priority=partner.get('mutation_priority', mutation_priority),
 			conservation_run=partner.get('conservation_run', False),
 			alt_gene_name=partner.get('alt_gene_name'),
@@ -1560,9 +1560,9 @@ if __name__ == '__main__':
 	# input_uniprot / alt_uniprot_id, or skip alignment entirely with a precomputed file.
 	# alt_user_fasta is the one that matters when the screen numbers residues on a sequence
 	# UniProt has no accession for (e.g. a RefSeq-only isoform) #
-	cons_user_fasta = conservation_cfg.get('user_fasta')
-	cons_alt_user_fasta = conservation_cfg.get('alt_user_fasta')
-	cons_alignment_filename = conservation_cfg.get('alignment_filename')
+	cons_user_fasta = conservation_cfg.get('user_fasta') or None
+	cons_alt_user_fasta = conservation_cfg.get('alt_user_fasta') or None
+	cons_alignment_filename = conservation_cfg.get('alignment_filename') or None
 
 	database_cfg = config.get('database') or {}
 	mut_col = database_cfg.get('mut_col')
@@ -1582,9 +1582,9 @@ if __name__ == '__main__':
 	mut_categories.extend(mutation_category_cfg.get('intron', []))
 
 	# OPTIONAL
-	user_fasta = config.get('user_fasta')
-	user_pdb = config.get('user_pdb')
-	user_dssp = config.get('user_dssp')
+	user_fasta = config.get('user_fasta') or None # '' (A CLEARED NOTEBOOK FIELD) MEANS UNSET #
+	user_pdb = config.get('user_pdb') or None
+	user_dssp = config.get('user_dssp') or None
 	function_for_lfc = config.get('function_for_lfc', 'mean')
 	function_for_lfc3d = config.get('function_for_lfc3d', 'mean')
 	function_for_meta = config.get('function_for_meta', 'mean')

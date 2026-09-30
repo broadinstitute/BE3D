@@ -677,7 +677,11 @@ def edit_yaml_widgets(yaml_path, key_groups, exclude=('mode', 'atom_level_naa', 
                 v = w.value
                 if isinstance(orig, list):
                     v = [x.strip() for x in v.split(',') if x.strip()]
-                elif orig is None and v == '':
+                elif v == '':
+                    # A cleared field means "unset", not an empty string -- the pipeline
+                    # checks optional paths (user_pdb, user_fasta, ...) with `is not None`,
+                    # so '' would be taken as a path and fail instead of falling back to
+                    # the automatic AlphaFold / UniProt fetch.
                     v = None
             _set_path(current, key, v)
         with open(yaml_path, 'w') as f:
