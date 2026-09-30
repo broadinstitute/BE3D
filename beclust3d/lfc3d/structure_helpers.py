@@ -261,7 +261,16 @@ def query_af(
     # QUERY ALPHAFOLD #
     affile = structureid + '.pdb'
     if not os.path.exists(working_filedir / af_filename): 
-        _ = wget.download(f'https://alphafold.ebi.ac.uk/files/{affile}', out=str(working_filedir))
+        url = f'https://alphafold.ebi.ac.uk/files/{affile}'
+        try:
+            _ = wget.download(url, out=str(working_filedir))
+        except Exception as e:
+            # AFDB only hosts canonical UniProt entries (no '-2' style isoforms), so an
+            # isoform accession 404s here -- point at user_pdb instead of a bare HTTPError #
+            raise RuntimeError(
+                f'Could not download the AlphaFold model {url} ({e}). AlphaFold DB only has '
+                f'canonical UniProt accessions (not isoforms like Q9NVX7-2); use the canonical '
+                f'accession or supply user_pdb.') from e
         os.rename(working_filedir / affile, working_filedir / af_filename)
     return None
 
