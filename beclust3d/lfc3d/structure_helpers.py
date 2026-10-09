@@ -7,6 +7,7 @@ Description:
 
 import os
 import math
+import time
 import wget
 import warnings
 import requests
@@ -532,11 +533,27 @@ def query_domains(
     """
 
     # FETCH DATA #
+    # UniProt answers 429/5xx (e.g. 503) during brief outages; retry those with backoff. A failed fetch must stop
+    # the run here: returning without the domains TSV only defers the crash to the characterization step.
     url = f"https://rest.uniprot.org/uniprotkb/{uniprot_id}.json"
-    response = requests.get(url)
-    if response.status_code != 200:
-        print(f"Error fetching data: {response.status_code}")
-        return
+    max_attempts = 5
+    for attempt in range(1, max_attempts + 1):
+        try:
+            response = requests.get(url, timeout=60)
+        except requests.exceptions.RequestException as error:
+            response, failure = None, f"{type(error).__name__}: {error}"
+        else:
+            if response.status_code == 200:
+                break
+            failure = f"HTTP {response.status_code}"
+            if response.status_code != 429 and response.status_code < 500:
+                raise RuntimeError(f"UniProt domain query for {uniprot_id} failed ({failure}): {url}")
+        if attempt < max_attempts:
+            wait = min(2 ** attempt, 30)
+            print(f"UniProt domain query for {uniprot_id} failed ({failure}); retrying in {wait}s ({attempt}/{max_attempts})")
+            time.sleep(wait)
+    else:
+        raise RuntimeError(f"UniProt domain query for {uniprot_id} failed after {max_attempts} attempts ({failure}): {url}")
 
     # SEQUENCE #
     data = response.json()
