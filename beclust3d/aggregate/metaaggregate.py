@@ -268,6 +268,17 @@ def znorm_meta(
     -------
     df_meta_Z : pd.DataFrame
         DataFrame containing z-scores, p-values, and significance labels per residue at each threshold in pthrs.
+        Also includes Benjamini-Hochberg FDR q-value columns (``{aggr_func}_{score_type}_neg_q`` and
+        ``{aggr_func}_{score_type}_pos_q``) computed across all residues per direction.
+
+    Notes
+    -----
+    The raw p<0.05/0.01/0.001 significance labels apply no correction for the many residues
+    tested simultaneously, so the fraction of residues flagged ("base rate") can be high
+    (~7%-50% across targets in our benchmarking) and raw p<0.05 tends to over-call. The added
+    q-value columns are Benjamini-Hochberg FDR values; thresholding on q (e.g. q<0.1) is the
+    recommended multiple-testing-aware way to call significant residues. All existing p-value
+    and significance columns are unchanged.
     """
 
     # THE META-AGGREGATED RESULTS ARE Z SCORED TO THE WHOLE SET OF RANDOMIZED CONTROLS #
@@ -347,7 +358,18 @@ def znorm_meta(
                 result_data[f'{header_main}_{sign}_{pthr_str}_p'].append(signal_p)
                 result_data[f'{header_main}_{sign}_{pthr_str}_psig'].append(signal_plabel)
 
+    # ADD BENJAMINI-HOCHBERG FDR Q-VALUES ALONGSIDE THE RAW P-VALUES #
+    # The raw p-values do not depend on the p-value threshold, so a single
+    # q-value column per direction accompanies the (threshold-indexed) p
+    # columns. Recommended multiplicity-aware call: q<0.1 (see helper docs);
+    # raw p<0.05 over-calls because base rates can be high. #
+    q_data = {}
+    for sign in ['neg', 'pos']:
+        pvals = result_data[f'{header_main}_{sign}_{pthrs_str[0]}_p']
+        q_data[f'{header_main}_{sign}_q'] = benjamini_hochberg(pvals)
+
     df_temp = pd.DataFrame(result_data).replace(0,'-')
+    df_temp = pd.concat([df_temp, pd.DataFrame(q_data)], axis=1)
     df_meta_Z = pd.concat([df_meta_Z, df_temp], axis=1)
 
     # SAVE #
