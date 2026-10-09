@@ -246,6 +246,7 @@ def check_screen_residues(
     target_chainid, 
     df_struc, 
     gene_list=None, 
+    conserv_dfs=None, 
     mut_categories=('Missense', 'Silent', 'Nonsense'), 
     on_mismatch='warn', 
 ): 
@@ -287,6 +288,14 @@ def check_screen_residues(
         input_gene (cross-species screens, still in the other species' numbering here) are
         listed in the summary as skipped. None checks every screen.
 
+    conserv_dfs : list of (pd.DataFrame or None) or None, optional (default=None)
+        Per-screen residue map, as passed to parse_be_data. A screen that has one is
+        still in the alternative sequence's numbering at this point, so it is listed
+        as skipped. This covers the case gene_list cannot: an alternative carrying the
+        same gene symbol as input_gene -- another isoform of the same protein, say --
+        where the two names are equal and the gene_list test never fires. None checks
+        every screen.
+
     mut_categories : list of str, optional (default=('Missense', 'Silent', 'Nonsense'))
         parse_be_data categories whose tables carry per-edit refAA/edit_pos columns.
 
@@ -314,6 +323,10 @@ def check_screen_residues(
     os.makedirs(working_filedir / 'sequence_check', exist_ok=True)
     if gene_list is None: 
         gene_list = [input_gene] * len(screen_names)
+    if conserv_dfs is None: 
+        conserv_dfs = [None] * len(screen_names)
+    assert len(conserv_dfs) == len(screen_names), '[conserv_dfs] must match [screen_names]'
+    assert len(gene_list) == len(screen_names), '[gene_list] must match [screen_names]'
 
     resnums, pdb_seq, _ = extract_sequence_from_pdb(pdb_processed_file, target_chainid)
     pdb_res = dict(zip(resnums, pdb_seq))
@@ -323,10 +336,15 @@ def check_screen_residues(
     ref_len = max(ref_res) if ref_res else 0
 
     detail_rows, summary_rows = [], []
-    for screen_name, screen_gene in zip(screen_names, gene_list): 
+    for screen_name, screen_gene, conserv_df in zip(screen_names, gene_list, conserv_dfs): 
         if screen_gene != input_gene: 
             summary_rows.append({'gene': input_gene, 'chain': target_chainid, 'screen': screen_name,
                                  'checked': False, 'note': f'skipped: numbered on {screen_gene}'})
+            continue
+        if conserv_df is not None: 
+            summary_rows.append({'gene': input_gene, 'chain': target_chainid, 'screen': screen_name,
+                                 'checked': False,
+                                 'note': 'skipped: numbered on the alternative sequence'})
             continue
 
         # DISTINCT (refAA, position) PAIRS THIS SCREEN EDITS, OVER EVERY PER-EDIT CATEGORY TABLE #
@@ -382,11 +400,16 @@ def check_screen_residues(
     df_summary.to_csv(summary_file, sep='\t', index=False)
 
     n_total = int(df_summary['n_discrepant'].sum()) if 'n_discrepant' in df_summary else 0
+    n_checked = int(df_summary['checked'].sum()) if 'checked' in df_summary else 0
     if n_total: 
         print(f'WARNING: {input_gene}: see {detail_file} for every discrepant position')
         if on_mismatch == 'error': 
             raise ValueError(f'{input_gene} chain {target_chainid}: {n_total} edited position(s) disagree with the '
                              f'structure/reference residue (on_residue_mismatch: error); see {detail_file}')
-    else: 
+    elif n_checked: 
         print(f'{input_gene} chain {target_chainid}: every edited residue matches the structure/reference sequence')
+    else: 
+        # NOTHING WAS COMPARED, SO SAY SO RATHER THAN REPORT A CLEAN BILL OF HEALTH #
+        print(f'{input_gene} chain {target_chainid}: no screen checked '
+              f'(all {len(screen_names)} numbered on another sequence); see {summary_file}')
     return df_summary

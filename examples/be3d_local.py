@@ -94,7 +94,8 @@ def preprocess_ppi_partner(
 	check_screen_residues(
 		partner_dir, gene, screen_names,
 		os.path.join(partner_dir, 'sequence_structure', f'{structureid}_processed.pdb'), chain,
-		df_struc_lite, gene_list=gene_list, on_mismatch=on_residue_mismatch,
+		df_struc_lite, gene_list=gene_list, conserv_dfs=conserv_dfs,
+		on_mismatch=on_residue_mismatch,
 	)
 
 	for screen_name, screen_gene, df_consrv in zip(screen_names, gene_list, conserv_dfs):
@@ -773,10 +774,11 @@ def main(**kwargs):
 	
 	df_struc = pd.read_csv(f'{output_dir}/sequence_structure/{structureid}_coord_struc_features.tsv', sep='\t')
 	# GUARDRAIL: EVERY EDITED REFERENCE RESIDUE/POSITION vs THE PDB AND THE REFERENCE SEQUENCE.
-	# CROSS-SPECIES SCREENS ARE STILL IN THE OTHER SPECIES' NUMBERING HERE, SO ONLY input_gene'S OWN ARE CHECKED #
+	# A SCREEN MAPPED THROUGH conserv_dfs IS STILL IN THE ALTERNATIVE NUMBERING HERE, SO ONLY
+	# UNMAPPED, input_gene-NUMBERED SCREENS ARE CHECKED (gene_list ALONE MISSES A SAME-GENE ISOFORM) #
 	check_screen_residues(
 		output_dir, input_gene, screen_names, pdb_file, input_chain, df_struc,
-		gene_list=gene_list, on_mismatch=on_residue_mismatch,
+		gene_list=gene_list, conserv_dfs=conserv_dfs, on_mismatch=on_residue_mismatch,
 	)
 	
 	# For All
