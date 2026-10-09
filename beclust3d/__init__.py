@@ -8,6 +8,7 @@ from .lfc3d.randomize_data import randomize_data
 from .lfc3d.preprocess_data_plot import plot_rawdata
 
 from .lfc3d.prioritize_sequence import prioritize_by_sequence
+from .lfc3d.prioritize_report import validation_shortlist
 from .lfc3d.prioritize_sequence_plot import plot_screendata_sequence
 from .lfc3d.randomize_sequence import randomize_sequence
 
@@ -34,8 +35,9 @@ __all__ = [
     "randomize_data", 
     "plot_rawdata", 
 
-    "prioritize_by_sequence", 
-    "plot_screendata_sequence", 
+    "prioritize_by_sequence",
+    "validation_shortlist",
+    "plot_screendata_sequence",
     "randomize_sequence", 
 
     "calculate_lfc3d", 
