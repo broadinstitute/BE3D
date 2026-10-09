@@ -51,7 +51,20 @@ def average_split_meta(
         Number of randomizations per screen for calculating randomized LFC and LFC3D scores.
 
     aggr_func_name : str, optional
-        Name corresponding to 'aggr_func'. 
+        Name corresponding to 'aggr_func'. Defaults to 'SUM' (unchanged).
+        Set to 'INVERSE_VARIANCE' to opt into inverse-variance / empirical-Bayes
+        shrinkage: per residue, the per-screen scores are combined with
+        ``inverse_variance_mean`` instead of being summed, weighting each screen
+        by the reciprocal of its per-residue randomization-null variance (the
+        spread of that screen's ``{screen}_{score_type}r*`` columns). Prefer this
+        when screens are noisy or heterogeneous, since a plain SUM ignores
+        per-screen reliability and grows with the number of screens; the
+        inverse-variance combination stays on the per-screen scale and
+        down-weights unreliable screens. SUM remains the default so existing
+        behavior is byte-identical. Under this option the randomization-null
+        columns are combined with the unweighted MEAN (equivalent to
+        inverse-variance weighting with a single shared per-row variance), so the
+        meta score and its null are compared on the same scale during z-norm.
 
     Returns
     -------
@@ -73,8 +86,30 @@ def average_split_meta(
     df_bidir_meta = df_LFC_LFC3D[['unipos', 'unires', 'chain']].copy()
 
    # MAP AGGREGATION FUNCTION #
-    aggr_func = func_map[aggr_func_name.upper()]
-    
+    # OPT-IN INVERSE-VARIANCE / EMPIRICAL-BAYES SHRINKAGE (ADDITIVE) #
+    # DEFAULT PATH (SUM AND ALL EXISTING OPTIONS) IS UNCHANGED / BYTE-IDENTICAL #
+    use_inverse_variance = aggr_func_name.upper() == 'INVERSE_VARIANCE'
+    if use_inverse_variance:
+        # NULL COLUMNS ARE COMBINED WITH THE UNWEIGHTED MEAN SO THE META SCORE #
+        # AND ITS RANDOMIZED NULL LIVE ON THE SAME (PER-SCREEN) SCALE #
+        aggr_func = np.mean
+        # PRECOMPUTE EACH SCREEN'S PER-RESIDUE NULL VARIANCE (RELIABILITY SIGNAL) #
+        # FROM THE RANDOMIZATION COLUMNS BE3D ALREADY COMPUTES #
+        screen_var_dicts = []
+        for screen_name in screen_names:
+            rand_cols = [f"{screen_name}_{score_type}r{str(n+1)}" for n in range(nRandom)]
+            rand_cols = [c for c in rand_cols if c in df_LFC_LFC3D.columns]
+            if rand_cols:
+                rand_vals = df_LFC_LFC3D[rand_cols].replace('-', np.nan).astype(float)
+                var_series = rand_vals.var(axis=1, ddof=1)
+            else:
+                # NO PER-SCREEN NULL AVAILABLE -> NaN -> helper falls back to #
+                # the unweighted (across-screen equal-weight) mean #
+                var_series = pd.Series(np.nan, index=df_LFC_LFC3D.index)
+            screen_var_dicts.append(var_series.to_dict())
+    else:
+        aggr_func = func_map[aggr_func_name.upper()]
+
     # AGGR LFC3D VALUES ACROSS SCREENS FOR EACH RESIDUE #
     # EXCLUSIVE TO META-AGGREGATE, NOT IN NON-AGGREGATE #
     # SETUP PARAMS #
@@ -84,18 +119,39 @@ def average_split_meta(
         assert header in df_LFC_LFC3D.columns
     screen_name_dicts = [df_LFC_LFC3D[header].to_dict() for header in header_scores]
 
-    for i in range(len(df_LFC_LFC3D)): 
+    for i in range(len(df_LFC_LFC3D)):
         values_LFC3D_neg, values_LFC3D_pos, values_LFC3D = [], [], []
 
+        if use_inverse_variance:
+            # COLLECT PER-SCREEN (value, null-variance) PAIRS FOR THIS RESIDUE #
+            vars_LFC3D_neg, vars_LFC3D_pos, vars_LFC3D = [], [], []
+            for s_idx, screen_dict in enumerate(screen_name_dicts):
+                LFC3D = screen_dict[i]
+                if LFC3D != '-':
+                    LFC3D_value = float(LFC3D)
+                    LFC3D_var = screen_var_dicts[s_idx].get(i, np.nan)
+                    if LFC3D_value < 0.0:
+                        values_LFC3D_neg.append(LFC3D_value); vars_LFC3D_neg.append(LFC3D_var)
+                        values_LFC3D.append(LFC3D_value);     vars_LFC3D.append(LFC3D_var)
+                    elif LFC3D_value > 0.0:
+                        values_LFC3D_pos.append(LFC3D_value); vars_LFC3D_pos.append(LFC3D_var)
+                        values_LFC3D.append(LFC3D_value);     vars_LFC3D.append(LFC3D_var)
+
+            # INVERSE-VARIANCE-WEIGHTED MEAN PER RESIDUE #
+            list_LFC3D_neg.append(inverse_variance_mean(values_LFC3D_neg, vars_LFC3D_neg) if values_LFC3D_neg else '-')
+            list_LFC3D_pos.append(inverse_variance_mean(values_LFC3D_pos, vars_LFC3D_pos) if values_LFC3D_pos else '-')
+            list_LFC3D.append(inverse_variance_mean(values_LFC3D, vars_LFC3D) if values_LFC3D else '-')
+            continue
+
         # ADD POS AND NEG VALS SEPARATELY FOR EACH RESIDUE #
-        for screen_dict in screen_name_dicts: 
+        for screen_dict in screen_name_dicts:
             LFC3D = screen_dict[i]
-            if LFC3D != '-': 
+            if LFC3D != '-':
                 LFC3D_value = float(LFC3D)
-                if LFC3D_value < 0.0: 
+                if LFC3D_value < 0.0:
                     values_LFC3D_neg.append(LFC3D_value)
                     values_LFC3D.append(LFC3D_value)
-                elif LFC3D_value > 0.0: 
+                elif LFC3D_value > 0.0:
                     values_LFC3D_pos.append(LFC3D_value)
                     values_LFC3D.append(LFC3D_value)
 

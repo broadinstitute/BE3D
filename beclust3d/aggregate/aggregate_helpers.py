@@ -24,10 +24,81 @@ def sum_dash(
     if len(new_values) == 0: return '-'
     else: return sum(new_values)
 
+def inverse_variance_mean(
+    values,
+    variances
+):
+    """
+    Inverse-variance (empirical-Bayes) weighted mean of a set of screen scores.
+
+    Computes ``Sum(x_i / sigma_i^2) / Sum(1 / sigma_i^2)``, i.e. each value is
+    weighted by the reciprocal of its variance so that noisier / less reliable
+    observations contribute less to the combined estimate. This is the standard
+    fixed-effects meta-analytic combination and is the shared idea behind
+    Buhlmann credibility (actuarial), Hauer's empirical-Bayes estimator
+    (highway safety), Marshall shrinkage (disease mapping) and the
+    inverse-variance random-effects meta used by DMS tools such as Enrich2:
+    weight each source by its precision (1/variance) and let low-variance
+    sources dominate, effectively shrinking noisy screens toward the pooled mean.
+
+    Parameters
+    ----------
+    values : sequence
+        Per-screen scores for one residue. Entries equal to ``'-'`` or NaN are
+        ignored (BE3D uses ``'-'`` as its missing sentinel).
+    variances : sequence
+        Per-screen variance estimate aligned 1:1 with ``values`` (e.g. the
+        spread of each screen's randomization-null distribution at this
+        residue). Entries equal to ``'-'`` or NaN are treated as unusable.
+
+    Returns
+    -------
+    float
+        The inverse-variance-weighted mean. If no usable values remain returns
+        ``np.nan``. If the variances are degenerate (all NaN / non-positive, e.g.
+        all-zero) or only partially usable, it safely falls back to the plain
+        (unweighted) arithmetic mean of the values -- which is exactly the case
+        where every screen carries equal weight (the across-screen-variance
+        fallback reduces to this, since one shared variance yields equal weights).
+
+    Notes
+    -----
+    Pure / numpy-only and side-effect free. This is an opt-in aggregation; the
+    default meta-aggregation in BE3D remains a plain SUM.
+    """
+    xs, vs = [], []
+    for x, v in zip(values, variances):
+        if x == '-':
+            continue
+        xf = float(x)
+        if np.isnan(xf):
+            continue
+        try:
+            vf = np.nan if (v is None or v == '-') else float(v)
+        except (TypeError, ValueError):
+            vf = np.nan
+        xs.append(xf)
+        vs.append(vf)
+
+    if len(xs) == 0:
+        return np.nan
+
+    xs = np.asarray(xs, dtype=float)
+    vs = np.asarray(vs, dtype=float)
+
+    # ONLY STRICTLY POSITIVE, FINITE VARIANCES CAN FORM A WEIGHT #
+    valid = np.isfinite(vs) & (vs > 0.0)
+    # DEGENERATE OR PARTIAL VARIANCE INFO -> UNWEIGHTED MEAN (EQUAL WEIGHTS) #
+    if not valid.all():
+        return float(np.mean(xs))
+
+    weights = 1.0 / vs
+    return float(np.sum(xs * weights) / np.sum(weights))
+
 def filter_dash(
-    x, 
+    x,
     mode
-): 
+):
     """
     Filter a list for only non dash and neg or non dash and pos. 
     """
