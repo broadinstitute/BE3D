@@ -9,6 +9,7 @@ from .lfc3d.preprocess_data_plot import plot_rawdata
 
 from .lfc3d.prioritize_sequence import prioritize_by_sequence
 from .lfc3d.prioritize_sequence_plot import plot_screendata_sequence
+from .lfc3d.reachability import reachability_report
 from .lfc3d.randomize_sequence import randomize_sequence
 
 from .lfc3d.calculate_lfc3d import calculate_lfc3d
@@ -34,9 +35,10 @@ __all__ = [
     "randomize_data", 
     "plot_rawdata", 
 
-    "prioritize_by_sequence", 
-    "plot_screendata_sequence", 
-    "randomize_sequence", 
+    "prioritize_by_sequence",
+    "plot_screendata_sequence",
+    "reachability_report",
+    "randomize_sequence",
 
     "calculate_lfc3d", 
     "average_split_meta", "bin_meta", "znorm_meta", 

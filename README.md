@@ -196,6 +196,20 @@ If MUSCLE or CLUSTAL cannot be run locally, the pipeline queries the MUSCLE API,
 
 Another option to skip MUSCLE and CLUSTAL is for users to run alignment on their own in a CLUSTAL format, and provide the ```sequence.align``` alignment file into the pipeline which is one of the optional inputs. 
 
+### Base-editing reachability
+
+A base editor (CBE/ABE) can only install a subset of amino-acid substitutions, so many validated functional residues are simply not reachable by a tiling screen (e.g. EGFR T790M/C797S/L858R, BRAF V600E, PIK3CA H1047R, AKT1 E17K require transversions or indels no base editor makes). A residue with no editing guide can never be scored as a hotspot, so an apparent BE3D "miss" is often the assay's coverage limit rather than an algorithmic failure.
+
+`reachability_report` is an additive reporting utility (it does not change LFC3D scoring or clustering) that takes the per-residue missense edits table BE3D already builds (the ```*_protein_edits.tsv``` from ```prioritize_by_sequence```) and reports which residues were reachable, overall coverage, and — optionally — whether a supplied list of known functional/hotspot residues was editable at all:
+
+```python
+from beclust3d import reachability_report
+summary = reachability_report(df_protein, total_residues=1210,
+                              target_residues=[790, 797, 858],  # EGFR hotspots
+                              out_tsv="EGFR_reachability.tsv")
+# summary['coverage'], summary['targets']['unreachable']  -> uneditable hotspots
+```
+
 
 
 ## License
