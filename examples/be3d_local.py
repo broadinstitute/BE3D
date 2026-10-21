@@ -29,7 +29,7 @@ def preprocess_ppi_partner(
 	conservation_run=False, alt_gene_name=None, alt_uniprot_id=None, alt_screen_start=None,
 	v_score_threshold=3, muscle_path='muscle', priority_on_alternative=False,
 	cons_user_fasta=None, cons_alt_user_fasta=None, cons_alignment_filename=None,
-	sequence_source='structure', on_residue_mismatch='warn',
+	sequence_source='structure', on_residue_mismatch='warn', controls=('No Mutation',),
 ):
 	"""
 	Lightweight preprocessing for a PPI partner chain: only produces
@@ -99,7 +99,7 @@ def preprocess_ppi_partner(
 	)
 
 	for screen_name, screen_gene, df_consrv in zip(screen_names, gene_list, conserv_dfs):
-		df_control = pd.read_csv(f'{partner_dir}/screendata/{screen_gene}_{screen_name}_No_Mutation.tsv', sep='\t', index_col=0)
+		df_control = load_controls(partner_dir, screen_gene, screen_name, controls)
 		df_dict = {}
 		for mut in ['Missense', 'Silent', 'Nonsense']:
 			filepath = f'{partner_dir}/screendata/{screen_gene}_{screen_name}_{mut}.tsv'
@@ -288,6 +288,7 @@ def run_blind_target(
 			priority_on_alternative=partner.get('priority_on_alternative', False),
 			sequence_source=partner.get('sequence_source', sequence_source),
 			on_residue_mismatch=on_residue_mismatch,
+			controls=partner.get('controls') or ['No Mutation'],
 		)
 
 		ppi_chain_gene_dict[chain] = gene_identifier
@@ -385,6 +386,7 @@ def run_complex_mode(config, output_dir, common_kwargs, gene_names, uniprot_list
 	user_pdb = common_kwargs['user_pdb']
 	sequence_source = common_kwargs['sequence_source']
 	on_residue_mismatch = common_kwargs['on_residue_mismatch']
+	control_categories = common_kwargs['control_categories']
 
 	assert len(gene_names) == len(uniprot_list) == len(chain_list), \
 		'input_gene, input_uniprot, input_chain must list the same number of comma-separated entries in complex mode'
@@ -418,7 +420,7 @@ def run_complex_mode(config, output_dir, common_kwargs, gene_names, uniprot_list
 				muscle_path=muscle_path, priority_on_alternative=priority_on_alternative,
 				cons_user_fasta=cons_user_fasta, cons_alt_user_fasta=cons_alt_user_fasta,
 				cons_alignment_filename=cons_alignment_filename, sequence_source=sequence_source,
-				on_residue_mismatch=on_residue_mismatch,
+				on_residue_mismatch=on_residue_mismatch, controls=control_categories,
 			)
 			ppi_chain_gene_dict[ch] = gene_identifier
 			ppi_gene_edits_dict[gene_identifier] = partner_dir
@@ -597,6 +599,7 @@ def main(**kwargs):
 	qa_only=kwargs['qa_only']
 	qa_controls=kwargs['qa_controls']
 	qa_cases=kwargs['qa_cases']
+	control_categories=kwargs['control_categories']
 	priority_on_alternative=kwargs['priority_on_alternative']
 	ppi_chain_gene_dict=kwargs['ppi_chain_gene_dict']
 	ppi_gene_edits_dict=kwargs['ppi_gene_edits_dict']
@@ -795,7 +798,7 @@ def main(**kwargs):
 
 	# Human and Non-human mixed
 	for gene, screen_name, df_consrv in zip(gene_list, screen_names, conserv_dfs):
-		df_control = pd.read_csv(f'{output_dir}/screendata/{gene}_{screen_name}_No_Mutation.tsv', sep='\t', index_col=0)
+		df_control = load_controls(output_dir, gene, screen_name, control_categories)
 		df_dict = {}
 
 		for mut in ['Missense', 'Silent', 'Nonsense']:
@@ -894,7 +897,8 @@ def main(**kwargs):
 		
 		znorm_score(
 			df_bidir, output_dir, gene, screen_names,
-			pthrs=[0.05, 0.01, 0.001], score_type='LFC', gene_type=gene_type
+			pthrs=[0.05, 0.01, 0.001], score_type='LFC', gene_type=gene_type,
+			controls=control_categories,
 		)
 		df_lfc = pd.read_csv(f'{output_dir}/LFC/{gene_type}_{gene}_NonAggr_LFC.tsv', sep='\t')
 
@@ -1516,7 +1520,7 @@ if __name__ == '__main__':
 	sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), beclust3d_path)))
 
 	from beclust3d.lfc3d.structure import sequence_structural_features, sequence_structural_features_lite
-	from beclust3d.lfc3d.preprocess_data import parse_be_data, sanitary_check, check_screen_residues
+	from beclust3d.lfc3d.preprocess_data import parse_be_data, sanitary_check, check_screen_residues, load_controls
 	from beclust3d.lfc3d.preprocess_data_helpers import reduce_mutation_type
 	from beclust3d.lfc3d.preprocess_data_plot import plot_rawdata
 	from beclust3d.qa.hypothesis_tests import hypothesis_test
@@ -1601,6 +1605,13 @@ if __name__ == '__main__':
 	qa_only = qa_cfg.get('qa_only', False)
 	qa_controls = qa_cfg.get('controls', [])
 	qa_cases = qa_cfg.get('cases', [])
+	# qa.controls ALSO DEFINES THE NEGATIVE CONTROLS WHOSE LFCs FORM THE PER-SCREEN LFC NULL (prioritize_by_sequence,
+	# znorm_score), SO QA AND HIT CALLING COMPARE AGAINST THE SAME GUIDES. WITHOUT IT, FALL BACK TO THE no_mutation LABELS #
+	control_categories = qa_controls or mutation_category_cfg.get('no_mutation') or ['No Mutation']
+	missing_controls = [c for c in control_categories if c not in mut_categories]
+	if mode != 'blind_target' and missing_controls:
+		raise ValueError(f'control categories {missing_controls} are not listed under mutation_category, so no '
+						 f'screendata file is written for them; add them there or drop them from qa.controls')
 	priority_on_alternative = config.get('priority_on_alternative', False)
 	atom_level_naa = config.get('atom_level_naa', False)
 	# DROP BOTH LFC AND LFC3D (AND HENCE union) AT RESIDUES WITH NO RESOLVED xyz -- SEE calculate_lfc3d'S skip_no_coords.
@@ -1630,7 +1641,7 @@ if __name__ == '__main__':
 		cons_user_fasta=cons_user_fasta, cons_alt_user_fasta=cons_alt_user_fasta,
 		cons_alignment_filename=cons_alignment_filename,
 		function_for_meta=function_for_meta, qa_passed_only=qa_passed_only, qa_only=qa_only, qa_controls=qa_controls, qa_cases=qa_cases,
-		priority_on_alternative=priority_on_alternative, config_yaml=config_yaml, atom_level_naa=atom_level_naa, muscle_path=muscle_path,
+		control_categories=control_categories, priority_on_alternative=priority_on_alternative, config_yaml=config_yaml, atom_level_naa=atom_level_naa, muscle_path=muscle_path,
 		mutation_priority=mutation_priority, skip_no_coords=skip_no_coords, sequence_source=sequence_source,
 		on_residue_mismatch=on_residue_mismatch,
 	)

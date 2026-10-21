@@ -124,6 +124,21 @@ parse_be_data(
 
 Files are output to ```'[workdir]/screendata'```
 
+#### `load_controls`
+
+**Description:** \
+Pools the per-guide LFCs of the negative-control categories that `parse_be_data` wrote for one screen, one row per guide. The result is the `df_control` passed to `prioritize_by_sequence`, and `znorm_score` uses it for the LFC null distribution.
+
+```python
+load_controls(
+    workdir = 'PATH/TO/WORKING/DIRECTORY',   # directory parse_be_data wrote screendata/ into
+    input_gene = 'GENE_NAME',                # gene the screen was parsed under, or '*' for any
+    screen_name = 'screen_name_1',           # screen identifier
+    # Optional
+    controls = ['No Mutation'],              # mutation categories pooled as negative controls (e.g., ['No Mutation', 'Silent'])
+)
+```
+
 ---
 
 ### 5. `plot_rawdata`
@@ -184,7 +199,7 @@ prioritize_by_sequence(
     df_dict,                               # dict of parsed DataFrames from parse_be_data() e.g. {'Missense': pd.DataFrame(), ...}
     df_struc,                              # structural feature DataFrame from sequence_structural_features()
     df_consrv,                             # conservation DataFrame from conservation(), or None
-    df_control,                            # control/no-mutation LFC DataFrame, or None
+    df_control,                            # pooled negative-control LFC DataFrame from load_controls(), or None
     workdir = 'PATH/TO/WORKING/DIRECTORY', # output directory
     input_gene = 'GENE_NAME',              # gene name (e.g., 'DNMT3A', 'MEN1')
     screen_name = 'screen_name_1',         # screen identifier for DataFrames in df_dict
@@ -343,6 +358,7 @@ znorm_score(
     score_type = 'LFC3D',                  # score type to normalize; 'LFC' or 'LFC3D'
     pthrs = [0.05, 0.01, 0.001],           # p-value thresholds for significance labeling
     gene_type = 'Human',                   # species or gene type label used in output naming
+    controls = ['No Mutation'],            # negative-control categories for the LFC null (score_type='LFC' only)
 )
 ```
 

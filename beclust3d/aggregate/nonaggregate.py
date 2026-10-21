@@ -184,7 +184,8 @@ def znorm_score(
         screen_names, 
         score_type='LFC3D',
         pthrs=[0.05, 0.01, 0.001],
-        gene_type = 'Human'
+        gene_type = 'Human',
+        controls=('No Mutation',),
 ): 
     """
     Z-normalizes LFC or LFC3D scores against randomized control distributions and assigns significance labels at multiple p-value thresholds.
@@ -208,6 +209,9 @@ def znorm_score(
 
     pthrs : list of float, optional
         List of p-value thresholds used to define significance (default [0.05, 0.01, 0.001]).
+
+    controls : list of str, optional (default=('No Mutation',))
+        Mutation categories pooled as negative controls for the LFC null distribution (e.g. ['No Mutation', 'Silent']).
 
     Returns
     -------
@@ -249,7 +253,7 @@ def znorm_score(
         df_z[f'{screen_name}_AVG_{score_type}r_pos'] = df_bidir[f'{screen_name}_AVG_{score_type}r_pos']
         
         if score_type == 'LFC':
-            neg_stats_list, pos_stats_list = mu_sigma_screens(workdir,screen_names)            
+            neg_stats_list, pos_stats_list = mu_sigma_screens(workdir,screen_names,controls)            
             # all_stats_list = mu_sigma_screens_both(workdir,screen_names) # For two-tailed
             neg_mean = neg_stats_list[idx]['mean']
             neg_std = neg_stats_list[idx]['std']

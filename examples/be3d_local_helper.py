@@ -492,7 +492,7 @@ YAML_FIELD_HELP = {
     'qa_passed_only': 'Restrict the run to screens that passed the hypothesis-test QA gate',
     'qa_only': 'Run only the QA step, then stop (skips the rest of the pipeline)',
     'cases': 'Mutation categories treated as the QA hypothesis test\'s "cases" group (e.g. Nonsense)',
-    'controls': 'Mutation categories treated as the QA hypothesis test\'s "controls" group (e.g. No Mutation)',
+    'controls': 'Negative-control mutation categories: the QA hypothesis test\'s "controls" group and the per-screen LFC z-score null (e.g. No Mutation, Silent)',
     'ppi_chain_gene_dict': 'PDB chain -> gene symbol, covering every chain in the complex (mode: complex/ppi_diff)',
     'ppi_gene_edits_dict': 'gene identifier -> its preprocessed cross-chain LFC lookup directory (built by the pipeline, not hand-edited)',
     'partner_uniprot': 'Gene symbol -> UniProt accession for complex chains whose gene is a pure PPI neighbor (not in input_gene)',
