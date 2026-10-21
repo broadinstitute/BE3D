@@ -141,7 +141,7 @@ def clustering(
             else:
                 clus_lbl = list()
                 if atom_level:
-                    clus_lbl = cluster_residues_from_pdb(pdb_file=atom_level, residue_list=chain_unipos_list, linkage='average')
+                    clus_lbl = cluster_residues_from_pdb(pdb_file=atom_level, residue_list=chain_unipos_list, distance_threshold=dist, linkage='average')
                 else:
                     func_clustering = AgglomerativeClustering(**clustering_kwargs, distance_threshold=dist)
                     clus_lbl = func_clustering.fit(np_hits_coord).labels_
@@ -172,7 +172,7 @@ def cluster_residues_from_pdb(pdb_file, residue_list, distance_threshold=6, link
     residue_list : list of tuples
         Each tuple is (chain_id, residue_number). Example: [("A", 42), ("A", 45)].
     distance_threshold : float, optional
-        Distance threshold (Å) for clustering. Default = 3.5.
+        Distance threshold (Å) for clustering. Default = 6.
     linkage : str, optional
         Linkage method for clustering ('single', 'average', 'complete', etc.). Default = 'single'.
 

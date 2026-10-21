@@ -461,7 +461,7 @@ YAML_FIELD_HELP = {
     'user_dssp': 'Path to a user-supplied DSSP file (blank = compute automatically)',
     'nRandom': 'Number of random permutations for the null distribution (higher = slower, more precise p-values)',
     'structure_radius': 'Angstrom radius used to build the structural neighbor graph (LFC3D)',
-    'clustering_radius': 'Angstrom radius used for spatial clustering / dendrograms',
+    'clustering_radius': 'Angstrom radius (whole number, 4-20) used for spatial clustering, dendrograms and the g2p hit-cluster tables',
     'function_for_lfc': 'Aggregation function across guides for LFC (e.g. mean)',
     'function_for_lfc3d': 'Aggregation function across structural neighbors for LFC3D (e.g. mean)',
     'function_for_meta': 'Aggregation function across screens for meta-analysis (e.g. SUM)',

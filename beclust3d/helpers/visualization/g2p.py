@@ -38,7 +38,7 @@ def g2p_formatted_hit_cluster(results_dir,
         P-value threshold for Meta-aggregation hit prioritization, choices : [05,01,001]
 
     dist : int (default = 6)
-        Type the distance cutoff for agglomerative clustering, which is only for title
+        Clustering distance (Å) whose cluster labels are reported; must be one of the whole-Å distances clustering() ran at
         
     function_for_meta : bool
         True for getting Meta-aggregation analysis on a given function
