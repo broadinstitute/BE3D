@@ -1498,9 +1498,9 @@ def main(**kwargs):
 			pLDDT_col='bfactor_pLDDT', RSA_col='RSA', size_col=f'{score_type}_wght', direction_col='direction',
 			color_map = {'NEG': 'darkred', 'POS': 'darkblue'}
 		)
-		g2p_formatted_hit_cluster(output_dir, gene_list, screen_names, lfc_pthr=single_screen_pthr_str.split('.')[1], lfc3d_pthr=single_screen_pthr_str.split('.')[1], meta_pthr=multi_screen_pthr_str.split('.')[1], function_for_meta=function_for_meta, conservation=conservation_run, input_gene=input_gene)
+		g2p_formatted_hit_cluster(output_dir, gene_list, screen_names, lfc_pthr=single_screen_pthr_str.split('.')[1], lfc3d_pthr=single_screen_pthr_str.split('.')[1], meta_pthr=multi_screen_pthr_str.split('.')[1], dist=clustering_radius, function_for_meta=function_for_meta, conservation=conservation_run, input_gene=input_gene)
 	else:
-		g2p_formatted_hit_cluster(output_dir, gene_list, screen_names, lfc_pthr=single_screen_pthr_str.split('.')[1], lfc3d_pthr=single_screen_pthr_str.split('.')[1], meta_pthr=multi_screen_pthr_str.split('.')[1], function_for_meta=False, conservation=conservation_run, input_gene=input_gene)
+		g2p_formatted_hit_cluster(output_dir, gene_list, screen_names, lfc_pthr=single_screen_pthr_str.split('.')[1], lfc3d_pthr=single_screen_pthr_str.split('.')[1], meta_pthr=multi_screen_pthr_str.split('.')[1], dist=clustering_radius, function_for_meta=False, conservation=conservation_run, input_gene=input_gene)
 
 	# REACHING HERE MEANS THE FULL PIPELINE RAN WITHOUT ERROR; QA-FAILED OR qa_only RUNS EXIT EARLIER AND NEVER WRITE THIS #
 	with open(os.path.join(output_dir, 'RUN_COMPLETED.txt'), 'w') as f:
@@ -1596,6 +1596,11 @@ if __name__ == '__main__':
 	multi_screen_pthr = pthr_cfg.get('multi_screen', 0.05)
 	structure_radius = config.get('structure_radius', 6.0)
 	clustering_radius = config.get('clustering_radius', 6.0)
+	# clustering() LABELS CLUSTERS ONLY AT WHOLE-Å DISTANCES 4..20 (max_distances=20), AND THE g2p TABLES PICK THE
+	# _Clust_{clustering_radius}A COLUMNS, SO ANY OTHER VALUE WOULD SILENTLY REPORT NO CLUSTERS #
+	if clustering_radius != int(clustering_radius) or not 4 <= clustering_radius <= 20:
+		raise ValueError(f'clustering_radius must be a whole number of Angstroms from 4 to 20, got {clustering_radius}')
+	clustering_radius = int(clustering_radius)
 	qa_cfg = config.get('qa') or {}
 	qa_passed_only = qa_cfg.get('qa_passed_only', False)
 	qa_only = qa_cfg.get('qa_only', False)
