@@ -11,7 +11,7 @@ This document summarizes the major functions used in the analysis pipeline. Each
 ### 1. `hypothesis_test`
 
 **Description:** \
-Runs Mann-Whitney U and Kolmogorov-Smirnov tests for Hypothesis 1 (case vs. control within a single screen) and Hypothesis 2 (case in one screen vs. controls pooled across all screens).
+Runs Mann-Whitney U and Kolmogorov-Smirnov tests for Hypothesis 1 (case vs. control within a single screen) and Hypothesis 2 (a gene's cases in one screen vs. controls pooled across all genes in that same screen).
 
 ```python
 hypothesis_test(

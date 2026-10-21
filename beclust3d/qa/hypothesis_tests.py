@@ -30,7 +30,7 @@ def hypothesis_test(
     mutation categories using Mann-Whitney U and Kolmogorov-Smirnov tests.
 
     Hypothesis 1 tests whether case and control values differ for a given gene within a single screen. 
-    Hypothesis 2 tests the same gene's case values in one screen against its control values pooled across all screens.
+    Hypothesis 2 tests the same gene's case values in one screen against the control values of all genes pooled within that same screen.
 
     Parameters
     ----------
