@@ -7,6 +7,7 @@ Description:
 """
 
 import os
+import glob
 import warnings
 import pandas as pd
 from pathlib import Path
@@ -175,8 +176,9 @@ def parse_be_data(
                 df_subset = df_subset[df_subset['refAA'] == df_subset['altAA']]
             elif mut == 'Nonsense': 
                 df_subset = df_subset[df_subset['altAA'] == '*']
-            else: 
-                df_subset = df_subset[df_subset['LFC'] != df_subset['LFC'].shift()]
+            else:
+                # ONE ROW PER GUIDE: THE INDEX IS THE GUIDE'S ROW IN df_mut, REPEATED ONLY BY THE EXPLODE ABOVE #
+                df_subset = df_subset[~df_subset.index.duplicated()]
                 df_subset = df_subset['LFC']
 
             # WRITE LIST OF MUT AND THEIR LFC VALUES #
@@ -189,6 +191,53 @@ def parse_be_data(
         print(gene_mut_df) # OUTPUT COUNTS PER GENE FOR EA MUTATION #
 
     return mut_dfs
+
+def load_controls(
+    workdir,
+    input_gene,
+    screen_name,
+    controls=('No Mutation',),
+):
+    """
+    Pools the per-guide LFCs of every control category written by parse_be_data for one screen.
+
+    Parameters
+    ----------
+    workdir : str
+        Path to the working directory parse_be_data wrote screendata/ into.
+
+    input_gene : str
+        Gene name the screen was parsed under, or '*' to match any gene.
+
+    screen_name : str
+        Name of the screen.
+
+    controls : list of str, optional (default=('No Mutation',))
+        Mutation categories pooled as negative controls (e.g. ['No Mutation', 'Silent']).
+
+    Returns
+    -------
+    df_control : pd.DataFrame
+        One row per control guide, with an 'LFC' column.
+    """
+    screen_name_nospace = screen_name.replace(' ','_')
+    control_dfs, missing = [], []
+    for mut in controls:
+        paths = sorted(glob.glob(os.path.join(workdir, 'screendata', f"{input_gene}_{screen_name_nospace}_{mut.replace(' ','_')}.tsv")))
+        if not paths:
+            missing.append(mut)
+            continue
+        df = pd.read_csv(paths[0], sep='\t', index_col=0)
+        # MISSENSE/SILENT/NONSENSE FILES HOLD ONE ROW PER EDIT, SO A MULTI-EDIT GUIDE REPEATS ITS INDEX #
+        control_dfs.append(df.loc[~df.index.duplicated(), ['LFC']])
+
+    if not control_dfs:
+        raise FileNotFoundError(f'No control guides for screen {screen_name}: none of {list(controls)} '
+                                f'were written to {workdir}/screendata/ (check mutation_category and qa.controls)')
+    if missing:
+        # PRINTED, NOT warnings.warn: SEVERAL PIPELINE MODULES TURN ALL WARNINGS OFF AT IMPORT #
+        print(f'WARNING: {screen_name}: no {missing} guides; controls pooled from {[c for c in controls if c not in missing]} only')
+    return pd.concat(control_dfs, ignore_index=True)
 
 def sanitary_check(df_struc, df_missense_list, mute=True, screen_names=None, warn_fraction=0.05):
     """

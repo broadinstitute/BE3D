@@ -61,6 +61,7 @@ qa:
   - Nonsense
   - Splice-donor
   - Splice-acceptor
+  # negative controls for QA and the per-screen LFC z-score null; e.g. add Silent
   controls:
   - No Mutation
   qa_only: false

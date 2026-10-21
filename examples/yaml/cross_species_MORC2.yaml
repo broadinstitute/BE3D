@@ -49,7 +49,7 @@ qa:
   qa_passed_only: false
   qa_only: false
   cases: [Nonsense, Splice Site]
-  controls: [No Mutation]
+  controls: [No Mutation] # negative controls for QA and the per-screen LFC z-score null; e.g. [No Mutation, Silent]
 ppi_chain_gene_dict: null
 ppi_gene_edits_dict: null
 atom_level_naa: false

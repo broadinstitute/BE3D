@@ -12,6 +12,8 @@ import statistics
 import scipy.stats as stats
 import glob, os
 
+from ..lfc3d.preprocess_data import load_controls
+
 # HELPER FUNCTIONS #
 
 def sum_dash(
@@ -153,19 +155,19 @@ def pooled_mean_std(
     return pooled_mean, pooled_std
 
 def mu_sigma_screens(
-    workdir, 
+    workdir,
     screen_names,
-): 
+    controls=('No Mutation',),
+):
     """
     """
-    
+
     neg_stats_list = list()
     pos_stats_list = list()
-    
+
     for screen_name in screen_names:
         neg_mean, neg_std, pos_mean, pos_std = float(), float(), float(), float()
-        control_tsv = glob.glob(os.path.join(f'{workdir}/screendata/',f'*_{screen_name}_No_Mutation.tsv'))[0]
-        df_control = pd.read_csv(control_tsv, sep='\t', index_col=0)        
+        df_control = load_controls(workdir, '*', screen_name, controls)
         neg_mask = df_control['LFC'] < 0.0 # NEG #
         pos_mask = df_control['LFC'] > 0.0 # POS #
         df_nomut_neg = df_control.loc[neg_mask, 'LFC'] # NEG #
