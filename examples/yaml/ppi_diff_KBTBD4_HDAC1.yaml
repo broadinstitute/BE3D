@@ -12,7 +12,7 @@ priority_on_alternative: false
 database:
   aa_edits_col: Mutation_list
   gene_col: Gene
-  mut_col: Mutation_type
+  edit_categories_col: Mutation_type # per-edit list, collapsed with category_priority; use guide_category_col for a one-category-per-guide column
   edit_delimiter: ;
   val_col: sgRNA_score
 function_for_lfc: mean

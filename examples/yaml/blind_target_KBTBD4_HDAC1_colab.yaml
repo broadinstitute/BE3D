@@ -27,7 +27,7 @@ partners:
     user_pdb: null # blank = use the top-level user_pdb
     screen_dir: /content/beclust3d-public/examples/data
     screens: YeoKBTBD4-HDAC12025-ABE-Screen-PPI.tsv,YeoKBTBD4-HDAC12025-CBE-Screen-PPI.tsv
-    mut_col: Mutation_type
+    edit_categories_col: Mutation_type # per-edit list, collapsed with category_priority; use guide_category_col for a one-category-per-guide column
     val_col: sgRNA_score
     gene_col: Gene
     aa_edits_col: Mutation_list

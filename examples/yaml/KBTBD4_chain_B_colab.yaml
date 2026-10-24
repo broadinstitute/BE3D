@@ -19,7 +19,7 @@ category_labels:
   intron: [Intron]
 # most-to-least-deleterious order for collapsing a guide's semicolon-joined
 # per-edit mutation categories (e.g. 'Silent;Missense;') into a single category;
-# omit/null to use mut_col values as-is (already a single category per guide)
+# used only when database.edit_categories_col names a per-edit list (default order if omitted)
 category_priority: [Nonsense, Splice-donor, Splice-acceptor, Missense, Silent, Intron, No Mutation]
 qa:
   qa_passed_only: false
@@ -37,7 +37,7 @@ conservation:
   alignment_filename: null # precomputed Clustal alignment (primary first); skips both FASTAs and MUSCLE
 priority_on_alternative: false
 database:
-  mut_col: Mutation_type
+  edit_categories_col: Mutation_type # per-edit list, collapsed with category_priority; use guide_category_col for a one-category-per-guide column
   val_col: sgRNA_score
   gene_col: Gene
   aa_edits_col: Mutation_list

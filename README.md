@@ -42,7 +42,7 @@ BE3D enables structure-function analysis of BE tiling mutagenesis data by mappin
 
 BE3D requires the following inputs:
 
-1. **BE Screen Scores (TSV)**: Must include Mutation_type, Mutation_listt, Gene, and sgRNA_score. You must indicate column names as part of the input. 
+1. **BE Screen Scores (TSV)**: One row per guide, with the gene, the guide's score, its amino-acid edits, and its mutation category. You name the columns in the YAML's `database` section.
 
     Example TSV:
 
@@ -52,14 +52,20 @@ BE3D requires the following inputs:
 	KBTBD4	N34N;Y35Y;	Silent;Silent;	-0.138685212882075
     ```
 
-    Example input config (Python):
+    The category can come in either of two forms; name whichever column(s) you have:
 
-    ```python
-    mut_col   = "Mutation_type"
-    val_col   = "sgRNA_score"
-    gene_col  = "Gene"
-    edits_col = "Mutation_list"
+    ```yaml
+    database:
+      gene_col: Gene
+      val_col: sgRNA_score
+      aa_edits_col: Mutation_list           # amino-acid edits, split into one row per edit downstream
+      edit_delimiter: ;
+      guide_category_col: Mutation_Category # one category per guide (e.g. Missense), used as is
+      edit_categories_col: Mutation_type    # one category per edit (e.g. Silent;Missense), collapsed to one per guide
+    category_priority: [Nonsense, Splice-donor, Splice-acceptor, Missense, Intron, Silent, UTR, No Mutation]
     ```
+
+    With only `edit_categories_col`, each guide gets the first of its categories in `category_priority` (a built-in default order is used if you leave it out). With both, `guide_category_col` is used and the collapsed list only cross-checks it (`on_category_mismatch: warn` or `error`). The older key `mut_col` still works.
 
 2. **Uniprot ID**: Required to fetch an AlphaFold structure. It can fetch other isoforms by providing isoform identifier, `-isoform number`
 

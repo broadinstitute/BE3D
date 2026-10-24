@@ -25,6 +25,71 @@ def cfg_get(cfg, key, old_key, default=None, where=''):
 		return cfg[old_key]
 	return default
 
+def resolve_category_config(cfg, priority, where='', legacy_default_col=None):
+	"""
+	Which screen column(s) give each guide its mutation category, read from a database section or a
+	blind-target partner:
+	  - guide_category_col alone: one category per guide, used as is
+	  - edit_categories_col alone: a per-edit list (e.g. 'Silent;Missense;'), collapsed with `priority`
+	  - both: the per-guide column is used and the per-edit list only cross-checks it
+	The older mut_col still works: with a priority it meant "collapse", without one "use as is".
+	Returns a dict whose 'mut_col' is the column the rest of the pipeline reads.
+	"""
+	guide_col = cfg.get('guide_category_col') or None
+	edit_col = cfg.get('edit_categories_col') or None
+	if not (guide_col or edit_col):
+		old_col = cfg.get('mut_col') or legacy_default_col
+		if old_col and priority:
+			edit_col = old_col
+		elif old_col:
+			guide_col = old_col
+		if cfg.get('mut_col'):
+			print(f"NOTE: {where}mut_col is deprecated; use {where}{'edit_categories_col' if edit_col else 'guide_category_col'}")
+	if not (guide_col or edit_col):
+		raise ValueError(f'{where}guide_category_col (one category per guide) or {where}edit_categories_col '
+						 f'(per-edit category list) is required')
+	if guide_col and not edit_col and priority:
+		print(f'NOTE: category_priority is not used: {where}guide_category_col ({guide_col}) already has one category per guide')
+	return {'mut_col': guide_col or edit_col, 'guide_category_col': guide_col,
+			'edit_categories_col': edit_col, 'priority': priority}
+
+def apply_guide_categories(input_dfs, screen_names, category_cfg, edits_col, mut_delimiter,
+						   label_roles=None, report_dir=None, on_mismatch='warn'):
+	"""
+	Write one category per guide into category_cfg['mut_col'] of every screen (see
+	resolve_guide_category), printing what was collapsed or filled. With both category columns named,
+	the guides whose two columns disagree are written to report_dir/{screen}_category_check.tsv.
+	"""
+	n_mismatched = 0
+	for df, screen_name in zip(input_dfs, screen_names):
+		categories, report = resolve_guide_category(
+			df, category_cfg['guide_category_col'], category_cfg['edit_categories_col'], mut_delimiter,
+			category_cfg['priority'], edits_col if edits_col in df.columns else None, label_roles)
+		df[category_cfg['mut_col']] = categories
+		# PRINTED, NOT warnings.warn: SEVERAL PIPELINE MODULES TURN ALL WARNINGS OFF AT IMPORT #
+		if report['mode'] == 'collapse':
+			print(f"{screen_name}: categories collapsed from {category_cfg['edit_categories_col']}: "
+				  f"{report['n_collapsed']} multi-label guides, {report['n_filled']} empty lists set to No Mutation")
+			if report['n_fallback']:
+				print(f"WARNING: {screen_name}: {report['n_fallback']} multi-label guides have no label in category_priority "
+					  f"(unranked labels: {sorted(report['unknown_labels'])}); each keeps the first label of its list")
+		if report['n_empty']:
+			print(f"WARNING: {screen_name}: {report['n_empty']} guides have no category and match no category label")
+		if report['mode'] == 'guide+check':
+			mismatches = report['mismatches']
+			if len(mismatches):
+				os.makedirs(report_dir, exist_ok=True)
+				check_file = os.path.join(report_dir, f'{screen_name}_category_check.tsv')
+				mismatches.to_csv(check_file, sep='\t')
+				print(f"WARNING: {screen_name}: {len(mismatches)}/{report['n_guides']} guides disagree between "
+					  f"{category_cfg['guide_category_col']} and collapsed {category_cfg['edit_categories_col']}; see {check_file}")
+			else:
+				print(f"{screen_name}: {category_cfg['guide_category_col']} agrees with collapsed "
+					  f"{category_cfg['edit_categories_col']} for all {report['n_guides']} guides")
+			n_mismatched += len(mismatches)
+	if n_mismatched and on_mismatch == 'error':
+		raise ValueError(f'{n_mismatched} guides disagree between the two category columns (on_category_mismatch: error)')
+
 def used_sequence_fasta(workdir, structureid):
 	"""
 	FASTA of the reference sequence sequence_structural_features(_lite) numbered the
@@ -36,12 +101,12 @@ def used_sequence_fasta(workdir, structureid):
 def preprocess_ppi_partner(
 	partner_dir, gene, uniprot, chain,
 	screens, screen_dir, screen_names,
-	mut_col, val_col, gene_col, edits_col, mut_categories, mut_delimiter,
-	user_fasta, user_pdb, mutation_priority=None,
+	category_cfg, val_col, gene_col, edits_col, mut_categories, mut_delimiter,
+	user_fasta, user_pdb,
 	conservation_run=False, alt_gene_name=None, alt_uniprot_id=None, alt_screen_start=None,
 	v_score_threshold=3, muscle_path='muscle', priority_on_alternative=False,
 	cons_user_fasta=None, cons_alt_user_fasta=None, cons_alignment_filename=None,
-	sequence_source='structure', on_residue_mismatch='warn', controls=('No Mutation',),
+	sequence_source='structure', on_residue_mismatch='warn', controls=('No Mutation',), on_category_mismatch='warn',
 ):
 	"""
 	Lightweight preprocessing for a PPI partner chain: only produces
@@ -69,9 +134,9 @@ def preprocess_ppi_partner(
 	)
 
 	input_dfs = [pd.read_csv(os.path.join(screen_dir, s), sep='\t') for s in screens]
-	if mutation_priority:
-		for df in input_dfs:
-			df[mut_col] = df[mut_col].apply(lambda x: reduce_mutation_type(x, mut_delimiter, mutation_priority))
+	mut_col = category_cfg['mut_col']
+	apply_guide_categories(input_dfs, screen_names, category_cfg, edits_col, mut_delimiter,
+						   report_dir=os.path.join(partner_dir, 'screendata'), on_mismatch=on_category_mismatch)
 
 	# SPECIES-AWARE GENE NAME PER SCREEN, MIRRORING main()'s CONSERVATION SETUP #
 	if conservation_run and alt_gene_name:
@@ -283,14 +348,17 @@ def run_blind_target(
 		partner_dir = os.path.join(output_dir, 'ppi_partners', gene_identifier)
 		os.makedirs(partner_dir, exist_ok=True)
 
+		category_cfg = resolve_category_config(
+			partner, cfg_get(partner, 'category_priority', 'mutation_priority', mutation_priority, where='partners[].'),
+			where='partners[].', legacy_default_col='Mutation_type')
+
 		preprocess_ppi_partner(
 			partner_dir, gene, uniprot, chain,
 			screens, screen_dir, screen_names,
-			partner.get('mut_col', 'Mutation_type'), partner.get('val_col', 'sgRNA_score'),
+			category_cfg, partner.get('val_col', 'sgRNA_score'),
 			partner.get('gene_col', 'Gene'), cfg_get(partner, 'aa_edits_col', 'edits_col', 'Mutation_list', where='partners[].'),
 			mut_categories, mut_delimiter,
 			partner.get('user_fasta') or None, partner.get('user_pdb') or user_pdb,
-			mutation_priority=cfg_get(partner, 'category_priority', 'mutation_priority', mutation_priority, where='partners[].'),
 			conservation_run=partner.get('conservation_run', False),
 			alt_gene_name=partner.get('alt_gene_name'),
 			alt_uniprot_id=partner.get('alt_uniprot_id'),
@@ -377,13 +445,13 @@ def run_complex_mode(config, output_dir, common_kwargs, gene_names, uniprot_list
 	"""
 	screen_dir = common_kwargs['screen_dir']
 	screens = common_kwargs['screens']
-	mut_col = common_kwargs['mut_col']
+	category_cfg = common_kwargs['category_cfg']
 	val_col = common_kwargs['val_col']
 	gene_col = common_kwargs['gene_col']
 	edits_col = common_kwargs['edits_col']
 	mut_categories = common_kwargs['mut_categories']
 	mut_delimiter = common_kwargs['mut_delimiter']
-	mutation_priority = common_kwargs['mutation_priority']
+	on_category_mismatch = common_kwargs['on_category_mismatch']
 	conservation_run = common_kwargs['conservation_run']
 	alt_gene_name = common_kwargs['alt_gene_name']
 	alt_uniprot_id = common_kwargs['alt_uniprot_id']
@@ -425,8 +493,8 @@ def run_complex_mode(config, output_dir, common_kwargs, gene_names, uniprot_list
 			preprocess_ppi_partner(
 				partner_dir, g, gene_to_uniprot[g], ch,
 				screens_list, screen_dir, screen_names,
-				mut_col, val_col, gene_col, edits_col, mut_categories, mut_delimiter,
-				user_fasta, user_pdb, mutation_priority=mutation_priority,
+				category_cfg, val_col, gene_col, edits_col, mut_categories, mut_delimiter,
+				user_fasta, user_pdb, on_category_mismatch=on_category_mismatch,
 				conservation_run=conservation_run, alt_gene_name=alt_gene_name, alt_uniprot_id=alt_uniprot_id,
 				alt_screen_start=alt_screen_start, v_score_threshold=v_score_threshold,
 				muscle_path=muscle_path, priority_on_alternative=priority_on_alternative,
@@ -621,7 +689,9 @@ def main(**kwargs):
 	# LFC3D/LFC3Dr -- SO THEY DROP OUT OF THE LFC, LFC3D AND union/Meta-union HIT LISTS ALIKE #
 	skip_no_coords=kwargs.get('skip_no_coords', True)
 	muscle_path=kwargs['muscle_path']
-	mutation_priority=kwargs['mutation_priority']
+	category_cfg=kwargs['category_cfg']
+	label_roles=kwargs['label_roles']
+	on_category_mismatch=kwargs['on_category_mismatch']
 	sequence_source=kwargs.get('sequence_source', 'structure')
 	on_residue_mismatch=kwargs.get('on_residue_mismatch', 'warn')
 
@@ -650,11 +720,10 @@ def main(**kwargs):
 	screen_names = [s.split('.')[0] for s in screens]
 	input_dfs = [pd.read_csv(os.path.join(screen_dir,s), sep='\t') for s in screens]
 
-	# COLLAPSE PER-EDIT MUTATION CATEGORY LISTS (e.g. 'Silent;Missense;') INTO A SINGLE CATEGORY PER GUIDE,
-	# BEFORE hypothesis_test / parse_be_data DO EXACT-MATCH FILTERING AGAINST mut_categories #
-	if mutation_priority:
-		for df in input_dfs:
-			df[mut_col] = df[mut_col].apply(lambda x: reduce_mutation_type(x, mut_delimiter, mutation_priority))
+	# ONE CATEGORY PER GUIDE -- AS GIVEN, OR COLLAPSED FROM A PER-EDIT LIST LIKE 'Silent;Missense;' -- BEFORE
+	# hypothesis_test / parse_be_data DO EXACT-MATCH FILTERING AGAINST mut_categories #
+	apply_guide_categories(input_dfs, screen_names, category_cfg, edits_col, mut_delimiter, label_roles,
+						   os.path.join(output_dir, 'screendata'), on_category_mismatch)
 
 	# Only for original Gene -- RUN BEFORE conservation SO IT CAN ALIGN THE SAME REFERENCE SEQUENCE #
 	sequence_structural_features(
@@ -720,10 +789,11 @@ def main(**kwargs):
 		h2_ks_test_pd = h2_ks_test_pd.replace(-999,None)
 		white_screen_list = h2_ks_test_pd[(h2_ks_test_pd[f"p_{'_'.join(qa_cases)}_vs_{'_'.join(qa_controls)}"]<0.05)&(h2_ks_test_pd['gene_name'].isin(gene_list))]['screenid'].to_list()
 		print(f'original screen size: {len(screen_names)}, screen white list size: {len(white_screen_list)}, QA-passed screen size: {len(list(set(screen_names).intersection(white_screen_list)))}')
-		screen_name_to_file = dict(zip([s.split('.')[0] for s in screens], screens))
+		df_by_screen = dict(zip(screen_names, input_dfs))
 
 		original_screen_names = screen_names
-		passed_screen_names = list(set(original_screen_names).intersection(white_screen_list))
+		# IN THE YAML'S ORDER, SO A QA-FILTERED RUN LAYS OUT ITS SCREENS LIKE AN UNFILTERED ONE #
+		passed_screen_names = [s for s in original_screen_names if s in set(white_screen_list)]
 		failed_screen_names = [s for s in original_screen_names if s not in passed_screen_names]
 		qa_status = 'PASSED' if passed_screen_names else 'FAILED'
 
@@ -736,7 +806,8 @@ def main(**kwargs):
 			f.write(f'screens_failed: {",".join(sorted(failed_screen_names))}\n')
 
 		screen_names = passed_screen_names
-		input_dfs = [pd.read_csv(os.path.join(screen_dir,screen_name_to_file[s]), sep='\t') for s in screen_names]
+		# KEEP THE ALREADY-CATEGORIZED TABLES: RE-READING THE FILES WOULD UNDO apply_guide_categories #
+		input_dfs = [df_by_screen[s] for s in screen_names]
 		conserv_dfs = list()
 		gene_list = list() # where we need only have genes passed QA, so OVERWRITE the previous raw gene list.
 		for screen_name in screen_names:
@@ -1533,7 +1604,7 @@ if __name__ == '__main__':
 
 	from beclust3d.lfc3d.structure import sequence_structural_features, sequence_structural_features_lite
 	from beclust3d.lfc3d.preprocess_data import parse_be_data, sanitary_check, check_screen_residues, load_controls
-	from beclust3d.lfc3d.preprocess_data_helpers import reduce_mutation_type
+	from beclust3d.lfc3d.preprocess_data_helpers import resolve_guide_category
 	from beclust3d.lfc3d.preprocess_data_plot import plot_rawdata
 	from beclust3d.qa.hypothesis_tests import hypothesis_test
 	from beclust3d.lfc3d.randomize_data import randomize_data
@@ -1583,7 +1654,6 @@ if __name__ == '__main__':
 	cons_alignment_filename = conservation_cfg.get('alignment_filename') or None
 
 	database_cfg = config.get('database') or {}
-	mut_col = database_cfg.get('mut_col')
 	val_col = database_cfg.get('val_col')
 	gene_col = database_cfg.get('gene_col')
 	edits_col = cfg_get(database_cfg, 'aa_edits_col', 'edits_col', where='database.')
@@ -1591,6 +1661,17 @@ if __name__ == '__main__':
 	# database.mut_list_col AND database.gRNA_col WERE NEVER READ; OLDER YAMLS MAY STILL CARRY THEM, HARMLESSLY #
 
 	mutation_category_cfg = cfg_get(config, 'category_labels', 'mutation_category', {}) or {}
+	# OPTIONAL; MOST-TO-LEAST-DELETERIOUS ORDER FOR COLLAPSING A PER-EDIT CATEGORY LIST (e.g. 'Silent;Missense;') #
+	mutation_priority = cfg_get(config, 'category_priority', 'mutation_priority')
+	# blind_target READS ITS CATEGORY COLUMNS PER PARTNER, NOT FROM database #
+	category_cfg = resolve_category_config(database_cfg, mutation_priority, where='database.') if mode != 'blind_target' else None
+	mut_col = category_cfg['mut_col'] if category_cfg else None
+	# LABEL -> ROLE, SO THE guide+check CROSS-CHECK TREATS e.g. 'Splice Site' AND 'Splice-donor' UNDER splice AS AGREEING #
+	label_roles = {label: role for role, labels in mutation_category_cfg.items() for label in (labels or [])}
+	# WHEN BOTH CATEGORY COLUMNS ARE NAMED AND DISAGREE: 'warn' (DEFAULT) REPORTS AND CONTINUES; 'error' STOPS THE RUN #
+	on_category_mismatch = config.get('on_category_mismatch', 'warn')
+	if on_category_mismatch not in ('warn', 'error'):
+		raise ValueError(f"on_category_mismatch must be 'warn' or 'error', got {on_category_mismatch!r}")
 	mut_categories = list()
 	mut_categories.extend(mutation_category_cfg.get('nonsense', []))
 	mut_categories.extend(mutation_category_cfg.get('splice', []))
@@ -1637,8 +1718,6 @@ if __name__ == '__main__':
 	# NO-OP ON AlphaFold MODELS, WHERE EVERY RESIDUE IS COORDINATED #
 	skip_no_coords = config.get('skip_no_coords', True)
 	muscle_path = config.get('muscle_path', 'muscle')
-	# OPTIONAL; MOST-TO-LEAST-DELETERIOUS ORDER FOR COLLAPSING DELIMITER-JOINED MULTI-CATEGORY mut_col VALUES (e.g. 'Silent;Missense;') #
-	mutation_priority = cfg_get(config, 'category_priority', 'mutation_priority')
 	# WHERE THE REFERENCE SEQUENCE (unipos 1..N) COMES FROM WHEN user_fasta IS NOT SET: 'structure' (DEFAULT) TAKES
 	# input_chain FROM THE AF MODEL / user_pdb, FALLING BACK TO UNIPROT WHEN THAT CHAIN HAS GAPS OR A DIFFERENT
 	# LENGTH FROM UNIPROT; 'uniprot' ALWAYS QUERIES UNIPROT (THE BEHAVIOR BEFORE THIS OPTION EXISTED) #
@@ -1659,7 +1738,8 @@ if __name__ == '__main__':
 		cons_alignment_filename=cons_alignment_filename,
 		function_for_meta=function_for_meta, qa_passed_only=qa_passed_only, qa_only=qa_only, qa_controls=qa_controls, qa_cases=qa_cases,
 		control_categories=control_categories, priority_on_alternative=priority_on_alternative, config_yaml=config_yaml, atom_level_naa=atom_level_naa, muscle_path=muscle_path,
-		mutation_priority=mutation_priority, skip_no_coords=skip_no_coords, sequence_source=sequence_source,
+		category_cfg=category_cfg, label_roles=label_roles, on_category_mismatch=on_category_mismatch,
+		skip_no_coords=skip_no_coords, sequence_source=sequence_source,
 		on_residue_mismatch=on_residue_mismatch,
 	)
 
