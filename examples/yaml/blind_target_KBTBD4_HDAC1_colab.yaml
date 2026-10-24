@@ -17,8 +17,7 @@ atom_level_naa: false
 function_for_lfc: mean       # aggregation used when HDAC1's own per-residue LFC was computed
 function_for_lfc3d: mean     # how KBTBD4's cross-chain HDAC1 neighbor values are aggregated per screen
 function_for_meta: sum       # how per-screen blind LFC3D values are combined into Meta_LFC3D_blind
-mut_delimiter: ;
-mutation_priority: [Nonsense, Splice-donor, Splice-acceptor, Missense, Silent, Intron, No Mutation]
+category_priority: [Nonsense, Splice-donor, Splice-acceptor, Missense, Silent, Intron, No Mutation]
 
 partners:
   - gene: HDAC1
@@ -31,10 +30,10 @@ partners:
     mut_col: Mutation_type
     val_col: sgRNA_score
     gene_col: Gene
-    edits_col: Mutation_list
-    mut_delimiter: ;
+    aa_edits_col: Mutation_list
+    edit_delimiter: ;
     mut_categories: [Nonsense, Splice-donor, Splice-acceptor, Missense, Silent, Intron, No Mutation]
-    mutation_priority: [Nonsense, Splice-donor, Splice-acceptor, Missense, Silent, Intron, No Mutation]
+    category_priority: [Nonsense, Splice-donor, Splice-acceptor, Missense, Silent, Intron, No Mutation]
     conservation_run: false
     alt_gene_name: null
     alt_uniprot_id: null

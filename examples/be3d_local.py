@@ -13,6 +13,18 @@ def load_config(config_yaml):
 
 	return config
 
+def cfg_get(cfg, key, old_key, default=None, where=''):
+	"""
+	Read a renamed config key: the new name wins, the old name still works but says so.
+	`where` prefixes the printed names with their section (e.g. 'database.').
+	"""
+	if cfg.get(key) is not None:
+		return cfg[key]
+	if cfg.get(old_key) is not None:
+		print(f'NOTE: {where}{old_key} is deprecated; use {where}{key}')
+		return cfg[old_key]
+	return default
+
 def used_sequence_fasta(workdir, structureid):
 	"""
 	FASTA of the reference sequence sequence_structural_features(_lite) numbered the
@@ -265,7 +277,7 @@ def run_blind_target(
 		screen_names = [s.split('.')[0] for s in screens]
 		screen_dir = partner['screen_dir']
 		mut_categories = partner['mut_categories']
-		mut_delimiter = partner.get('mut_delimiter', mut_delimiter_default)
+		mut_delimiter = cfg_get(partner, 'edit_delimiter', 'mut_delimiter', mut_delimiter_default, where='partners[].')
 
 		gene_identifier = f'{gene}_chain_{chain}'
 		partner_dir = os.path.join(output_dir, 'ppi_partners', gene_identifier)
@@ -275,10 +287,10 @@ def run_blind_target(
 			partner_dir, gene, uniprot, chain,
 			screens, screen_dir, screen_names,
 			partner.get('mut_col', 'Mutation_type'), partner.get('val_col', 'sgRNA_score'),
-			partner.get('gene_col', 'Gene'), partner.get('edits_col', 'Mutation_list'),
+			partner.get('gene_col', 'Gene'), cfg_get(partner, 'aa_edits_col', 'edits_col', 'Mutation_list', where='partners[].'),
 			mut_categories, mut_delimiter,
 			partner.get('user_fasta') or None, partner.get('user_pdb') or user_pdb,
-			mutation_priority=partner.get('mutation_priority', mutation_priority),
+			mutation_priority=cfg_get(partner, 'category_priority', 'mutation_priority', mutation_priority, where='partners[].'),
 			conservation_run=partner.get('conservation_run', False),
 			alt_gene_name=partner.get('alt_gene_name'),
 			alt_uniprot_id=partner.get('alt_uniprot_id'),
@@ -1574,11 +1586,11 @@ if __name__ == '__main__':
 	mut_col = database_cfg.get('mut_col')
 	val_col = database_cfg.get('val_col')
 	gene_col = database_cfg.get('gene_col')
-	edits_col = database_cfg.get('edits_col')
-	gRNA_col = database_cfg.get('gRNA_col')
-	mut_delimiter = database_cfg.get('mut_delimiter', ';')
+	edits_col = cfg_get(database_cfg, 'aa_edits_col', 'edits_col', where='database.')
+	mut_delimiter = cfg_get(database_cfg, 'edit_delimiter', 'mut_delimiter', ';', where='database.')
+	# database.mut_list_col AND database.gRNA_col WERE NEVER READ; OLDER YAMLS MAY STILL CARRY THEM, HARMLESSLY #
 
-	mutation_category_cfg = config.get('mutation_category') or {}
+	mutation_category_cfg = cfg_get(config, 'category_labels', 'mutation_category', {}) or {}
 	mut_categories = list()
 	mut_categories.extend(mutation_category_cfg.get('nonsense', []))
 	mut_categories.extend(mutation_category_cfg.get('splice', []))
@@ -1615,7 +1627,7 @@ if __name__ == '__main__':
 	control_categories = qa_controls or mutation_category_cfg.get('no_mutation') or ['No Mutation']
 	missing_controls = [c for c in control_categories if c not in mut_categories]
 	if mode != 'blind_target' and missing_controls:
-		raise ValueError(f'control categories {missing_controls} are not listed under mutation_category, so no '
+		raise ValueError(f'control categories {missing_controls} are not listed under category_labels, so no '
 						 f'screendata file is written for them; add them there or drop them from qa.controls')
 	priority_on_alternative = config.get('priority_on_alternative', False)
 	atom_level_naa = config.get('atom_level_naa', False)
@@ -1625,8 +1637,8 @@ if __name__ == '__main__':
 	# NO-OP ON AlphaFold MODELS, WHERE EVERY RESIDUE IS COORDINATED #
 	skip_no_coords = config.get('skip_no_coords', True)
 	muscle_path = config.get('muscle_path', 'muscle')
-	mutation_priority = config.get('mutation_priority') # optional; most-to-least-deleterious order for collapsing
-	                                                      # delimiter-joined multi-category mut_col values (e.g. 'Silent;Missense;')
+	# OPTIONAL; MOST-TO-LEAST-DELETERIOUS ORDER FOR COLLAPSING DELIMITER-JOINED MULTI-CATEGORY mut_col VALUES (e.g. 'Silent;Missense;') #
+	mutation_priority = cfg_get(config, 'category_priority', 'mutation_priority')
 	# WHERE THE REFERENCE SEQUENCE (unipos 1..N) COMES FROM WHEN user_fasta IS NOT SET: 'structure' (DEFAULT) TAKES
 	# input_chain FROM THE AF MODEL / user_pdb, FALLING BACK TO UNIPROT WHEN THAT CHAIN HAS GAPS OR A DIFFERENT
 	# LENGTH FROM UNIPROT; 'uniprot' ALWAYS QUERIES UNIPROT (THE BEHAVIOR BEFORE THIS OPTION EXISTED) #
@@ -1638,7 +1650,7 @@ if __name__ == '__main__':
 	# KWARGS SHARED ACROSS EVERY main() CALL, REGARDLESS OF MODE #
 	common_kwargs = dict(
 		screen_dir=screen_dir, screens=screens, mut_col=mut_col, val_col=val_col, gene_col=gene_col, edits_col=edits_col,
-		gRNA_col=gRNA_col, user_fasta=user_fasta, user_pdb=user_pdb, user_dssp=user_dssp, nRandom=nRandom,
+		user_fasta=user_fasta, user_pdb=user_pdb, user_dssp=user_dssp, nRandom=nRandom,
 		single_screen_pthr=single_screen_pthr, multi_screen_pthr=multi_screen_pthr,
 		structure_radius=structure_radius, clustering_radius=clustering_radius, function_for_lfc=function_for_lfc, function_for_lfc3d=function_for_lfc3d,
 		mut_categories=mut_categories, mut_delimiter=mut_delimiter, conservation_run=conservation_run, alt_gene_name=alt_gene_name, alt_uniprot_id=alt_uniprot_id,
