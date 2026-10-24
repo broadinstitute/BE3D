@@ -474,7 +474,7 @@ YAML_FIELD_HELP = {
     'val_col': 'Screen column holding each guide\'s score (e.g. sgRNA_score, LFC)',
     'gene_col': 'Screen column holding the gene symbol each guide targets',
     'aa_edits_col': "Screen column holding each guide's amino-acid edits (e.g. S3S;L4F), used to split a guide into its individual edits",
-    'category_labels': "Your data's category labels for each BEClust3D role, as 'role: [labels]'",
+    'category_labels': "Your data's category labels for each BEClust3D role, as 'role: [labels]'. Guides under 'intergenic' are negative controls taken from the whole screen, whatever their gene",
     'mut_categories': "Category labels this partner's screens use (this partner's own list)",
     'category_priority': 'Most-to-least-deleterious order for collapsing a multi-edit guide to one category',
     'edit_delimiter': "Delimiter between items in the category-list and amino-acid edits columns (e.g. ';')",

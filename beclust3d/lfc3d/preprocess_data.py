@@ -30,6 +30,7 @@ def parse_be_data(
     v_score_threshold=3, ### conserv_col
     gene_list=False,
     mutation_priority=None,
+    screen_wide_categories=None,
 ):
     """
     Parses raw base editing screen data into per-mutation-type DataFrames for each screen.
@@ -88,6 +89,10 @@ def parse_be_data(
         list of per-edit categories (e.g. 'Silent;Missense;'). If None, mut_col
         values are used as-is, assuming they are already single categories.
 
+    screen_wide_categories : list of str or None, optional (default=None)
+        Categories that belong to no gene, such as intergenic negative controls. Their guides are
+        taken from the whole screen, whatever gene_col says, and written under each gene's name.
+
     Returns
     -------
     mut_dfs : dict
@@ -127,25 +132,27 @@ def parse_be_data(
         if conserv_df is not None:
             conserv_df['v_score'] = conserv_df['v_score'].astype(int)
             conserv_list = [str(x) for x in conserv_df[conserv_df['v_score']>=v_score_threshold][conserv_col].tolist()]
-        # NARROW DOWN TO INPUT_GENE #
-        df_gene = screen_df.loc[screen_df[gene_col] == input_gene, ]
         if mutation_priority:
-            df_gene = df_gene.copy()
-            df_gene[mut_col] = df_gene[mut_col].apply(
+            screen_df = screen_df.copy()
+            screen_df[mut_col] = screen_df[mut_col].apply(
                 lambda x: reduce_mutation_type(x, mut_delimiter, mutation_priority))
+        # NARROW DOWN TO INPUT_GENE; SCREEN-WIDE CATEGORIES (e.g. INTERGENIC CONTROLS) BELONG TO NO GENE #
+        df_gene = screen_df.loc[screen_df[gene_col] == input_gene, ]
         mut_dfs[screen_name] = {}
 
         # NARROW DOWN TO EACH MUTATION TYPE #
         gene_mut_df = {}
         for mut in mut_categories: 
 
+            df_source = screen_df if mut in (screen_wide_categories or []) else df_gene
+
             # MAKE SURE MUT CATEGORY APPEARS IN DF #
-            if not mut in df_gene[mut_col].unique(): 
+            if not mut in df_source[mut_col].unique(): 
                 warnings.warn(f'{mut} not in Dataframe')
                 continue
 
             # IF USER WANTS TO CATEGORIZE BY ONE SINGLE MUTATION PER GUIDE OR MULTIPLE MUTATIONS PER GUIDE #
-            df_mut = df_gene.loc[df_gene[mut_col] == mut, ]
+            df_mut = df_source.loc[df_source[mut_col] == mut, ]
             df_mut = df_mut.reset_index(drop=True)
             gene_mut_df[mut] = len(df_mut)
 

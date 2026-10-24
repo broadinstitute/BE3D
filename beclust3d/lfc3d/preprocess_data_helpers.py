@@ -53,7 +53,7 @@ def reduce_mutation_type(
 # MOST-TO-LEAST-DELETERIOUS ORDER USED WHEN A CATEGORY LIST IS COLLAPSED WITHOUT A USER-GIVEN ONE.
 # IT MATCHES THE PER-GUIDE CATEGORIES THE BUNDLED MORC2 EXAMPLE SCREENS WERE ORIGINALLY ASSIGNED #
 DEFAULT_CATEGORY_PRIORITY = ['Nonsense', 'Splice-donor', 'Splice-acceptor', 'Splice Site', 'Missense',
-                             'Intron', 'Silent', 'UTR', 'Flank', 'No Mutation']
+                             'Intron', 'Silent', 'UTR', 'Flank', 'Intergenic', 'No Mutation']
 
 def split_categories(
     value,

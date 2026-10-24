@@ -32,12 +32,14 @@ def hypothesis_one(
     val_col, 
     testtype, 
     col_names, 
+    screen_wide_categories=None, 
 ): 
     if testtype == 'MannWhitney': 
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('U_', 'p_')])
     if testtype == 'KolmogorovSmirnov': 
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('D_', 'p_')])
     col_names.extend(['num_of_cases', 'num_of_controls'])
+    screen_wide = set(screen_wide_categories or [])
 
     df_output = pd.DataFrame(columns=col_names)
     # PER SCREEN PER GENE #
@@ -52,7 +54,9 @@ def hypothesis_one(
                 df_case = pd.concat([df_case, df_edits.loc[df_edits[mut_col]==case].reset_index(drop=True)])
             df_control = pd.DataFrame()
             for control in controls: 
-                df_control = pd.concat([df_control, df_edits.loc[df_edits[mut_col]==control].reset_index(drop=True)])
+                # A SCREEN-WIDE CONTROL (e.g. INTERGENIC) BELONGS TO NO GENE, SO EVERY GENE USES THE WHOLE SCREEN'S #
+                df_source = df_input if control in screen_wide else df_edits
+                df_control = pd.concat([df_control, df_source.loc[df_source[mut_col]==control].reset_index(drop=True)])
             new_row.extend(add_to_row(df_control, df_case, val_col, testtype))
             new_row.extend([len(df_case),len(df_control)])
 
@@ -82,6 +86,7 @@ def hypothesis_two(
     val_col, 
     testtype, 
     col_names, 
+    screen_wide_categories=None, 
 ): 
     if testtype == 'MannWhitney': 
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('U_', 'p_')])
@@ -93,16 +98,10 @@ def hypothesis_two(
     df_controls = list()
 
     # GLOBAL SILENT AND NO MUTATION #
-    # PER SCREEN PER GENE #
+    # EVERY CONTROL GUIDE OF THE SCREEN, WHATEVER ITS GENE -- INCLUDING ONES WITH NO GENE, LIKE INTERGENIC CONTROLS --
+    # SO screen_wide_categories NEEDS NO SEPARATE HANDLING HERE #
     for df_input, screen_name in zip(df_inputs, screen_names): 
-        df_control = pd.DataFrame()
-        for current_gene in unique_genes:
-            df_edits = df_input[df_input[gene_col] == current_gene]
-
-            # PARSE DF FOR EACH MUT TYPE, CONCAT TO PREVIOUS GENE #
-            for control in controls: 
-                df_control = pd.concat([df_control, df_edits.loc[df_edits[mut_col]==control].reset_index(drop=True)])
-                
+        df_control = df_input.loc[df_input[mut_col].isin(controls)].reset_index(drop=True)
         df_controls.append(df_control)
         
     # PER SCREEN PER GENE #

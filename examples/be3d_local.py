@@ -107,6 +107,7 @@ def preprocess_ppi_partner(
 	v_score_threshold=3, muscle_path='muscle', priority_on_alternative=False,
 	cons_user_fasta=None, cons_alt_user_fasta=None, cons_alignment_filename=None,
 	sequence_source='structure', on_residue_mismatch='warn', controls=('No Mutation',), on_category_mismatch='warn',
+	screen_wide_categories=None,
 ):
 	"""
 	Lightweight preprocessing for a PPI partner chain: only produces
@@ -165,6 +166,7 @@ def preprocess_ppi_partner(
 		mut_categories=mut_categories, mut_delimiter=mut_delimiter,
 		conserv_dfs=conserv_dfs, conserv_col='alternative_res_pos',
 		gene_list=gene_list, v_score_threshold=v_score_threshold,
+		screen_wide_categories=screen_wide_categories,
 	)
 
 	# GUARDRAIL: EDITED RESIDUES vs THE PDB / REFERENCE SEQUENCE (OWN-SPECIES SCREENS ONLY) #
@@ -452,6 +454,7 @@ def run_complex_mode(config, output_dir, common_kwargs, gene_names, uniprot_list
 	mut_categories = common_kwargs['mut_categories']
 	mut_delimiter = common_kwargs['mut_delimiter']
 	on_category_mismatch = common_kwargs['on_category_mismatch']
+	screen_wide_categories = common_kwargs['screen_wide_categories']
 	conservation_run = common_kwargs['conservation_run']
 	alt_gene_name = common_kwargs['alt_gene_name']
 	alt_uniprot_id = common_kwargs['alt_uniprot_id']
@@ -501,6 +504,7 @@ def run_complex_mode(config, output_dir, common_kwargs, gene_names, uniprot_list
 				cons_user_fasta=cons_user_fasta, cons_alt_user_fasta=cons_alt_user_fasta,
 				cons_alignment_filename=cons_alignment_filename, sequence_source=sequence_source,
 				on_residue_mismatch=on_residue_mismatch, controls=control_categories,
+				screen_wide_categories=screen_wide_categories,
 			)
 			ppi_chain_gene_dict[ch] = gene_identifier
 			ppi_gene_edits_dict[gene_identifier] = partner_dir
@@ -692,6 +696,7 @@ def main(**kwargs):
 	category_cfg=kwargs['category_cfg']
 	label_roles=kwargs['label_roles']
 	on_category_mismatch=kwargs['on_category_mismatch']
+	screen_wide_categories=kwargs['screen_wide_categories']
 	sequence_source=kwargs.get('sequence_source', 'structure')
 	on_residue_mismatch=kwargs.get('on_residue_mismatch', 'warn')
 
@@ -778,7 +783,8 @@ def main(**kwargs):
 		mut_col=mut_col,
 		val_col=val_col,
 		gene_col=gene_col,
-		save_type='svg'
+		save_type='svg',
+		screen_wide_categories=screen_wide_categories,
 		)
 
 	if qa_only:
@@ -837,7 +843,8 @@ def main(**kwargs):
 		conserv_dfs = conserv_dfs,
 		conserv_col='alternative_res_pos',
 		gene_list=gene_list,
-		v_score_threshold=v_score_threshold
+		v_score_threshold=v_score_threshold,
+		screen_wide_categories=screen_wide_categories,
 		)
 
 	# For All
@@ -1679,6 +1686,10 @@ if __name__ == '__main__':
 	mut_categories.extend(mutation_category_cfg.get('silent', []))
 	mut_categories.extend(mutation_category_cfg.get('no_mutation', []))
 	mut_categories.extend(mutation_category_cfg.get('intron', []))
+	# INTERGENIC GUIDES ARE NEGATIVE CONTROLS THAT BELONG TO NO GENE: THEY ARE TAKEN FROM THE WHOLE SCREEN, WHATEVER
+	# gene_col SAYS, BOTH FOR QA AND FOR THE LFC NULL WHEN LISTED UNDER qa.controls #
+	screen_wide_categories = list(mutation_category_cfg.get('intergenic', []))
+	mut_categories.extend(screen_wide_categories)
 
 	# OPTIONAL
 	user_fasta = config.get('user_fasta') or None # '' (A CLEARED NOTEBOOK FIELD) MEANS UNSET #
@@ -1739,6 +1750,7 @@ if __name__ == '__main__':
 		function_for_meta=function_for_meta, qa_passed_only=qa_passed_only, qa_only=qa_only, qa_controls=qa_controls, qa_cases=qa_cases,
 		control_categories=control_categories, priority_on_alternative=priority_on_alternative, config_yaml=config_yaml, atom_level_naa=atom_level_naa, muscle_path=muscle_path,
 		category_cfg=category_cfg, label_roles=label_roles, on_category_mismatch=on_category_mismatch,
+		screen_wide_categories=screen_wide_categories,
 		skip_no_coords=skip_no_coords, sequence_source=sequence_source,
 		on_residue_mismatch=on_residue_mismatch,
 	)

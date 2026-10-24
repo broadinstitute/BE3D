@@ -26,6 +26,7 @@ hypothesis_test(
     val_col = 'logFC',                       # numeric measurement column in input_dfs
     gene_col = 'Target Gene Symbol',         # gene identifier column in input_dfs
     save_type = 'png',                       # plot format ('png', 'pdf', 'svg', etc.)
+    screen_wide_categories = None,           # categories belonging to no gene (e.g. ['Intergenic']), taken from the whole screen
 )
 ```
 
@@ -119,6 +120,7 @@ parse_be_data(
     v_score_threshold = 3,                              # minimum conservation score (-1, 1, 2, or 3)
     gene_list = False,                                  # if True, processes a list of genes
     mutation_priority = None,                           # most-to-least deleterious category order used to collapse multi-category mut_col values (e.g., 'Silent;Missense;'); None uses mut_col as-is
+    screen_wide_categories = None,                      # categories belonging to no gene (e.g. ['Intergenic']): taken from the whole screen and written under input_gene's name
 )
 ```
 
