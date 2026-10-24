@@ -26,10 +26,11 @@ hypothesis_test(
     val_col = 'logFC',                       # numeric measurement column in input_dfs
     gene_col = 'Target Gene Symbol',         # gene identifier column in input_dfs
     save_type = 'png',                       # plot format ('png', 'pdf', 'svg', etc.)
+    screen_wide_categories = None,           # categories belonging to no gene (e.g. ['Intergenic']), taken from the whole screen
 )
 ```
 
-Files are output to ```'[workdir]/hypothesis_qa'```
+Each table has one row per screen and gene the screen contains. `status` says whether the comparison ran (`tested`) or why not (`no_cases`, `no_controls`, `no_cases_no_controls`); an untested row leaves its statistic and p-value empty. Files are output to ```'[workdir]/hypothesis_qa'```
 
 ---
 
@@ -119,6 +120,7 @@ parse_be_data(
     v_score_threshold = 3,                              # minimum conservation score (-1, 1, 2, or 3)
     gene_list = False,                                  # if True, processes a list of genes
     mutation_priority = None,                           # most-to-least deleterious category order used to collapse multi-category mut_col values (e.g., 'Silent;Missense;'); None uses mut_col as-is
+    screen_wide_categories = None,                      # categories belonging to no gene (e.g. ['Intergenic']): taken from the whole screen and written under input_gene's name
 )
 ```
 
@@ -755,6 +757,29 @@ df[mut_col] = df[mut_col].apply(lambda x: reduce_mutation_type(
 ```
 
 No files are written.
+
+---
+
+### 29. `resolve_guide_category`
+
+**Description:** \
+Gives every guide of one screen a single mutation category, from whichever category column(s) are named. `guide_category_col` alone is used as is (a value holding more than one distinct label raises, since the column is then a per-edit list). `edit_categories_col` alone is collapsed with `priority` (`DEFAULT_CATEGORY_PRIORITY` if omitted); a guide whose list is empty becomes `empty_label` when it also has no edits. With both named, `guide_category_col` is used and the collapsed list only cross-checks it, comparing roles from `label_roles` so two labels of one role agree. be3d_local.py calls it for every screen it loads, driven by the YAML keys `database.guide_category_col`, `database.edit_categories_col`, `category_priority` and `on_category_mismatch`.
+
+```python
+categories, report = resolve_guide_category(
+    df,                                    # one screen, one row per guide
+    guide_category_col = 'Mutation_Category', # column with one category per guide, or None
+    edit_categories_col = 'Mutation_Type', # column with one category per edit, or None
+    # Optional
+    delimiter = ';',                       # delimiter inside the category-list and edits columns
+    priority = None,                       # collapse order, most to least deleterious; None = DEFAULT_CATEGORY_PRIORITY
+    edits_col = 'Amino_Acid_Edits',        # amino-acid edits; an empty list becomes empty_label only when there are no edits
+    label_roles = {'Splice Site': 'splice', 'Splice-donor': 'splice'}, # label -> role for the cross-check
+    empty_label = 'No Mutation',           # category for a guide with no categories and no edits
+)
+```
+
+`report` holds the mode, counts of collapsed, filled and still-empty guides, labels missing from the priority order, and (with both columns) a DataFrame of disagreeing guides. No files are written; be3d_local.py writes the disagreements to `'[workdir]/screendata/[screen]_category_check.tsv'`.
 
 ---
 

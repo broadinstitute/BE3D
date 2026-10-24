@@ -467,16 +467,22 @@ YAML_FIELD_HELP = {
     'function_for_meta': 'Aggregation function across screens for meta-analysis (e.g. SUM)',
     'score_type': "mode: ppi_diff merge granularity -- 'LFC3D' (per-screen) or 'Meta_LFC3D' (meta-aggregated)",
     'skip_existing': 'Skip re-running a pipeline leg if its output already exists',
-    'mut_col': 'Screen column holding each guide\'s mutation type (e.g. Missense, Nonsense)',
+    'guide_category_col': "Screen column with one mutation category per guide (e.g. Missense), used as is",
+    'edit_categories_col': "Screen column with one category per edit (e.g. Silent;Missense), collapsed to one per guide with category_priority; next to guide_category_col it only cross-checks that column",
+    'on_category_mismatch': "When guide_category_col and the collapsed edit_categories_col disagree: 'warn' (report and continue) or 'error' (stop the run)",
+    'mut_col': 'Old name: guide_category_col, or edit_categories_col when category_priority is set',
     'val_col': 'Screen column holding each guide\'s score (e.g. sgRNA_score, LFC)',
     'gene_col': 'Screen column holding the gene symbol each guide targets',
-    'edits_col': 'Screen column holding the (semicolon-joined) per-edit mutation categories',
-    'mutation_category': "Raw mut_col values grouped into categories, as 'category: [raw values]'",
-    'mut_categories': "Raw mut_col values grouped into categories (this partner's own list)",
-    'mutation_priority': 'Most-to-least-deleterious order for collapsing a multi-edit guide to one category',
-    'mut_delimiter': "Delimiter separating multiple edits within edits_col (e.g. ';')",
-    'mut_list_col': 'Optional column listing individual edits separately (blank = derive from edits_col)',
-    'gRNA_col': 'Optional column holding the guide/sgRNA identifier',
+    'aa_edits_col': "Screen column holding each guide's amino-acid edits (e.g. S3S;L4F), used to split a guide into its individual edits",
+    'category_labels': "Your data's category labels for each BEClust3D role, as 'role: [labels]'. Guides under 'intergenic' are negative controls taken from the whole screen, whatever their gene",
+    'mut_categories': "Category labels this partner's screens use (this partner's own list)",
+    'category_priority': 'Most-to-least-deleterious order for collapsing a multi-edit guide to one category',
+    'edit_delimiter': "Delimiter between items in the category-list and amino-acid edits columns (e.g. ';')",
+    # OLD NAMES, STILL ACCEPTED (be3d_local.py PRINTS A DEPRECATION NOTE) #
+    'edits_col': 'Old name of aa_edits_col',
+    'mutation_category': 'Old name of category_labels',
+    'mutation_priority': 'Old name of category_priority',
+    'mut_delimiter': 'Old name of edit_delimiter',
     'beclust3d_path': 'Path to the beclust3d package checkout (importable pipeline code, not this examples/ folder)',
     'muscle_path': 'Path to the MUSCLE executable (used by conservation alignment)',
     'single_screen': 'p-value threshold for per-screen hit calling (e.g. BE-Clust3D)',
@@ -579,7 +585,7 @@ def edit_yaml_widgets(yaml_path, key_groups, exclude=('mode', 'atom_level_naa', 
     'partners[0].mut_categories'); pass None to mean "every leaf setting not already shown
     in an earlier group" -- that auto-fills a trailing catch-all group (e.g. "Advanced /
     other settings") so every field in the yaml ends up exposed somewhere. A dict-valued
-    key (e.g. the whole 'mutation_category') is edited as a small YAML block rather than
+    key (e.g. the whole 'category_labels') is edited as a small YAML block rather than
     exploded field by field.
 
     exclude : field names hidden from every group, including the "Advanced / other
@@ -633,7 +639,7 @@ def edit_yaml_widgets(yaml_path, key_groups, exclude=('mode', 'atom_level_naa', 
                     rows=min(6, max(3, len(options))),
                 )
             elif isinstance(val, dict):
-                # A whole nested mapping (mutation_category, conservation, ppi_chain_gene_dict,
+                # A whole nested mapping (category_labels, conservation, ppi_chain_gene_dict,
                 # ...) edited as one YAML block rather than exploded field by field.
                 w = widgets.Textarea(
                     value=yaml.safe_dump(val, sort_keys=False), description=key,

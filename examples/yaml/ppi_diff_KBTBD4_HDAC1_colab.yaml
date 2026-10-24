@@ -24,13 +24,11 @@ function_for_lfc: mean
 function_for_lfc3d: mean
 function_for_meta: SUM
 database:
-  mut_list_col: null
-  mut_col: Mutation_type
+  edit_categories_col: Mutation_type # per-edit list, collapsed with category_priority; use guide_category_col for a one-category-per-guide column
   val_col: sgRNA_score
   gene_col: Gene
-  edits_col: Mutation_list
-  mut_delimiter: ;
-  gRNA_col: null
+  aa_edits_col: Mutation_list
+  edit_delimiter: ;
 conservation:
   run: false
   v_score_threshold: 3
@@ -38,14 +36,14 @@ conservation:
   alt_uniprot_id: null
   alt_screen_start: null
 priority_on_alternative: false
-mutation_category:
+category_labels:
   missense: [Missense]
   silent: [Silent]
   nonsense: [Nonsense]
   no_mutation: [No Mutation]
   splice: [Splice-donor, Splice-acceptor]
   intron: [Intron]
-mutation_priority: [Nonsense, Splice-donor, Splice-acceptor, Missense, Silent, Intron, No Mutation]
+category_priority: [Nonsense, Splice-donor, Splice-acceptor, Missense, Silent, Intron, No Mutation]
 qa:
   qa_passed_only: false
   qa_only: false

@@ -10,6 +10,7 @@ Description:
 import os
 import warnings
 from pathlib import Path
+import pandas as pd
 
 from .hypothesis_tests_helpers import *
 
@@ -24,6 +25,7 @@ def hypothesis_test(
     val_col='logFC', 
     gene_col='Target Gene Symbol', 
     save_type='png', 
+    screen_wide_categories=None, 
 ): 
     """
     Run two hypothesis tests across a set of screens and genes, comparing case vs. control
@@ -64,6 +66,10 @@ def hypothesis_test(
     save_type : str, optional (default='png')
         Format for saving output plots (e.g., 'png', 'pdf', 'svg').
 
+    screen_wide_categories : list of str or None, optional (default=None)
+        Categories that belong to no gene, such as intergenic negative controls. Their guides are taken
+        from the whole screen for every gene's test, and a "gene" made only of them gets no row.
+
     Returns
     -------
     df_MW1_input : pd.DataFrame
@@ -96,6 +102,13 @@ def hypothesis_test(
     for df in input_dfs: 
         unique = df[gene_col].unique().tolist()
         unique_genes = list(set(unique_genes+unique))
+    # A GUIDE WITH NO GENE (e.g. AN INTERGENIC CONTROL WITH AN EMPTY gene_col) GIVES NO GENE TO TEST; SORTED SO
+    # THE QA TABLES AND PLOTS LIST GENES IN THE SAME ORDER ON EVERY RUN (A SET'S ORDER CHANGES BETWEEN RUNS) #
+    unique_genes = sorted(g for g in unique_genes if pd.notna(g))
+    if screen_wide_categories:
+        # NOR DOES A "GENE" MADE ONLY OF SCREEN-WIDE CONTROLS (e.g. gene_col = 'INTERGENIC') #
+        targeted = set().union(*[set(df.loc[~df[mut_col].isin(screen_wide_categories), gene_col]) for df in input_dfs])
+        unique_genes = [g for g in unique_genes if g in targeted]
 
     unique_mutations = []
     for df in input_dfs: 
@@ -115,10 +128,12 @@ def hypothesis_test(
     # MW AND KS TESTS HYPOTHESIS 1 #
     df_MW1_input = hypothesis_one(
         working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name,
-        gene_col, mut_col, val_col, testtype='MannWhitney', col_names = ['screenid','gene_name'])
+        gene_col, mut_col, val_col, testtype='MannWhitney', col_names = ['screenid','gene_name'],
+        screen_wide_categories=screen_wide_categories)
     df_KS1_input = hypothesis_one(
         working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name,
-        gene_col, mut_col, val_col, testtype='KolmogorovSmirnov', col_names = ['screenid','gene_name'])
+        gene_col, mut_col, val_col, testtype='KolmogorovSmirnov', col_names = ['screenid','gene_name'],
+        screen_wide_categories=screen_wide_categories)
 
     hypothesis_plot(
         working_filedir, df_MW1_input.copy(), df_KS1_input.copy(), screen_names, 'screenid', 'gene_name',
@@ -130,10 +145,12 @@ def hypothesis_test(
     # MW AND KS TESTS HYPOTHESIS 2 #
     df_MW2_input = hypothesis_two(
         working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name,
-        gene_col, mut_col, val_col, testtype='MannWhitney', col_names = ['screenid','gene_name'])
+        gene_col, mut_col, val_col, testtype='MannWhitney', col_names = ['screenid','gene_name'],
+        screen_wide_categories=screen_wide_categories)
     df_KS2_input = hypothesis_two(
         working_filedir, input_dfs, screen_names, unique_genes, cases, controls, comp_name,
-        gene_col, mut_col, val_col, testtype='KolmogorovSmirnov', col_names = ['screenid','gene_name'])
+        gene_col, mut_col, val_col, testtype='KolmogorovSmirnov', col_names = ['screenid','gene_name'],
+        screen_wide_categories=screen_wide_categories)
     
     hypothesis_plot(
         working_filedir, df_MW2_input.copy(), df_KS2_input.copy(), screen_names, 'screenid', 'gene_name', 

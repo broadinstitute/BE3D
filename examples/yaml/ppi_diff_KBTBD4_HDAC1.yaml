@@ -10,12 +10,10 @@ conservation:
   v_score_threshold: 3
 priority_on_alternative: false
 database:
-  edits_col: Mutation_list
-  gRNA_col: null
+  aa_edits_col: Mutation_list
   gene_col: Gene
-  mut_col: Mutation_type
-  mut_delimiter: ;
-  mut_list_col: null
+  edit_categories_col: Mutation_type # per-edit list, collapsed with category_priority; use guide_category_col for a one-category-per-guide column
+  edit_delimiter: ;
   val_col: sgRNA_score
 function_for_lfc: mean
 function_for_lfc3d: mean
@@ -25,7 +23,7 @@ input_gene: KBTBD4, HDAC1
 input_uniprot: Q9NVX7-2, Q13547
 mode: ppi_diff
 muscle_path: muscle
-mutation_category:
+category_labels:
   intron:
   - Intron
   missense:
@@ -39,7 +37,7 @@ mutation_category:
   splice:
   - Splice-donor
   - Splice-acceptor
-mutation_priority:
+category_priority:
 - Nonsense
 - Splice-donor
 - Splice-acceptor
