@@ -820,3 +820,136 @@ def run_be3d_with_progress(script, yaml_path):
     print(output)
     if proc.returncode != 0:
         raise subprocess.CalledProcessError(proc.returncode, [script, yaml_path], output=output)
+
+
+# ── Colab run folder: inputs (screens, structures, configs) and outputs in one place ──
+
+# notebook section -> the bundled example config it runs, under examples/yaml/
+EXAMPLE_CONFIGS = {
+    'monomer': 'KBTBD4_chain_B_colab.yaml',
+    'ppi': 'ppi_diff_KBTBD4_HDAC1_colab.yaml',
+    'blind_target': 'blind_target_KBTBD4_HDAC1_colab.yaml',
+    'cross_species': 'cross_species_MORC2_colab.yaml',
+}
+
+
+def prepare_run_folders(beclust3d_path, run_dir):
+    """
+    Create {run_dir}/inputs/{screens,structures,configs} and {run_dir}/outputs, and copy the
+    bundled example screens and structures into inputs/. A file already there is never
+    overwritten, so re-running keeps whatever a user uploaded under the same name. Returns the
+    folder paths as a dict.
+    """
+    import glob
+    import shutil
+
+    dirs = {'run': run_dir, 'inputs': os.path.join(run_dir, 'inputs'), 'outputs': os.path.join(run_dir, 'outputs')}
+    for name in ('screens', 'structures', 'configs'):
+        dirs[name] = os.path.join(dirs['inputs'], name)
+    for d in dirs.values():
+        os.makedirs(d, exist_ok=True)
+
+    examples = os.path.join(beclust3d_path, 'examples')
+    sources = {'screens': glob.glob(os.path.join(examples, 'data', '*.tsv')) + glob.glob(os.path.join(examples, 'data', '*', '*.tsv')),
+               'structures': glob.glob(os.path.join(examples, 'pdb', '*'))}
+    for name, files in sources.items():
+        for src in sorted(files):
+            dst = os.path.join(dirs[name], os.path.basename(src))
+            if not os.path.exists(dst):
+                shutil.copy2(src, dst)
+    return dirs
+
+
+def notebook_mode(cfg):
+    """
+    The notebook section that shows a config's results: monomer, cross_species (a monomer run
+    with conservation.run), ppi (mode: ppi_diff) or blind_target.
+    """
+    mode = cfg.get('mode', 'monomer')
+    if mode == 'monomer':
+        return 'cross_species' if (cfg.get('conservation') or {}).get('run') else 'monomer'
+    if mode == 'ppi_diff':
+        return 'ppi'
+    if mode == 'blind_target':
+        return 'blind_target'
+    raise ValueError(f"mode: {mode} has no results section in this notebook; use mode: ppi_diff for a "
+                     "complex run (it runs the complex and compares it with no-PPI)")
+
+
+def localize_config(src_yaml, dst_yaml, run_dir, beclust3d_path, muscle_path):
+    """
+    Write a copy of src_yaml that runs in this runtime: the pipeline and MUSCLE paths point at
+    this runtime's copies, output_dir goes under {run_dir}/outputs (keeping its last folder name),
+    and every input file -- screens, PDB/FASTA/DSSP, conservation files, the same inside
+    blind-target partners -- is kept if its path exists, else looked up by file name in
+    inputs/screens or inputs/structures. src_yaml itself is left unchanged.
+
+    Returns (cfg, missing, from_examples): the written config; the input files found nowhere, each
+    as (field, file name) -- upload those before running; and the inputs found only as an unchanged
+    copy of a bundled example of the same name, each as (field, path) -- worth a warning, since a
+    user's own file of that name may simply not have been uploaded.
+    """
+    import filecmp
+    import glob
+
+    screens_dir = os.path.join(run_dir, 'inputs', 'screens')
+    structures_dir = os.path.join(run_dir, 'inputs', 'structures')
+    examples = os.path.join(beclust3d_path, 'examples')
+    bundled = {os.path.basename(f): f for f in glob.glob(os.path.join(examples, 'data', '*.tsv'))
+               + glob.glob(os.path.join(examples, 'data', '*', '*.tsv')) + glob.glob(os.path.join(examples, 'pdb', '*'))}
+    with open(src_yaml) as f:
+        cfg = yaml.safe_load(f)
+    missing, from_examples = [], []
+
+    def _note_if_bundled(field, path):
+        name = os.path.basename(path)
+        if name in bundled and filecmp.cmp(path, bundled[name], shallow=False):
+            from_examples.append((field, path))
+
+    def _screens(section, where):
+        if not section.get('screens'):
+            return
+        names = [s.strip() for s in str(section['screens']).split(',') if s.strip()]
+        current = section.get('screen_dir') or ''
+        if current and all(os.path.isfile(os.path.join(current, n)) for n in names):
+            return
+        if all(os.path.isfile(os.path.join(screens_dir, n)) for n in names):
+            section['screen_dir'] = screens_dir
+            for n in names:
+                _note_if_bundled(f'{where}screens', os.path.join(screens_dir, n))
+            return
+        missing.extend((f'{where}screens', n) for n in names
+                       if not os.path.isfile(os.path.join(screens_dir, n)) and not (current and os.path.isfile(os.path.join(current, n))))
+
+    def _file(section, key, where):
+        value = section.get(key)
+        if not value or os.path.isfile(str(value)):
+            return
+        candidate = os.path.join(structures_dir, os.path.basename(str(value)))
+        if os.path.isfile(candidate):
+            section[key] = candidate
+            _note_if_bundled(f'{where}{key}', candidate)
+        else:
+            missing.append((f'{where}{key}', os.path.basename(str(value))))
+
+    cfg['beclust3d_path'] = beclust3d_path
+    cfg['muscle_path'] = muscle_path
+    name = os.path.basename(os.path.normpath(str(cfg.get('output_dir') or ''))) or os.path.splitext(os.path.basename(dst_yaml))[0]
+    cfg['output_dir'] = os.path.join(run_dir, 'outputs', name)
+
+    _screens(cfg, '')
+    for key in ('user_pdb', 'user_fasta', 'user_dssp'):
+        _file(cfg, key, '')
+    for key in ('user_fasta', 'alt_user_fasta', 'alignment_filename'):
+        _file(cfg.get('conservation') or {}, key, 'conservation.')
+    for i, partner in enumerate(cfg.get('partners') or []):
+        where = f'partners[{i}].'
+        if partner.get('muscle_path'):
+            partner['muscle_path'] = muscle_path
+        _screens(partner, where)
+        for key in ('user_pdb', 'user_fasta'):
+            _file(partner, key, where)
+
+    with open(dst_yaml, 'w') as f:
+        yaml.safe_dump(cfg, f, sort_keys=False)
+    return cfg, missing, from_examples

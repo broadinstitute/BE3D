@@ -1,13 +1,13 @@
 mode: monomer # monomer, complex, ppi_diff, blind_target
 beclust3d_path: /content/beclust3d-public
-screen_dir: /content/beclust3d-public/examples/data
-output_dir: /content/BE3D_example/output/KBTBD4_chain_B
+screen_dir: /content/BE3D_run/inputs/screens
+output_dir: /content/BE3D_run/outputs/KBTBD4_chain_B
 muscle_path: /content/muscle
 input_gene: KBTBD4
 input_uniprot: Q9NVX7-2
 input_chain: B
 screens: YeoKBTBD4-HDAC12025-ABE-Screen-PPI.tsv,YeoKBTBD4-HDAC12025-CBE-Screen-PPI.tsv
-user_pdb: /content/beclust3d-public/examples/pdb/8voj_KBTBD4_HDAC1_chain_ABC.pdb
+user_pdb: /content/BE3D_run/inputs/structures/8voj_KBTBD4_HDAC1_chain_ABC.pdb
 sequence_source: structure # structure (default): sequence from the AF model / user_pdb, UniProt fallback on gaps or length mismatch; uniprot: always UniProt; user_fasta overrides both
 on_residue_mismatch: warn # warn (default): report screen edits whose residue disagrees with the PDB/reference and continue; error: stop the run
 category_labels:

@@ -1,13 +1,13 @@
 mode: blind_target
 beclust3d_path: /content/beclust3d-public
-output_dir: /content/BE3D_example/output/blind_target/KBTBD4_HDAC1
+output_dir: /content/BE3D_run/outputs/blind_target_KBTBD4_HDAC1
 
 # KBTBD4 does have its own real screen data, but here we deliberately ignore it --
 # LFC3D is computed purely from its structural neighbor HDAC1's real LFC values.
 input_gene: KBTBD4
 input_uniprot: Q9NVX7-2
 input_chain: B
-user_pdb: /content/beclust3d-public/examples/pdb/8voj_KBTBD4_HDAC1_chain_ABC.pdb
+user_pdb: /content/BE3D_run/inputs/structures/8voj_KBTBD4_HDAC1_chain_ABC.pdb
 sequence_source: structure # structure (default): sequence from the AF model / user_pdb, UniProt fallback on gaps or length mismatch; uniprot: always UniProt; user_fasta overrides both
 on_residue_mismatch: warn # warn (default): report screen edits whose residue disagrees with the PDB/reference and continue; error: stop the run
 structure_radius: 6.0
@@ -25,7 +25,7 @@ partners:
     chain: C
     user_fasta: null # blank = query this partner's uniprot
     user_pdb: null # blank = use the top-level user_pdb
-    screen_dir: /content/beclust3d-public/examples/data
+    screen_dir: /content/BE3D_run/inputs/screens
     screens: YeoKBTBD4-HDAC12025-ABE-Screen-PPI.tsv,YeoKBTBD4-HDAC12025-CBE-Screen-PPI.tsv
     edit_categories_col: Mutation_type # per-edit list, collapsed with category_priority; use guide_category_col for a one-category-per-guide column
     val_col: sgRNA_score
