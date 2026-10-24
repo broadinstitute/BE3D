@@ -550,7 +550,7 @@ def plot_violin_by_processed_muttype(output_dir, input_gene, screen_name,
     mutation category -- unlike plot_violin_by_muttype (which reads the raw screen file's
     mut_col as-is), this reads parse_be_data's own output,
     `screendata/{input_gene}_{screen_name}_{category}.tsv` (one file per category), so the
-    categories/values shown already reflect mutation_priority collapsing (a guide with a
+    categories/values shown already reflect category_priority collapsing (a guide with a
     semicolon-joined multi-category edit list resolved to one category) and each
     category's own filtering (e.g. Missense requires refAA != altAA, Nonsense requires
     altAA == '*') -- exactly what the rest of the pipeline (parse_be_data onward) sees.

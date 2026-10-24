@@ -585,7 +585,7 @@ def edit_yaml_widgets(yaml_path, key_groups, exclude=('mode', 'atom_level_naa', 
     'partners[0].mut_categories'); pass None to mean "every leaf setting not already shown
     in an earlier group" -- that auto-fills a trailing catch-all group (e.g. "Advanced /
     other settings") so every field in the yaml ends up exposed somewhere. A dict-valued
-    key (e.g. the whole 'mutation_category') is edited as a small YAML block rather than
+    key (e.g. the whole 'category_labels') is edited as a small YAML block rather than
     exploded field by field.
 
     exclude : field names hidden from every group, including the "Advanced / other
@@ -639,7 +639,7 @@ def edit_yaml_widgets(yaml_path, key_groups, exclude=('mode', 'atom_level_naa', 
                     rows=min(6, max(3, len(options))),
                 )
             elif isinstance(val, dict):
-                # A whole nested mapping (mutation_category, conservation, ppi_chain_gene_dict,
+                # A whole nested mapping (category_labels, conservation, ppi_chain_gene_dict,
                 # ...) edited as one YAML block rather than exploded field by field.
                 w = widgets.Textarea(
                     value=yaml.safe_dump(val, sort_keys=False), description=key,
