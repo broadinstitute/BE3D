@@ -22,7 +22,7 @@ function_for_lfc: mean
 function_for_lfc3d: mean
 function_for_meta: SUM
 database:
-  mut_col: Mutation_type
+  edit_categories_col: Mutation_type # per-edit list (e.g. Silent;Missense), collapsed with category_priority
   val_col: sgRNA_score
   gene_col: Gene
   aa_edits_col: Mutation_list
@@ -42,12 +42,15 @@ category_labels:
   silent: [Silent]
   nonsense: [Nonsense]
   no_mutation: [No Mutation]
-  splice: [Splice Site]
+  splice: [Splice-donor, Splice-acceptor]
   intron: [Intron]
+# most-to-least-deleterious order for collapsing a guide's per-edit categories into one;
+# this order matches the per-guide categories these screens were originally assigned
+category_priority: [Nonsense, Splice-donor, Splice-acceptor, Missense, Intron, Silent, UTR, Flank, No Mutation]
 qa:
   qa_passed_only: false
   qa_only: false
-  cases: [Nonsense, Splice Site]
+  cases: [Nonsense, Splice-donor, Splice-acceptor]
   controls: [No Mutation] # negative controls for QA and the per-screen LFC z-score null; e.g. [No Mutation, Silent]
 ppi_chain_gene_dict: null
 ppi_gene_edits_dict: null
