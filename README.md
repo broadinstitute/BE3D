@@ -176,6 +176,15 @@ python be3d_local.py ./yaml/KBTBD4_chain_B.yaml
 
 ```
 
+### Running the tests
+
+From the repository root, in the BE3D environment:
+
+``` bash
+pip install pytest
+python -m pytest
+```
+
 ## Google Colab Notebooks
 BE3D can also be run directly in Google Colab.
 
