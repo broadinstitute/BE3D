@@ -30,7 +30,7 @@ hypothesis_test(
 )
 ```
 
-Files are output to ```'[workdir]/hypothesis_qa'```
+Each table has one row per screen and gene the screen contains. `status` says whether the comparison ran (`tested`) or why not (`no_cases`, `no_controls`, `no_cases_no_controls`); an untested row leaves its statistic and p-value empty. Files are output to ```'[workdir]/hypothesis_qa'```
 
 ---
 

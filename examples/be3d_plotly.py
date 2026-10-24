@@ -487,10 +487,18 @@ def plot_hypothesis_qa(output_dir, pthr=0.05, test="MannWhitney", hypothesis=2,
     df = df.copy()
     df[pcol] = pd.to_numeric(df[pcol], errors="coerce")
     df[stat_col] = pd.to_numeric(df[stat_col], errors="coerce")
+    # Untested comparisons (no cases or no controls) have an empty p-value; tables from older runs
+    # wrote -999 there instead, which -log10 would otherwise plot as the most significant point.
+    untested = df[pcol].isna() | (df[pcol] < 0)
+    if untested.any():
+        _warn(f"{int(untested.sum())} untested comparison(s) in {path} (no cases or no controls) are not plotted.")
+        df = df[~untested]
+        if df.empty:
+            return None
     df["-log10(p)"] = -np.log10(df[pcol].clip(lower=1e-300))
     df["significant"] = np.where(df[pcol] < pthr, f"p < {pthr}", f"p >= {pthr}")
 
-    hover_cols = [c for c in ("screenid", "gene_name", "num_of_cases", "num_of_controls") if c in df.columns]
+    hover_cols = [c for c in ("screenid", "gene_name", "num_of_cases", "num_of_controls", "status") if c in df.columns]
     fig = px.scatter(
         df, x=stat_col, y="-log10(p)", color="significant",
         hover_data=hover_cols + [pcol],

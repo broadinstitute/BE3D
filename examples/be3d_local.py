@@ -792,24 +792,30 @@ def main(**kwargs):
 		
 	if qa_passed_only:
 		h2_ks_test_pd = pd.read_csv(f'{output_dir}/hypothesis_qa/KolmogorovSmirnov_hypothesis2.tsv',sep='\t')
-		h2_ks_test_pd = h2_ks_test_pd.replace(-999,None)
-		white_screen_list = h2_ks_test_pd[(h2_ks_test_pd[f"p_{'_'.join(qa_cases)}_vs_{'_'.join(qa_controls)}"]<0.05)&(h2_ks_test_pd['gene_name'].isin(gene_list))]['screenid'].to_list()
-		print(f'original screen size: {len(screen_names)}, screen white list size: {len(white_screen_list)}, QA-passed screen size: {len(list(set(screen_names).intersection(white_screen_list)))}')
+		# ONLY THE TARGET GENE'S ROWS COUNT; A ROW WITHOUT CASES OR CONTROLS WAS NEVER TESTED, SO IT NEITHER PASSES NOR FAILS #
+		h2_target = h2_ks_test_pd[h2_ks_test_pd['gene_name'].isin(gene_list) & (h2_ks_test_pd['status'] == 'tested')]
+		white_screen_list = h2_target[h2_target[f"p_{'_'.join(qa_cases)}_vs_{'_'.join(qa_controls)}"] < 0.05]['screenid'].to_list()
+		tested_screen_set = set(h2_target['screenid'])
 		df_by_screen = dict(zip(screen_names, input_dfs))
 
 		original_screen_names = screen_names
 		# IN THE YAML'S ORDER, SO A QA-FILTERED RUN LAYS OUT ITS SCREENS LIKE AN UNFILTERED ONE #
 		passed_screen_names = [s for s in original_screen_names if s in set(white_screen_list)]
-		failed_screen_names = [s for s in original_screen_names if s not in passed_screen_names]
+		untested_screen_names = [s for s in original_screen_names if s not in tested_screen_set]
+		failed_screen_names = [s for s in original_screen_names if s in tested_screen_set and s not in passed_screen_names]
 		qa_status = 'PASSED' if passed_screen_names else 'FAILED'
+		print(f'QA: {len(passed_screen_names)} of {len(original_screen_names)} screens passed, {len(failed_screen_names)} failed, '
+			  f'{len(untested_screen_names)} untested (no cases or no controls for the target gene); only passed screens continue')
 
 		# TAG THE OUTPUT FOLDER WITH QA STATUS SO A FAILED GENE IS DISTINGUISHABLE WITHOUT RE-RUNNING #
 		with open(os.path.join(output_dir, 'QA_STATUS.txt'), 'w') as f:
 			f.write(f'qa_status: {qa_status}\n')
 			f.write(f'n_screens_total: {len(original_screen_names)}\n')
 			f.write(f'n_screens_passed: {len(passed_screen_names)}\n')
+			f.write(f'n_screens_untested: {len(untested_screen_names)}\n')
 			f.write(f'screens_passed: {",".join(sorted(passed_screen_names))}\n')
 			f.write(f'screens_failed: {",".join(sorted(failed_screen_names))}\n')
+			f.write(f'screens_untested: {",".join(sorted(untested_screen_names))}\n')
 
 		screen_names = passed_screen_names
 		# KEEP THE ALREADY-CATEGORIZED TABLES: RE-READING THE FILES WOULD UNDO apply_guide_categories #

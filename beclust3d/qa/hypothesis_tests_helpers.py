@@ -38,7 +38,7 @@ def hypothesis_one(
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('U_', 'p_')])
     if testtype == 'KolmogorovSmirnov': 
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('D_', 'p_')])
-    col_names.extend(['num_of_cases', 'num_of_controls'])
+    col_names.extend(['num_of_cases', 'num_of_controls', 'status'])
     screen_wide = set(screen_wide_categories or [])
 
     df_output = pd.DataFrame(columns=col_names)
@@ -46,6 +46,8 @@ def hypothesis_one(
     for df_input, screen_name in zip(df_inputs, screen_names): 
         for current_gene in unique_genes: 
             df_edits = df_input[df_input[gene_col] == current_gene]
+            if df_edits.empty: # GENE NOT IN THIS SCREEN (e.g. A MOUSE GENE IN A HUMAN SCREEN), NOTHING TO TEST #
+                continue
             new_row = [screen_name, current_gene]
 
             # PARSE DF FOR EACH MUT TYPE #
@@ -58,7 +60,7 @@ def hypothesis_one(
                 df_source = df_input if control in screen_wide else df_edits
                 df_control = pd.concat([df_control, df_source.loc[df_source[mut_col]==control].reset_index(drop=True)])
             new_row.extend(add_to_row(df_control, df_case, val_col, testtype))
-            new_row.extend([len(df_case),len(df_control)])
+            new_row.extend([len(df_case), len(df_control), comparison_status(df_case, df_control)])
 
             # ADD NEW ROW #
             df_output.loc[len(df_output)] = new_row
@@ -92,7 +94,7 @@ def hypothesis_two(
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('U_', 'p_')])
     if testtype == 'KolmogorovSmirnov': 
         col_names.extend([pref+comp for comp in [comp_name] for pref in ('D_', 'p_')])
-    col_names.extend(['num_of_cases', 'num_of_controls'])
+    col_names.extend(['num_of_cases', 'num_of_controls', 'status'])
     
     df_output = pd.DataFrame(columns=col_names)
     df_controls = list()
@@ -108,6 +110,8 @@ def hypothesis_two(
     for df_input, screen_name, df_control in zip(df_inputs, screen_names, df_controls): 
         for current_gene in unique_genes: 
             df_edits = df_input[df_input[gene_col] == current_gene]
+            if df_edits.empty: # GENE NOT IN THIS SCREEN (e.g. A MOUSE GENE IN A HUMAN SCREEN), NOTHING TO TEST #
+                continue
             new_row = [screen_name, current_gene]
 
             # PARSE DF FOR EACH MUT TYPE #
@@ -115,9 +119,10 @@ def hypothesis_two(
             for case in cases: 
                 df_case = pd.concat([df_case, df_edits.loc[df_edits[mut_col]==case].reset_index(drop=True)])
 
-            df_case_in = df_case[df_case[gene_col]==current_gene]
-            new_row.extend(add_to_row(df_control, df_case_in, val_col, testtype))
-            new_row.extend([len(df_case),len(df_control)])
+            # df_case IS ALREADY THIS GENE'S (BUILT FROM df_edits); FILTERING IT AGAIN BY gene_col CRASHED WHEN NO CASE
+            # CATEGORY EXISTED AT ALL, SINCE AN EMPTY df_case HAS NO COLUMNS #
+            new_row.extend(add_to_row(df_control, df_case, val_col, testtype))
+            new_row.extend([len(df_case), len(df_control), comparison_status(df_case, df_control)])
             
             # ADD NEW ROW #
             df_output.loc[len(df_output)] = new_row
@@ -143,7 +148,21 @@ def add_to_row(
         if function == 'MannWhitney': 
             U1, p = mannwhitneyu(df1[val_col], df2[val_col], method="asymptotic")
             return [U1, p]
-    return [-999, -999]
+    # NOT TESTED: LEFT EMPTY RATHER THAN A SENTINEL, SO NO p-VALUE FILTER CAN MISTAKE IT FOR SIGNIFICANT #
+    return [np.nan, np.nan]
+
+def comparison_status(
+    df_case, 
+    df_control, 
+): 
+    """
+    Why a comparison was or was not run: 'tested', 'no_cases', 'no_controls' or 'no_cases_no_controls'.
+    """
+    if len(df_case) and len(df_control): 
+        return 'tested'
+    if not len(df_case) and not len(df_control): 
+        return 'no_cases_no_controls'
+    return 'no_cases' if not len(df_case) else 'no_controls'
 
 ### PLOTTING FUNCTION #
 
@@ -165,7 +184,6 @@ def hypothesis_plot(
                              figsize=(12, 5*len(category_names)))
 
     # PREP DATAFRAME MW #
-    df_MW_input.replace(-999, pd.NA, inplace=True)  # replace -999 with NaN
     df_MW_input[f"p_{header}"] = df_MW_input[f"p_{header}"].apply(negative_log_transformation)
 
     all_handles = []
@@ -210,7 +228,6 @@ def hypothesis_plot(
         ax.set_ylabel('MW -log(P-Value)')
 
     # PREP DATAFRAME KS #
-    df_KS_input.replace(-999, pd.NA, inplace=True)  # replace -999 with NaN
     df_KS_input[f"p_{header}"] = df_KS_input[f"p_{header}"].apply(negative_log_transformation)
 
     if len(category_names) == 1: axes_list = [axes[1]] # FOR ONE SCREEN/GENE #
