@@ -191,6 +191,18 @@ BE3D can also be run directly in Google Colab.
 - **Colab Notebook Example (KBTBD4)**: 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/broadinstitute/BE3D/blob/main/examples/BE3D_Colab.ipynb)
 
+The notebook keeps everything for a run in one folder, `/content/BE3D_run` (or `MyDrive/BE3D_run` in your Google Drive, so it survives a runtime reset):
+
+```
+BE3D_run/
+  inputs/screens/      screen TSVs
+  inputs/structures/   PDB / FASTA / DSSP / alignment files
+  inputs/configs/      YAML configs
+  outputs/             results, one folder per run
+```
+
+The bundled examples are copied in, so they run as they are. To run your own data, put your files in those folders (drag them into the Colab file browser, or use the notebook's upload cell), then in the mode cell set **CONFIG_SOURCE** to *My own YAML* and **MY_YAML** to your config's file name. Your YAML can keep the paths from your own machine: the notebook writes a Colab-ready copy that finds each input by file name in the run folder and sends results to `outputs/`, and lists any file it cannot find. The YAML's `mode:` picks the results section (a `monomer` run with `conservation.run: true` appears under *Cross species*).
+
 ## Github Structure
 
 ## Notes
