@@ -74,7 +74,10 @@ def apply_guide_categories(input_dfs, screen_names, category_cfg, edits_col, mut
 				print(f"WARNING: {screen_name}: {report['n_fallback']} multi-label guides have no label in category_priority "
 					  f"(unranked labels: {sorted(report['unknown_labels'])}); each keeps the first label of its list")
 		if report['n_empty']:
-			print(f"WARNING: {screen_name}: {report['n_empty']} guides have no category and match no category label")
+			# IN PLACE: CALLERS KEEP USING THE SAME input_dfs OBJECTS #
+			df.drop(index=df.index[df[category_cfg['mut_col']].isna()], inplace=True)
+			df.reset_index(drop=True, inplace=True)
+			print(f"WARNING: {screen_name}: dropped {report['n_empty']} guides with no category")
 		if report['mode'] == 'guide+check':
 			mismatches = report['mismatches']
 			if len(mismatches):
