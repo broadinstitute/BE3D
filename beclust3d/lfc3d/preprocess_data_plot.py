@@ -172,8 +172,10 @@ def violin_by_gene(
         df_current_gene = df.loc[df[gene_col] == current_gene,]
 
         # ENSURE ALL MUTATION TYPES PRESENT #
-        for mutcat in mut_categories: 
-            if mutcat not in df_current_gene[mut_col].unique():
+        # GUIDES WITHOUT A CATEGORY ARE pd.NA, WHICH `in` ON AN ARRAY CANNOT COMPARE #
+        present_cats = set(df_current_gene[mut_col].dropna())
+        for mutcat in mut_categories:
+            if mutcat not in present_cats:
                 df_temp = pd.DataFrame({val_col: [np.nan], mut_col: [mutcat]})
                 df_current_gene = pd.concat([df_current_gene, df_temp], ignore_index=True)
         df_gene = pd.concat([df_gene, df_current_gene], ignore_index=True)
