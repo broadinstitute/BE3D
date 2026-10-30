@@ -67,7 +67,9 @@ BE3D requires the following inputs:
 
     With only `edit_categories_col`, each guide gets the first of its categories in `category_priority` (a built-in default order is used if you leave it out). With both, `guide_category_col` is used and the collapsed list only cross-checks it (`on_category_mismatch: warn` or `error`). The older key `mut_col` still works.
 
-    Intergenic (or other gene-less) negative controls go under their own role, `category_labels.intergenic: [Intergenic]`. They are taken from the whole screen whatever their gene column says; list them in `qa.controls` to use them for QA and for the per-screen LFC null.
+    Intergenic (or other gene-less) negative controls go under their own role, `category_labels.intergenic: [Intergenic]`. They are taken from the whole screen whatever their gene column says; list them in `qa.controls` to use them for QA, in `null_controls` to pool them into the LFC null.
+
+    `qa.controls` and `null_controls` are set separately and do not have to agree. QA asks whether a screen worked at all, so it can pool a wider control group (`[No Mutation, Silent]`) for power, while the null should hold non-perturbing guides only, since any real signal pooled into it inflates sigma and hides hits. `null_controls` defaults to the `category_labels.no_mutation` labels.
 
 2. **Uniprot ID**: Required to fetch an AlphaFold structure. It can fetch other isoforms by providing isoform identifier, `-isoform number`
 

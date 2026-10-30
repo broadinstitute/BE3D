@@ -21,11 +21,14 @@ category_labels:
 # per-edit mutation categories (e.g. 'Silent;Missense;') into a single category;
 # used only when database.edit_categories_col names a per-edit list (default order if omitted)
 category_priority: [Nonsense, Splice-donor, Splice-acceptor, Missense, Silent, Intron, No Mutation]
+# negative controls for the per-screen LFC z-score null, independent of qa.controls;
+# defaults to the category_labels no_mutation labels
+null_controls: [No Mutation]
 qa:
   qa_passed_only: false
   qa_only: false
   cases: [Nonsense, Splice-donor, Splice-acceptor]
-  controls: [No Mutation] # negative controls for QA and the per-screen LFC z-score null; e.g. [No Mutation, Silent]
+  controls: [No Mutation] # negative controls for the QA hypothesis tests; e.g. [No Mutation, Silent]
 conservation:
   run: false
   v_score_threshold: 3

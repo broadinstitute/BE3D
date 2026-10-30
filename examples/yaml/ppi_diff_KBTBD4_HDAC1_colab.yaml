@@ -44,11 +44,14 @@ category_labels:
   splice: [Splice-donor, Splice-acceptor]
   intron: [Intron]
 category_priority: [Nonsense, Splice-donor, Splice-acceptor, Missense, Silent, Intron, No Mutation]
+# negative controls for the per-screen LFC z-score null, independent of qa.controls;
+# defaults to the category_labels no_mutation labels
+null_controls: [No Mutation]
 qa:
   qa_passed_only: false
   qa_only: false
   cases: [Nonsense, Splice-donor, Splice-acceptor]
-  controls: [No Mutation] # negative controls for QA and the per-screen LFC z-score null; e.g. [No Mutation, Silent]
+  controls: [No Mutation] # negative controls for the QA hypothesis tests; e.g. [No Mutation, Silent]
 ppi_chain_gene_dict:
   A: KBTBD4
   B: KBTBD4

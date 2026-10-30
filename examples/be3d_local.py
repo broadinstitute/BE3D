@@ -373,7 +373,7 @@ def run_blind_target(
 			priority_on_alternative=partner.get('priority_on_alternative', False),
 			sequence_source=partner.get('sequence_source', sequence_source),
 			on_residue_mismatch=on_residue_mismatch,
-			controls=partner.get('controls') or ['No Mutation'],
+			controls=cfg_get(partner, 'null_controls', 'controls', ['No Mutation'], where='partners[].'),
 		)
 
 		ppi_chain_gene_dict[chain] = gene_identifier
@@ -1723,13 +1723,20 @@ if __name__ == '__main__':
 	qa_only = qa_cfg.get('qa_only', False)
 	qa_controls = qa_cfg.get('controls', [])
 	qa_cases = qa_cfg.get('cases', [])
-	# qa.controls ALSO DEFINES THE NEGATIVE CONTROLS WHOSE LFCs FORM THE PER-SCREEN LFC NULL (prioritize_by_sequence,
-	# znorm_score), SO QA AND HIT CALLING COMPARE AGAINST THE SAME GUIDES. WITHOUT IT, FALL BACK TO THE no_mutation LABELS #
-	control_categories = qa_controls or mutation_category_cfg.get('no_mutation') or ['No Mutation']
+	# THE NEGATIVE CONTROLS WHOSE LFCs FORM THE PER-SCREEN LFC NULL (prioritize_by_sequence, znorm_score). SET
+	# INDEPENDENTLY OF qa.controls: QA ASKS WHETHER A SCREEN WORKED AT ALL, SO IT CAN POOL A WIDER CONTROL GROUP
+	# (e.g. Silent) FOR POWER, WHILE THE NULL SHOULD HOLD NON-PERTURBING GUIDES ONLY -- ANY REAL SIGNAL POOLED INTO
+	# IT INFLATES sigma AND HIDES HITS. DEFAULTS TO THE no_mutation LABELS #
+	null_controls = config.get('null_controls')
+	control_categories = null_controls or mutation_category_cfg.get('no_mutation') or ['No Mutation']
 	missing_controls = [c for c in control_categories if c not in mut_categories]
 	if mode != 'blind_target' and missing_controls:
-		raise ValueError(f'control categories {missing_controls} are not listed under category_labels, so no '
-						 f'screendata file is written for them; add them there or drop them from qa.controls')
+		raise ValueError(f'null control categories {missing_controls} are not listed under category_labels, so no '
+						 f'screendata file is written for them; add them there or drop them from null_controls')
+	# BEFORE null_controls EXISTED THE NULL FOLLOWED qa.controls; SAY SO WHEN AN OLD YAML WOULD HAVE MEANT SOMETHING ELSE #
+	if null_controls is None and qa_controls and sorted(qa_controls) != sorted(control_categories):
+		print(f'NOTE: the LFC null uses {control_categories} (the no_mutation labels), not qa.controls {qa_controls}; '
+			  f'set null_controls explicitly to pool anything else into it')
 	priority_on_alternative = config.get('priority_on_alternative', False)
 	atom_level_naa = config.get('atom_level_naa', False)
 	# DROP BOTH LFC AND LFC3D (AND HENCE union) AT RESIDUES WITH NO RESOLVED xyz -- SEE calculate_lfc3d'S skip_no_coords.
