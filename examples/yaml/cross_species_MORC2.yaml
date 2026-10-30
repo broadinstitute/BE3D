@@ -47,11 +47,14 @@ category_labels:
 # most-to-least-deleterious order for collapsing a guide's per-edit categories into one;
 # this order matches the per-guide categories these screens were originally assigned
 category_priority: [Nonsense, Splice-donor, Splice-acceptor, Missense, Intron, Silent, UTR, Flank, No Mutation]
+# negative controls for the per-screen LFC z-score null, independent of qa.controls;
+# defaults to the category_labels no_mutation labels
+null_controls: [No Mutation]
 qa:
   qa_passed_only: false
   qa_only: false
   cases: [Nonsense, Splice-donor, Splice-acceptor]
-  controls: [No Mutation] # negative controls for QA and the per-screen LFC z-score null; e.g. [No Mutation, Silent]
+  controls: [No Mutation] # negative controls for the QA hypothesis tests; e.g. [No Mutation, Silent]
 ppi_chain_gene_dict: null
 ppi_gene_edits_dict: null
 atom_level_naa: false
